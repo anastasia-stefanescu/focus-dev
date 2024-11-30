@@ -1,0 +1,92 @@
+{
+  "name": "code-stats",
+  "displayName": "code-stats",
+  "description": "",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.95.0",
+    "@types/mocha": "^10.0.9",
+    "@types/node": "20.x",
+    "@typescript-eslint/eslint-plugin": "^8.10.0",
+    "@typescript-eslint/parser": "^8.7.0",
+    "eslint": "^9.13.0",
+    "typescript": "^5.6.3",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1"
+  },
+  "contributes": { 
+    "commands": [
+      {
+        "command": "code-stats.helloWorld",
+        "title": "Hello World"
+      },
+      {
+        "command": "code-stats.viewDashboard",
+        "title": "View Dashboard",
+        "category": "Dashboard"
+      },
+      {
+        "command": "code-stats.analyseCode",
+        "title": "Analyse Code"
+      },
+      {
+        "command": "code-stats.logout",
+        "title": "Log Out"
+      },
+      {
+        "command": "code-stats.signIn",
+        "title": "Sign In"
+      },
+      {
+        "command": "code-stats.accessSettings",
+        "title": "Access Settings"
+      }
+    ],
+    "configuration": [
+      {
+        "title": "Code Stats",
+        "properties": {
+          "code-stats.apiKey": {
+            "type": "string",
+            "default": "",
+            "description": "API Key"
+          }
+        }
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "code-stats-sidebar",
+          "title": "Code Stats" 
+        }
+      ]
+    },
+    "views": {
+      "code-stats-sidebar": [
+        {
+          "id": "code-stats.dashboard",
+          "name": "Dashboard",
+          "type": "webview"
+        }
+      ]
+    }
+  }
+
+}

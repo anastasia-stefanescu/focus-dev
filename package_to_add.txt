@@ -1,0 +1,19 @@
+activationEvents: onStartupFinished
+main: we have ./out/extension.js, they have ./dist/...
+
+contribute.commands - to add all commands we want :
+     - view Dashboard
+      - enable/exit Flow Mode ?
+      - log out
+      - sign in
+    Mine:
+         - display Settings
+         - get analysis
+
+configuration
+
+viewsContainers - icon
+
+views - icon
+
+dependencies?
