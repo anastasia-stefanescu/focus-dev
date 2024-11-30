@@ -21,7 +21,7 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
 
     //The sidebar:
     // - registerWebviewViewProvider
-    // - launch the web url of the (web?) dashboard
+    // - launch the web url of the (web?) dashbhttps://github.com/anastasia-stefanescu/Code-statsoard
     // - display the side bar => activate the view ?
     // - 
 
