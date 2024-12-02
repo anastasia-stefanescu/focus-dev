@@ -1,0 +1,49 @@
+//ExtensionContext provides information about the extension's runtime environment. It is passed as an argument to the activate function,
+    
+    // ExtensionContext.subscriptions = Subscriptions listen to events emitted by services and perform actions in response.
+    // Ex1: you subscribe to TextDocument.onDidChange event to listen for changes to a text document and perform some action in response.
+    // Ex2: you subscribe to commands.onCommand event to listen for commands and perform some action in response.
+    // Ex3: you create a subscription for registering a command
+
+    //ExtensionContext.extensionUri = object that points to the root dir of the extension
+   
+// WEBVIEWS
+
+Whenever a webview's visibility changes, or when a webview is moved into a new column, 
+the onDidChangeViewState event is fired. 
+
+The .visible property tells you if the webview panel is currently visible or not.
+
+Extensions can programmatically bring a webview panel to the foreground by calling reveal(). 
+This method takes an optional target view column to show the panel in.
+A webview panel may only show in a single editor column at a time. 
+Calling reveal() or dragging a webview panel to a new editor column moves the webview into that new column.
+
+Webviews run in isolated contexts that cannot directly access local resources. 
+you must use the Webview.asWebviewUri function to convert a local file: URI into a 
+special URI that VS Code can use to load a subset of local resources.
+
+By default, webviews can only access resources in the following locations:
+ - Within your extension's install directory.
+ - Within the user's currently active workspace.
+Use the WebviewOptions.localResourceRoots to allow access to additional local resources.
+You can also always use data URIs to embed resources directly within the webview.
+
+Controlling access to local resources
+Webviews can control which resources can be loaded from the user's machine with localResourceRoots option. localResourceRoots defines a set of root URIs from which local content may be loaded.
+
+We can use localResourceRoots to restrict Cat Coding webviews to only load resources from a media directory in our extension:
+
+
+Context menus
+Advanced webviews can customize the context menu that shows when a user right-clicks inside of a webview. 
+This is done using a contribution point similarly to VS Code's normal context menus, so custom menus fit right in with the rest of the editor. 
+Webviews can also show custom context menus for different sections of the webview.
+
+
+Scripts and message passing
+Webviews are just like iframes, which means that they can also run scripts. 
+JavaScript is disabled in webviews by default, but it can easily re-enable by passing in the enableScripts: true option.
+
+Let's use a script to add a counter tracking the lines of source code our cat has written. Running a basic script is pretty simple, but note that this example is only for demonstration purposes.
+In practice, your webview should always disable inline scripts using a content security policy:
