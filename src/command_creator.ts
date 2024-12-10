@@ -1,8 +1,10 @@
-import * as vscode from 'vscode';
+import * as vscode from 'vscode'; 
+import path from 'path';
 import { ExtensionContext, Disposable} from "vscode";
 import { window, ViewColumn  } from "vscode";
+import { Uri } from 'vscode';
 import { SidebarViewProvider } from './Sidebar/extension_sidebar';
-
+import { AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET, REDIRECT_URI} from './Constants';
 
 
 export function createCommands(  ctx: ExtensionContext /* add: kpm controller, storageManager */ ) 
@@ -18,8 +20,14 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
     // - display the side bar => activate the view ?
     const sidebarViewProvider /* : SidebarViewProvider */ = new SidebarViewProvider(ctx);
     
+    // The command has been defined in the package.json file. Now provide the implementation of the command with registerCommand
+	// The commandId parameter must match the command field in package.json
+	const disposable = vscode.commands.registerCommand('code-stats.helloWorld', () => {
+		// The code you place here will be executed every time your command is executed
+		vscode.window.showInformationMessage('Hello World from code-stats!'); // Display a message box to the user
+	});
 
-
+	commands.push(disposable);
 
     const viewDashboard = vscode.commands.registerCommand('code-stats.viewDashboard', () => {
         const panel = vscode.window.createWebviewPanel(
@@ -30,7 +38,7 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
                 enableScripts: true,
             }
         );
-        const onDiskPath = vscode.Uri.joinPath(ctx.extensionUri, 'media', 'cat.gif');
+        const onDiskPath = Uri.file(path.join(ctx.extensionPath, 'media', 'cat.gif'));
 
         // And get the special URI to use with the webview
         const catGifSrc = panel.webview.asWebviewUri(onDiskPath);
@@ -39,6 +47,13 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
         window.showInformationMessage('Viewing Dashboard');
     });
     commands.push(viewDashboard); 
+
+    const loginWithAuth0 = vscode.commands.registerCommand('extension.authLogin', async () => {
+        const authUrl = `https://${AUTH0_DOMAIN}/authorize?client_id=${AUTH0_CLIENT_ID}&response_type=code&redirect_uri=${REDIRECT_URI}&scope=openid profile email`;
+        vscode.env.openExternal(vscode.Uri.parse(authUrl));
+      });
+    commands.push(loginWithAuth0);
+
 
     return Disposable.from(...commands);
 

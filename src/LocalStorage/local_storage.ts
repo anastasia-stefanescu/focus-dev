@@ -1,6 +1,7 @@
 import { ExtensionContext, Memento } from 'vscode';
 
 
+
 export class LocalStorageManager {
     private static instance: LocalStorageManager;
     private storage: Memento;

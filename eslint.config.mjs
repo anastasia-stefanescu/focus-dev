@@ -1,5 +1,5 @@
-import typescriptEslint from "@typescript-eslint/eslint-plugin";
-import tsParser from "@typescript-eslint/parser";
+import {typescriptEslint} from "@typescript-eslint/eslint-plugin";
+import {tsParser}  from "@typescript-eslint/parser";
 
 export default [{
     files: ["**/*.ts"],
@@ -16,7 +16,7 @@ export default [{
 
     rules: {
         "@typescript-eslint/naming-convention": ["warn", {
-            selector: "import",
+            selector: "const",
             format: ["camelCase", "PascalCase"],
         }],
 

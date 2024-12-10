@@ -1,20 +1,47 @@
 CASSANDRA
 
-brew install cassandra
-brew services start cassandra
+    brew install cassandra
+    brew services start cassandra
 
-cqlsh 
+    cqlsh 
 
-// Create a Keyspace 
-CREATE KEYSPACE code_stats
-WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
-
-DESCRIBE keyspaces;
-
-USE code_stats;
+    // Create a Keyspace 
+    CREATE KEYSPACE code_stats
+    WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
+    DESCRIBE keyspaces;
+    USE code_stats;
 
 NODEJS
 
+PACKAGES
+    npm install @types/vscode --save-dev
+    npm install --save-dev @types/express
+    npm install --save-dev @types/cors
+
 
 AXIOS
-npm install axios
+    npm install axios
+
+AUTH0 
+    Log in to your Auth0 dashboard.
+    Go to Applications > Applications, and click Create Application.
+    Name your application (e.g., "VSCode Extension").
+    Select Regular Web Application.
+    After creating the application:
+    Note down your Client ID and Client Secret.
+    Add your redirect URIs in the Allowed Callback URLs field. For VSCode, the URI will be in the format:
+    vscode://<your-publisher-name>.<your-extension-name>
+    For example:
+    vscode://mypublisher.myextension
+
+WHEN FIRST RUNNING:
+ - package.json .main set to "main": "./src/extension.ts"
+ - set commonjs in tsconfig
+ - use everywhere require instead of imports
+ - npm install -g typescript (for installing tsc)
+ - npm run build   - use it to compile files
+
+
+ - we need to set the tsconfig to compile the dist folder to commonjs
+ - use "npx tsc" to recompile the dist folder; check it is written in commonjs
+ - set in package the type "commonjs" so it can run the dist folder well

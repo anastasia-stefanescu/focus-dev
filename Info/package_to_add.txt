@@ -46,3 +46,10 @@ ADDED MORE THAN default:
 
 WEBVIEWS
 - de testat cu vizibilitatea in tot felul de scenarii
+
+AUTHENTICATION
+- added this for testing:
+{
+        "command": "extension.authLogin",
+        "title": "Login with Auth0"
+}

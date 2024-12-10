@@ -1,0 +1,25 @@
+SCOPES
+
+Scopes in authentication define the level of access or permissions that a token (and, consequently, your app or extension) has when interacting with a resource or API. 
+Scopes act as a filter, specifying what actions can be performed and what data can be accessed.
+
+ACCESS TOKEN:
+ - It's a short-lived token used to authenticate API requests on behalf of the user.
+ - Example: If you use GitHub’s authentication, the token lets your app perform actions like fetching repositories or reading user data.
+Most tokens are either:
+ - JWT (JSON Web Token): A self-contained token with encoded claims (e.g., user ID, issued time, expiry).
+ - Opaque Token: A random string that the provider validates on its servers
+
+Access tokens often expire after a short period (e.g., 1 hour).
+If they expire, the app may use a refresh token (if provided) to get a new one without requiring the user to log in again.
+
+Most tokens are "bearer tokens," meaning they grant access to whoever holds them. For this reason, you must keep tokens secure.
+
+
+GET SESSION
+// get a session: {id: <String>, accessToken: <String>, account: {label: <String>, id: <Number>}, scopes: [<String>,...]}
+  // If the user is already signed in with the specified authentication provider, it fetches the existing session.
+  // If no session exists or the requested scopes require it, it can prompt the user to sign in or authorize the required access.
+  // The session includes an access token that extensions can use to interact with APIs or services that require authentication.
+  const session = await authentication.getSession(AUTH_TYPE, [], { createIfNone: false });
+  

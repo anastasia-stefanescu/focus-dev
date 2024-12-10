@@ -4,11 +4,10 @@ import { ExtensionContext } from 'vscode';
 import {commands} from 'vscode';
 
 
-
 export class SidebarViewProvider implements WebviewViewProvider {
     //!! a command is saving the provider in the context's subscriptions!!
 
-    private _view?: WebviewView; 
+    private _view?:  WebviewView; 
 
     constructor(private readonly context: ExtensionContext) {} // or as parameter we can have the extensionUri
 
@@ -31,17 +30,17 @@ export class SidebarViewProvider implements WebviewViewProvider {
             }
 		});
 
-        webviewView.webview.html = await this.getHtmlForWebview();
+        webviewView.webview.html = /* await */ this.getHtmlForWebview();
     }
 
-    private async getHtmlForWebview() : Promise<string> 
-    {
-        const response = await appGet('plugin/sidebar', {}) //params  = {}
-        if (response)
-            return response.data
-        return await 
+    // private async getHtmlForWebview() : Promise<string> 
+    // {
+    //     const response = await appGet('plugin/sidebar', {}) //params  = {}
+    //     if (response)
+    //         return response.data
+    //     return await 
 
-    }
+    // }
 
     //Refresh
     //Close
@@ -92,29 +91,29 @@ export class SidebarViewProvider implements WebviewViewProvider {
 	// }
 
 
-    // private getHtmlForWebview(): string {
-    //     return `
-    //         <!DOCTYPE html>
-    //         <html lang="en">
-    //         <head>
-    //         <meta charset="UTF-8">
-    //         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    //         <title>Calico Dashboard</title>
-    //         <style>
-    //             body {
-    //             font-family: Arial, sans-serif;
-    //             padding: 10px;
-    //             }
-    //             h1 {
-    //             color: #007acc;
-    //             }
-    //         </style>
-    //         </head>
-    //         <body>
-    //         <h1>Welcome to Calico Dashboard</h1>
-    //         <p>Customize this dashboard with your content.</p>
-    //         </body>
-    //         </html>
-    //     `;
-    // }
+    private getHtmlForWebview(): string {
+        return `
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Calico Dashboard</title>
+            <style>
+                body {
+                font-family: Arial, sans-serif;
+                padding: 10px;
+                }
+                h1 {
+                color: #007acc;
+                }
+            </style>
+            </head>
+            <body>
+            <h1>Welcome to Calico Dashboard</h1>
+            <p>Customize this dashboard with your content.</p>
+            </body>
+            </html>
+        `;
+    }
 }

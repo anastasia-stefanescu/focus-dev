@@ -1,17 +1,52 @@
+// {
+// 	"compilerOptions": {
+// 		"module": "commonjs",
+// 		"target": "ES2022",
+// 		"outDir": "out",
+// 		"rootDir": "src",
+// 		"lib": [
+// 			"ES2022"
+// 		],
+// 		"sourceMap": true,
+// 		"esModuleInterop": true,
+// 		"strict": true,   /* enable all strict type-checking options */
+// 		// "types": ["module"],
+// 		// "main": "./out/extension.js"
+// 		/* Additional Checks */
+// 		// "noImplicitReturns": true, /* Report error when not all code paths in function return a value. */
+// 		// "noFallthroughCasesInSwitch": true, /* Report errors for fallthrough cases in switch statement. */
+// 		// "noUnusedParameters": true,  /* Report errors on unused parameters. */
+// 	},
+// 	"include": ["src/**/*"]
+// }
+// {
+// 	"compilerOptions": {
+// 	  "target": "es6",
+// 	  "module": "ESNext",
+// 	  "outDir": "dist",
+// 	  "rootDir": "src",
+// 	  "strict": true,
+// 	  "esModuleInterop": true,
+// 	  "moduleResolution": "node",
+// 	  "types": ["node", "vscode", "mocha"], // Add "vscode" here
+// 	  "skipLibCheck": true
+// 	},
+// 	"include": ["src"],
+// 	"exclude": ["node_modules", "dist"]
+//   }
+
 {
 	"compilerOptions": {
-		"module": "Node16",
-		"target": "ES2022",
-		"outDir": "out",
-		"lib": [
-			"ES2022"
-		],
-		"sourceMap": true,
-		"rootDir": "src",
-		"strict": true   /* enable all strict type-checking options */
-		/* Additional Checks */
-		// "noImplicitReturns": true, /* Report error when not all code paths in function return a value. */
-		// "noFallthroughCasesInSwitch": true, /* Report errors for fallthrough cases in switch statement. */
-		// "noUnusedParameters": true,  /* Report errors on unused parameters. */
-	}
-}
+	  "target": "ES2020",              // Keep modern JavaScript features
+	  "module": "commonjs",            // Compile to CommonJS for compatibility
+	  "outDir": "dist",                // Output folder for compiled files
+	  "rootDir": "src",                // Source folder
+	  "strict": true,                  // Enable strict type checking
+	  "esModuleInterop": true,         // Interoperability with CommonJS modules
+	  "moduleResolution": "node",      // Use Node.js module resolution
+	  "resolveJsonModule": true,       // Allow importing JSON files
+	  "skipLibCheck": true             // Skip library checking for faster builds
+	},
+	"include": ["src/**/*"],           // Include all files in the `src` folder
+	"exclude": ["node_modules"]        // Exclude `node_modules` folder
+  }

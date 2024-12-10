@@ -1,5 +1,7 @@
 {
   "name": "code-stats",
+  "type": "commonjs",
+  "main": "./dist/extension.js",
   "displayName": "code-stats",
   "description": "This is the README for your extension \"code-stats\". After writing up a brief description, we recommend including the following sections.",
   "version": "0.0.1",
@@ -10,11 +12,12 @@
     "Other"
   ],
   "activationEvents": [],
-  "main": "./out/extension.js",
+
   "devDependencies": {
     "@types/cassandra-driver": "^4.1.1",
+    "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
-    "@types/mocha": "^10.0.9",
+    "@types/mocha": "^10.0.10",
     "@types/node": "^20.17.9",
     "@types/vscode": "^1.95.0",
     "@typescript-eslint/eslint-plugin": "^8.10.0",
@@ -23,7 +26,8 @@
     "@vscode/test-electron": "^2.4.1",
     "eslint": "^9.13.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vscode": "^1.1.37"
   },
   "contributes": {
     "viewsContainers": {
@@ -52,6 +56,10 @@
         "command": "code-stats.viewDashboard",
         "title": "View Dashboard",
         "category": "Dashboard"
+      },
+      {
+        "command": "code-stats.authLogin",
+        "title": "Login with Auth0"
       }
     ]
   },
@@ -68,8 +76,7 @@
     "body-parser": "^1.20.3",
     "cassandra-driver": "^4.7.2",
     "cors": "^2.8.5",
-    "express": "^4.21.2",
-    "vscode": "*"
+    "express": "^4.21.2"
   },
   "keywords": [],
   "author": "",

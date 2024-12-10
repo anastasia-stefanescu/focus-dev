@@ -12,7 +12,7 @@ export const logActivity = async (userId: string, codingTime: number) => {
 };
 
 export const fetchActivities = async () => {
-  const query = 'SELECT * FROM activities';
+  const query = 'SELECT *from activities';
   const result = await client.execute(query);
   return result;
 };

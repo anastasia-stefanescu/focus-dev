@@ -1,4 +1,5 @@
 
+import { Request } from "express";
 // auth login - used in : extension.ts (to create new session) (to be completed)
 // get session from vscode authentication ( create if None!!)
 // if session exists now, 
@@ -6,6 +7,16 @@
  // - if it was never update or updated more than 3000 ago,
      // authProvider removes session (by account id)
      // create a new one (create if None)
+
+function generateAccessToken(){
+
+}
+
+export function handleAuthentication(state: any) {
+    const accessToken = generateAccessToken(); 
+    const redirectUri = `${state.redirect_uri}?access_token=${accessToken}&state=${state}`;
+    return redirectUri;
+}
 
 
 // create user (anonymous)
