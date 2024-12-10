@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import { ExtensionContext, Disposable} from "vscode";
 import { window, ViewColumn  } from "vscode";
+import { SidebarViewProvider } from './Sidebar/extension_sidebar';
+
 
 
 export function createCommands(  ctx: ExtensionContext /* add: kpm controller, storageManager */ ) 
@@ -14,7 +16,10 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
     // - registerWebviewViewProvider
     // - launch the web url of the (web?) dashbhttps://github.com/anastasia-stefanescu/Code-statsoard
     // - display the side bar => activate the view ?
-    // - 
+    const sidebarViewProvider /* : SidebarViewProvider */ = new SidebarViewProvider(ctx);
+    
+
+
 
     const viewDashboard = vscode.commands.registerCommand('code-stats.viewDashboard', () => {
         const panel = vscode.window.createWebviewPanel(

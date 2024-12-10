@@ -17,3 +17,32 @@ viewsContainers - icon
 views - icon
 
 dependencies?
+
+ADDED MORE THAN default:
+ - Added a build script
+"scripts": {
+  "build": "tsc",
+  "start": "node dist/server.js",
+  "dev": "ts-node src/server.ts"
+}
+
+- Debugging for typescript (to add?)
+
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug TypeScript",
+      "preLaunchTask": "tsc: build - tsconfig.json",
+      "program": "${workspaceFolder}/src/server.ts",
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"]
+    }
+  ]
+}
+
+
+
+WEBVIEWS
+- de testat cu vizibilitatea in tot felul de scenarii

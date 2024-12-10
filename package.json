@@ -1,7 +1,7 @@
 {
   "name": "code-stats",
   "displayName": "code-stats",
-  "description": "",
+  "description": "This is the README for your extension \"code-stats\". After writing up a brief description, we recommend including the following sections.",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.95.0"
@@ -12,17 +12,37 @@
   "activationEvents": [],
   "main": "./out/extension.js",
   "devDependencies": {
-    "@types/vscode": "^1.95.0",
+    "@types/cassandra-driver": "^4.1.1",
+    "@types/express": "^5.0.0",
     "@types/mocha": "^10.0.9",
-    "@types/node": "20.x",
+    "@types/node": "^20.17.9",
+    "@types/vscode": "^1.95.0",
     "@typescript-eslint/eslint-plugin": "^8.10.0",
     "@typescript-eslint/parser": "^8.7.0",
-    "eslint": "^9.13.0",
-    "typescript": "^5.6.3",
     "@vscode/test-cli": "^0.0.10",
-    "@vscode/test-electron": "^2.4.1"
+    "@vscode/test-electron": "^2.4.1",
+    "eslint": "^9.13.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
   },
-  "contributes": { 
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "statsDashboard",
+          "title": "Stats Dashboard",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "statsDashboard": [
+        {
+          "id": "statsView",
+          "name": "Dashboard"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "code-stats.helloWorld",
@@ -36,12 +56,22 @@
     ]
   },
   "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "ts-node server.ts",
     "vscode:prepublish": "npm run compile",
     "compile": "tsc watch -p ./",
     "postinstall": "node ./node_modules/vscode/bin/install"
   },
   "dependencies": {
+    "axios": "^1.7.9",
+    "body-parser": "^1.20.3",
+    "cassandra-driver": "^4.7.2",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
     "vscode": "*"
-  }
-
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }

@@ -1,0 +1,27 @@
+Memento for local storage
+
+Memento: A storage API that allows you to persist data between sessions.
+It stores small data in a way that is persistent across VSCode restarts, but specific to the extensiom.
+
+Memento stores data in Visual Studio Code's internal storage system, and the data is saved in specific locations 
+on your computer depending on whether it’s stored in globalState or workspaceState.
+
+globalState:
+ - storing global data that persists across all instances of VSCode, i.e., data that is shared by the extension across different projects or workspaces.
+   Data stored here is common for all users of the extension.
+   storage place ex: ~/Library/Application Support/Code/User/globalStorage/
+
+ExtensionContext: Provides access to global and workspace-level states such as:
+ - globalState (for global data)
+ - workspaceState (for workspace-specific data).
+
+We construct the class that manages the local storage as a singleton because we want a single point of access for managing the storage
+ - constructor accepts the ExtensionContext, and it stores ctx.globalState in the storage property.
+ - Get Value: Retrieves the value associated with the provided key or else, an empty string ('').
+ - Set Value: Stores the given value under the specified key. This updates the state in the globalState
+ - Deletes the value associated with the provided key.
+
+Memento only supports primitive types (like strings, numbers, booleans, etc.).
+For more complex data types (e.g., objects or arrays), you'll need to serialize them (e.g., using JSON.stringify and JSON.parse).
+
+Keys can be strings like 'user_preferences', etc

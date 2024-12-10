@@ -35,7 +35,7 @@ Webviews can control which resources can be loaded from the user's machine with 
 We can use localResourceRoots to restrict Cat Coding webviews to only load resources from a media directory in our extension:
 
 
-Context menus
+CONTEXT MENUS
 Advanced webviews can customize the context menu that shows when a user right-clicks inside of a webview. 
 This is done using a contribution point similarly to VS Code's normal context menus, so custom menus fit right in with the rest of the editor. 
 Webviews can also show custom context menus for different sections of the webview.
@@ -46,4 +46,9 @@ Webviews are just like iframes, which means that they can also run scripts.
 JavaScript is disabled in webviews by default, but it can easily re-enable by passing in the enableScripts: true option.
 
 Let's use a script to add a counter tracking the lines of source code our cat has written. Running a basic script is pretty simple, but note that this example is only for demonstration purposes.
-In practice, your webview should always disable inline scripts using a content security policy:
+In practice, your webview should always disable inline scripts using a content security policy
+
+WEBVIEWS VIEW PROVIDERS
+
+
+
