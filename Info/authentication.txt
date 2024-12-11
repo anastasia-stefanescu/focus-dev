@@ -22,4 +22,9 @@ GET SESSION
   // If no session exists or the requested scopes require it, it can prompt the user to sign in or authorize the required access.
   // The session includes an access token that extensions can use to interact with APIs or services that require authentication.
   const session = await authentication.getSession(AUTH_TYPE, [], { createIfNone: false });
-  
+
+HOW MY CODE WORKS
+
+When the login command is triggered, the server sends a get request to /authorize endpoint
+  with the auth0 credentials. 
+Auth0 redirects to one of the redirectUris registered on Auth0

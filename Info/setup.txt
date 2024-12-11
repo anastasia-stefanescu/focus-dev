@@ -24,15 +24,15 @@ AXIOS
 
 AUTH0 
     Log in to your Auth0 dashboard.
-    Go to Applications > Applications, and click Create Application.
-    Name your application (e.g., "VSCode Extension").
+    Go to Applications > Applications, and click Create Application. Name your application (e.g., "VSCode Extension").
     Select Regular Web Application.
     After creating the application:
-    Note down your Client ID and Client Secret.
-    Add your redirect URIs in the Allowed Callback URLs field. For VSCode, the URI will be in the format:
-    vscode://<your-publisher-name>.<your-extension-name>
-    For example:
-    vscode://mypublisher.myextension
+        Note down your Client ID and Client Secret, and domain.
+        Add your redirect URIs in the Allowed Callback URLs field. For VSCode, the URI will be in the format:
+            vscode://<your-publisher-name>.<your-extension-name>
+        For example:
+            vscode://mypublisher.myextension
+    Scroll to the bottom and click Save Changes.
 
 WHEN FIRST RUNNING:
  - package.json .main set to "main": "./src/extension.ts"
@@ -45,3 +45,5 @@ WHEN FIRST RUNNING:
  - we need to set the tsconfig to compile the dist folder to commonjs
  - use "npx tsc" to recompile the dist folder; check it is written in commonjs
  - set in package the type "commonjs" so it can run the dist folder well
+
+ - Test commands by searching them in the Command Palette

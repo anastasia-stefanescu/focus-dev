@@ -2,6 +2,7 @@
 import * as vscode from 'vscode';
 import { createCommands } from './command_creator';
 import { window, Uri, ExtensionContext } from 'vscode';
+import { getServerRunning } from './server';
 
 // The `activate` function does not return anything, so its return type is `void`.
 export function activate (context: vscode.ExtensionContext) {
@@ -9,15 +10,18 @@ export function activate (context: vscode.ExtensionContext) {
   
   context.subscriptions.push(createCommands(context));
 
+  getServerRunning();
+
   const uriHandler = window.registerUriHandler({
-    handleUri(uri : vscode.Uri) {
+    handleUri(uri : Uri) {
       const query = new URLSearchParams(uri.query);
-      const code = query.get('code');
+      const auth_code = query.get('code');
       const state = query.get('state');
 
-      if (code) {
+      if (auth_code) {
         // Send the authorization code to your server for token exchange
-        exchangeAuthCodeForToken(code);
+        vscode.window.showInformationMessage(`Auth code: ${JSON.stringify({ auth_code })}`);
+        exchangeAuthCodeForToken(auth_code);
       } else {
         vscode.window.showErrorMessage('Authorization failed: No code received');
       }
@@ -27,13 +31,12 @@ export function activate (context: vscode.ExtensionContext) {
   context.subscriptions.push(uriHandler);
 };
 
-// The `deactivate` function also does not return anything.
-export function deactivate() {
-  // Cleanup or deactivation logic goes here
-};
+export function deactivate() {};
 
 // Async function for exchanging the authorization code for a token.
 async function exchangeAuthCodeForToken(code : any) {
+  console.log('Authorization Code:', code);
+  console.log('Request Body:', JSON.stringify({ code }));
   try {
     const response = await fetch('http://localhost:3001/callback', {
       method: 'POST',

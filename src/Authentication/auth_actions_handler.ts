@@ -9,10 +9,10 @@ import { Request } from "express";
      // create a new one (create if None)
 
 function generateAccessToken(){
-
+    
 }
 
-export function handleAuthentication(state: any) {
+export function getRedirectUri(state: any) {
     const accessToken = generateAccessToken(); 
     const redirectUri = `${state.redirect_uri}?access_token=${accessToken}&state=${state}`;
     return redirectUri;

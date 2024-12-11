@@ -2,7 +2,6 @@ import { AxiosError } from "axios";
 
 import axios from 'axios';
 import { logActivity } from '../Database/database';
-import { handleAuthentication } from '../Authentication/auth_actions_handler';
 import { Query } from 'express-serve-static-core';
 import { Request, Response } from "express";
 import { NextFunction } from "express";
@@ -37,12 +36,6 @@ export const postActivity = async (endpoint: string, content: any) => {
         }
     }
 };
-
-export const server_handleAuthentication = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const { state } = req.query as {state : string};
-    const redirectUri = handleAuthentication(state);
-    res.redirect(redirectUri);
-}
 
 //logs directly to database; is called by server when an external request to the server is made
 export const server_postActivity = async (req: Request<{}, {}, ActivityRequest>, res: Response, next: NextFunction):Promise<void> => {

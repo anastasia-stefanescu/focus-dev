@@ -1,5 +1,6 @@
 {
   "name": "code-stats",
+  "publisher": "my-extension",
   "type": "commonjs",
   "main": "./dist/extension.js",
   "displayName": "code-stats",
@@ -48,10 +49,6 @@
       ]
     },
     "commands": [
-      {
-        "command": "code-stats.helloWorld",
-        "title": "Hello World"
-      },
       {
         "command": "code-stats.viewDashboard",
         "title": "View Dashboard",

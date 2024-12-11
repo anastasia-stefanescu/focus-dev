@@ -48,8 +48,8 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
     });
     commands.push(viewDashboard); 
 
-    const loginWithAuth0 = vscode.commands.registerCommand('extension.authLogin', async () => {
-        const authUrl = `https://${AUTH0_DOMAIN}/authorize?client_id=${AUTH0_CLIENT_ID}&response_type=code&redirect_uri=${REDIRECT_URI}&scope=openid profile email`;
+    const loginWithAuth0 = vscode.commands.registerCommand('code-stats.authLogin', async () => {
+        const authUrl = `http://${AUTH0_DOMAIN}/authorize?client_id=${AUTH0_CLIENT_ID}&response_type=code&redirect_uri=${REDIRECT_URI}&scope=openid profile email`;
         vscode.env.openExternal(vscode.Uri.parse(authUrl));
       });
     commands.push(loginWithAuth0);
