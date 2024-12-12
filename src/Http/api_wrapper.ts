@@ -52,3 +52,26 @@ export const server_postActivity = async (req: Request<{}, {}, ActivityRequest>,
     }
   };
 
+  export function isResponseOk(resp: any) {
+    let status = getResponseStatus(resp);
+    if (status && resp && status < 300) {
+      return true;
+    }
+    return false;
+  }
+  
+
+  function getResponseStatus(resp: any) {
+    let status = null;
+    if (resp?.status) {
+      status = resp.status;
+    } else if (resp?.response && resp.response.status) {
+      status = resp.response.status;
+    } else if (resp?.code === 'ECONNABORTED') {
+      status = 500;
+    } else if (resp?.code === 'ECONNREFUSED') {
+      status = 503;
+    }
+    return status;
+  }
+

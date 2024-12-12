@@ -1,20 +1,208 @@
-// const { authentication, AuthenticationProvider, AuthenticationProviderAuthenticationSessionsChangeEvent, AuthenticationSession}from 'vscode';
-// const { Disposable, EventEmitter, ExtensionContext }from "vscode";
-// const { ProgressLocation }from 'vscode';
+import { authentication, AuthenticationProvider, AuthenticationProviderAuthenticationSessionsChangeEvent, AuthenticationSession} from 'vscode';
+import { Disposable, EventEmitter, ExtensionContext, commands }from "vscode";
+import { ProgressLocation }from 'vscode';
 
-// const { window } from "vscode";
-// const { v4 as uuid } from 'uuid';
-// const {Uri, UriHandler } from 'vscode';
-// const {env, Event } from 'vscode';
+import { window } from "vscode";
+import { v4 as uuid } from 'uuid';
+import {Uri, UriHandler } from 'vscode';
+import {env, Event} from 'vscode';
+// import { getUser } from './user_handler';
+// import { saveUser } from './user_handler';
 
-// export const AUTH_TYPE = `auth0`;
-// const AUTH_NAME = `Auth0`;
-// // Also Auth domain??
-// const SESSIONS_SECRET_KEY = `${AUTH_TYPE}.sessions`;
+//export const AUTH_TYPE = `auth0`;
+//const AUTH_NAME = `Auth0`;
+// Also Auth domain??
+//const SESSIONS_SECRET_KEY = `${AUTH_TYPE}.sessions`;
 
-// let instance : MyAuthProvider;
+let instance : MyAuth0AuthProvider;
 
-// export class MyAuthProvider implements AuthenticationProvider, Disposable{
+export class MyAuth0AuthProvider extends Disposable implements AuthenticationProvider  {
+    public static readonly id = 'auth0-auth-provider';
+    private _sessionChangeEmitter = new EventEmitter<AuthenticationProviderAuthenticationSessionsChangeEvent>();
+    private _disposable = Disposable;
+    private _sessions: AuthenticationSession[] = [];
+    private _context: ExtensionContext;
+    private _tokenEmitter = new EventEmitter<string>(); 
+    private _token: string | undefined;
+
+    constructor(private readonly context: ExtensionContext) {
+        super(() => this.dispose());
+        this._context = context;
+       
+        this._register(context, authentication.registerAuthenticationProvider(MyAuth0AuthProvider.id, 'Auth0', this, {supportsMultipleAccounts : false}));
+        this._register(context, window.registerUriHandler({
+            handleUri: async (uri: Uri) => {
+                const token = await handleRedirectUri(uri);
+                if (token) {
+                    this._tokenEmitter.fire(token);
+                }
+        }}))
+
+        const storedSessions = this.context.globalState.get<AuthenticationSession[]>('auth0-sessions', []);
+        if (storedSessions) {
+            this._sessions = storedSessions;
+        }
+
+        instance = this;
+    }
+
+    private _register<T extends Disposable>( context: ExtensionContext, disposable: T): T {
+        context.subscriptions.push(disposable);
+        return disposable;
+    }
+
+    get onDidChangeSessions() { //An Event which fires when the array of sessions has changed, or data within a session has changed.
+        return this._sessionChangeEmitter.event;
+      }
+
+    async getSessions(scopes?: string[]): Promise<AuthenticationSession[]> {
+        if (scopes) {
+            return this._sessions.filter(session => scopes.every(scope => session.scopes.includes(scope)));
+        }
+        return this._sessions;
+    }
+
+    async createSession(scopes: string[]): Promise<AuthenticationSession> {
+        window.showInformationMessage('Create session !!!');
+        await commands.executeCommand<string>('code-stats.authLogin');
+        //window.showInformationMessage(`Token received in CreateSession ${this._token}`);
+             if (!this._token) { this._token = '';}
+            const session: AuthenticationSession = {
+                id: uuid(),
+                account: { id: '', label: '' },
+                scopes,
+                accessToken: this._token,
+            };
+
+            this._sessions.push(session);
+            // Set the current session in global state
+            await this.context.globalState.update('currentSession', session);
+
+            return session;
+    }
+
+    async updateSessionWithUserInfo(token: string, user: any, session: AuthenticationSession): Promise<AuthenticationSession>{
+        const sessionIndex = this._sessions.findIndex(s => s.id === session.id);
+        if (sessionIndex !== -1) {
+
+            const updatedSession : AuthenticationSession = {
+                id: session.id,
+                account: { id: user.id, label: user.name },
+                scopes: session.scopes,
+                accessToken: token,
+            } 
+            this._sessions[sessionIndex] = updatedSession;
+            try{
+                await this.context.globalState.update('currentSession', updatedSession);
+                window.showInformationMessage('Session successfully updated.');
+                return updatedSession;
+            }catch(e) { window.showErrorMessage('Global context could not be updated');}
+        } else {
+            window.showErrorMessage('Session not found.');
+        }
+        return session;
+    }
+
+    async removeSession(sessionId: string): Promise<void> {
+        this._sessions = this._sessions.filter(session => session.id !== sessionId);
+        await this.context.globalState.update('currentSession', null);
+    }
+
+
+    
+    
+    
+}
+
+
+async function handleRedirectUri(uri : Uri) {
+    const query = new URLSearchParams(uri.query);
+    const auth_code = query.get('code');
+    const state = query.get('state');
+
+    if (auth_code) {
+        // Send the authorization code to your server for token exchange
+        //window.showInformationMessage(`uri handler: Auth code: ${JSON.stringify({ auth_code })}`);
+        const token = await exchangeAuthCodeForToken(auth_code);
+        window.showInformationMessage(`Uri Handler: Token from exchange: ${token}`);
+        return token
+    } else {
+    window.showErrorMessage('Authorization failed: No code received');
+    }
+}
+
+async function exchangeAuthCodeForToken(code : any) {
+try {
+    const response = await fetch('http://localhost:3001/callback', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code }),
+    });
+    if (response.ok) {
+        const data = await response.json();
+        window.showInformationMessage(`Data:  ${data}`);
+        // const accessToken = (data as { accessToken: string }).accessToken;
+        // window.showInformationMessage(`Data:  ${data}`);
+        return data;
+    
+    } else {
+    window.showErrorMessage('Token exchange failed');
+    return;
+    }
+} catch (error) {
+    window.showErrorMessage('Error during token exchange');
+    return;
+}
+}
+
+
+// private async persistSession(session: AuthenticationSession) {
+//     const key = `auth-session-${session.id}`;
+//     await this.context.globalState.update(key, session);
+// }
+
+// //am modif aici tipul de return
+// private async loadPersistedSessions(context: ExtensionContext): Promise<(AuthenticationSession | undefined)[]> {
+//     const keys = context.globalState.keys();
+//     return keys
+//         .filter(key => key.startsWith('auth-session-'))
+//         .map(key => context.globalState.get<AuthenticationSession>(key));
+// }
+// async createSession(scopes: string[]): Promise<AuthenticationSession> {
+//     // Trigger the Auth0 login flow and obtain a token
+//     const authToken = await this.loginWithAuth0();
+
+//     // const session: AuthenticationSession = {
+//     //     id: uuid(), 
+//     //     accessToken : authToken,
+//     //     account: { id: '', label: '' }, // Customize user information
+//     //     scopes: [],
+//     // };
+
+//     try{
+//         const user = await getUser(authToken);
+//         await saveUser(user, authToken, instance);
+
+//         const session : AuthenticationSession = {
+//             id: uuid(),
+//             accessToken: authToken,
+//             account: {
+//               label: user.email,
+//               id: user.id
+//             },
+//             scopes: []
+//           };
+        
+//           return session;
+        
+//     }catch(e){
+
+//     }
+    
+// }
+
+
+// export class MyAuth0AuthProvider implements AuthenticationProvider, Disposable{
 //     private _sessionChangeEmitter = new EventEmitter<AuthenticationProviderAuthenticationSessionsChangeEvent>();
 //     private _disposable: Disposable;
 //     private _pendingStates: string[] = [];
@@ -222,7 +410,7 @@
     
 // }
 
-// export function getAuthInstance(): MyAuthProvider {
+// export function getAuthInstance()s MyAuth0AuthProvider {
 //   if (!instance) {
 //     throw new Error('AuthenticationProvider not initialized');
 //   }

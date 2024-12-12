@@ -1,13 +1,11 @@
 import { ExtensionContext, Memento } from 'vscode';
 
-
-
 export class LocalStorageManager {
     private static instance: LocalStorageManager;
     private storage: Memento;
 
     private constructor(context: ExtensionContext) {
-        this.storage = context.globalState; // or ctx.workspaceState for workspace-specific data
+        this.storage = context.globalState; // or context.workspaceState for workspace-specific storage
     }
 
     public static getInstance(context: ExtensionContext): LocalStorageManager {
@@ -17,34 +15,25 @@ export class LocalStorageManager {
         return LocalStorageManager.instance;
     }
 
-    public setItem(key: string, value: any) {
-        this.storage.update(key, value);
+    // Set a value in storage
+    public async setItem<T>(key: string, value: T): Promise<void> {
+        await this.storage.update(key, value);
     }
 
-    public getItem(key: string): any | undefined {
-        return this.storage.get(key) as string; // ??
+    // Get a value from storage
+    public getItem<T>(key: string): T | undefined {
+        return this.storage.get<T>(key);
     }
 
-    public removeItem(key: string){
-        this.storage.update(key, undefined);
+    // Remove a specific key
+    public async removeItem(key: string): Promise<void> {
+        await this.storage.update(key, undefined);
     }
 
-    public clear(){
-        const keys = Object.keys(this.storage);
+    // Clear all keys (requires explicit key tracking)
+    public async clear(keys: string[]): Promise<void> {
         for (const key of keys) {
-            this.removeItem(key);
+            await this.removeItem(key);
         }
     }
-
-    public clearDuplicates(){
-        const keys = Object.keys(this.storage);
-        const uniqueKeys = Array.from(new Set(keys));
-        for (const key of keys) {
-            if (!uniqueKeys.includes(key)) {
-                this.removeItem(key);
-            }
-        }
-    }
-
-
 }

@@ -8,7 +8,7 @@ import { AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET, AUTH0_DOMAIN, REDIRECT_URI } from
 import { fetchActivities } from "./Database/database";
 import { server_postActivity } from "./Http/api_wrapper";  
 import { Request, Response } from "express";
-import { getRedirectUri } from './Authentication/auth_actions_handler';
+//import { getRedirectUri } from './Authentication/auth_actions_handler';
 import {window} from 'vscode';
 
 const app = express();
@@ -44,11 +44,11 @@ export function getServerRunning() {
     }
   });
 
-  app.get('/authorize',  async (req: Request, res: Response) => {
-    const { state } = req.query as {state : string};
-    const redirectUri = getRedirectUri(state);
-    res.redirect(redirectUri);
-  });
+  // app.get('/authorize',  async (req: Request, res: Response) => {
+  //   const { state } = req.query as {state : string};
+  //   const redirectUri = getRedirectUri(state);
+  //   res.redirect(redirectUri);
+  // });
 
   app.get('/login', (req: Request, res: Response) => {
     const authUrl = `http://${AUTH0_DOMAIN}/authorize?` +
@@ -58,6 +58,7 @@ export function getServerRunning() {
 
   app.post('/callback', async (req: Request, res: Response) => {
     const code = req.body.code; // Auth0 sends the authorization code to your extension
+    window.showInformationMessage(`Callback 1: Code received from uri handler: ${code}`);
     if (!code) {
       res.status(400).send('Authorization code is required');
       return;
@@ -77,9 +78,9 @@ export function getServerRunning() {
     );
 
       const accessToken = response.data.access_token;
-      const idToken = response.data.id_token; // Optional, depending on your Auth0 settings
-
-      res.json({ accessToken, idToken });
+      //const idToken = response.data.id_token; // Optional, depending on your Auth0 settings
+      window.showInformationMessage(`Callback 2: token from oauth/token received: ${accessToken}`);
+      res.json(accessToken);
     } catch (error) {
       console.error('Error exchanging token:', error);
       res.status(500).send('Token exchange failed');

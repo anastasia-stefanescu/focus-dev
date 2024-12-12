@@ -1,58 +1,66 @@
 //const vscode from 'vscode');
 import * as vscode from 'vscode';
 import { createCommands } from './command_creator';
-import { window, Uri, ExtensionContext } from 'vscode';
+import { window, Uri, ExtensionContext, commands } from 'vscode';
 import { getServerRunning } from './server';
+import {authentication} from 'vscode';
+import { MyAuth0AuthProvider } from './Authentication/auth_provider';
+import { fetchUserInfo } from './Authentication/user_handler';
 
 // The `activate` function does not return anything, so its return type is `void`.
-export function activate (context: vscode.ExtensionContext) {
-  console.log('Congratulations, your extension "code-stats" is now active!');
+export async function activate (context: vscode.ExtensionContext) {
+  const authProvider = new MyAuth0AuthProvider(context);
   
   context.subscriptions.push(createCommands(context));
 
   getServerRunning();
 
-  const uriHandler = window.registerUriHandler({
-    handleUri(uri : Uri) {
-      const query = new URLSearchParams(uri.query);
-      const auth_code = query.get('code');
-      const state = query.get('state');
+  //createIfNone = false de obicei
+  const session = await authentication.getSession(MyAuth0AuthProvider.id, [], { createIfNone: true });
+  window.showInformationMessage(`Session creation. Logged in as: ${session.account.label}`);
+    
+  if (session) {
+    window.showInformationMessage(`Session creation succeeded. Logged in as: ${session.account.label}`);
+    // Handle the authenticated user, e.g., create/save a user.
+    const user = await fetchUserInfo(session.accessToken); // Fetch user info.
+    window.showInformationMessage(`Welcome, ${user.name}!`);
+    if (!user) {
+       await authProvider.updateSessionWithUserInfo(session.accessToken, user, session);
+    } else { window.showErrorMessage('User is null !!'); }
+}
 
-      if (auth_code) {
-        // Send the authorization code to your server for token exchange
-        vscode.window.showInformationMessage(`Auth code: ${JSON.stringify({ auth_code })}`);
-        exchangeAuthCodeForToken(auth_code);
-      } else {
-        vscode.window.showErrorMessage('Authorization failed: No code received');
-      }
-    },
-  });
 
-  context.subscriptions.push(uriHandler);
-};
+
+}
 
 export function deactivate() {};
 
-// Async function for exchanging the authorization code for a token.
-async function exchangeAuthCodeForToken(code : any) {
-  console.log('Authorization Code:', code);
-  console.log('Request Body:', JSON.stringify({ code }));
-  try {
-    const response = await fetch('http://localhost:3001/callback', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code }),
-    });
+export async function reload() {
+  // updateFlowModeStatus();
 
-    if (response.ok) {
-      const data = await response.json();
-	  const accessToken = (data as { accessToken: string }).accessToken;
-      vscode.window.showInformationMessage(`Access token: ${accessToken}`);
-    } else {
-      vscode.window.showErrorMessage('Token exchange failed');
-    }
-  } catch (error) {
-    console.error('Error during token exchange:', error);
-    vscode.window.showErrorMessage('Error during token exchange');
-  }
+  // try {
+  //   initializeWebsockets();
+  // } catch (e: any) {
+  //   logIt(`Failed to initialize websockets: ${e.message}`);
+  // }
+  
+  // // re-initialize user and preferences
+  // await getUser();
+
+  // // fetch after logging on
+  // SummaryManager.getInstance().updateSessionSummaryFromServer();
+
+  // if (musicTimeExtInstalled()) {
+  //   setTimeout(() => {
+  //     commands.executeCommand("musictime.refreshMusicTimeView")
+  //   }, 1000);
+  // }
+
+  // if (editorOpsExtInstalled()) {
+  //   setTimeout(() => {
+  //     commands.executeCommand("editorOps.refreshEditorOpsView")
+  //   }, 1000);
+  // }
+
+  //commands.executeCommand('codetime.refreshCodeTimeView');
 }

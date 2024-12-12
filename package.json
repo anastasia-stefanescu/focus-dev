@@ -13,7 +13,6 @@
     "Other"
   ],
   "activationEvents": [],
-
   "devDependencies": {
     "@types/cassandra-driver": "^4.1.1",
     "@types/cors": "^2.8.17",
@@ -73,7 +72,8 @@
     "body-parser": "^1.20.3",
     "cassandra-driver": "^4.7.2",
     "cors": "^2.8.5",
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "uuid": "^11.0.3"
   },
   "keywords": [],
   "author": "",

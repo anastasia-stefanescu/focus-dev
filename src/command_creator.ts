@@ -3,7 +3,7 @@ import path from 'path';
 import { ExtensionContext, Disposable} from "vscode";
 import { window, ViewColumn  } from "vscode";
 import { Uri } from 'vscode';
-import { SidebarViewProvider } from './Sidebar/extension_sidebar';
+import { SidebarViewProvider } from './Sidebar/webview_provider';
 import { AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET, REDIRECT_URI} from './Constants';
 
 
