@@ -5,12 +5,13 @@ import { window, ViewColumn  } from "vscode";
 import { Uri } from 'vscode';
 import { SidebarViewProvider } from './Sidebar/webview_provider';
 import { AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET, REDIRECT_URI} from './Constants';
-
+import { _tokenEmitter } from './Authentication/auth_provider';
 
 export function createCommands(  ctx: ExtensionContext /* add: kpm controller, storageManager */ ) 
     // { dispose: () => { }; }
     {
     let commands = [];
+
 
     // The kpmController is also a subscription
 
@@ -48,10 +49,28 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
     });
     commands.push(viewDashboard); 
 
+    // const loginWithAuth0 = vscode.commands.registerCommand('code-stats.authLogin', async () => {
+    //     const authUrl = `http://${AUTH0_DOMAIN}/authorize?client_id=${AUTH0_CLIENT_ID}&response_type=code&redirect_uri=${REDIRECT_URI}&scope=openid profile email`;
+    //     vscode.env.openExternal(vscode.Uri.parse(authUrl));
+
+    //     return new Promise<string>((resolve) => {
+    //         tokenEmitter.event(resolve); // Resolve when token is fired
+    //     });
+
+    //   });
     const loginWithAuth0 = vscode.commands.registerCommand('code-stats.authLogin', async () => {
-        const authUrl = `http://${AUTH0_DOMAIN}/authorize?client_id=${AUTH0_CLIENT_ID}&response_type=code&redirect_uri=${REDIRECT_URI}&scope=openid profile email`;
-        vscode.env.openExternal(vscode.Uri.parse(authUrl));
-      });
+        return new Promise<string>((resolve, reject) => {
+            // Subscribes to the token emitter
+            const listener = _tokenEmitter.event(token => {
+                listener.dispose(); // Ensure the listener is cleaned up after firing
+                resolve(token); // Resolves the promise with the received token
+            });
+    
+            // Opens the Auth0 login URL
+            const authUrl = `http://${AUTH0_DOMAIN}/authorize?client_id=${AUTH0_CLIENT_ID}&response_type=code&redirect_uri=${REDIRECT_URI}&scope=openid profile email`;
+            vscode.env.openExternal(vscode.Uri.parse(authUrl));
+        });
+    });
     commands.push(loginWithAuth0);
 
 

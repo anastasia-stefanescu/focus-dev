@@ -15,6 +15,7 @@ import {env, Event} from 'vscode';
 //const SESSIONS_SECRET_KEY = `${AUTH_TYPE}.sessions`;
 
 let instance : MyAuth0AuthProvider;
+export const _tokenEmitter = new EventEmitter<string>(); 
 
 export class MyAuth0AuthProvider extends Disposable implements AuthenticationProvider  {
     public static readonly id = 'auth0-auth-provider';
@@ -22,8 +23,8 @@ export class MyAuth0AuthProvider extends Disposable implements AuthenticationPro
     private _disposable = Disposable;
     private _sessions: AuthenticationSession[] = [];
     private _context: ExtensionContext;
-    private _tokenEmitter = new EventEmitter<string>(); 
-    private _token: string | undefined;
+    //public 
+    public _token: string | undefined;
 
     constructor(private readonly context: ExtensionContext) {
         super(() => this.dispose());
@@ -34,7 +35,7 @@ export class MyAuth0AuthProvider extends Disposable implements AuthenticationPro
             handleUri: async (uri: Uri) => {
                 const token = await handleRedirectUri(uri);
                 if (token) {
-                    this._tokenEmitter.fire(token);
+                    _tokenEmitter.fire(token);
                 }
         }}))
 
@@ -63,17 +64,18 @@ export class MyAuth0AuthProvider extends Disposable implements AuthenticationPro
     }
 
     async createSession(scopes: string[]): Promise<AuthenticationSession> {
-        window.showInformationMessage('Create session !!!');
-        await commands.executeCommand<string>('code-stats.authLogin');
-        //window.showInformationMessage(`Token received in CreateSession ${this._token}`);
-             if (!this._token) { this._token = '';}
+
+        const token = await commands.executeCommand<Promise<string>>('code-stats.authLogin');
+
+        window.showInformationMessage(`Token received in CreateSession ${token}`);
+        
             const session: AuthenticationSession = {
                 id: uuid(),
                 account: { id: '', label: '' },
                 scopes,
-                accessToken: this._token,
+                accessToken: token,
             };
-
+            window.showInformationMessage(`Session: ${session}`);
             this._sessions.push(session);
             // Set the current session in global state
             await this.context.globalState.update('currentSession', session);
@@ -114,22 +116,21 @@ export class MyAuth0AuthProvider extends Disposable implements AuthenticationPro
     
 }
 
-
 async function handleRedirectUri(uri : Uri) {
     const query = new URLSearchParams(uri.query);
     const auth_code = query.get('code');
-    const state = query.get('state');
 
     if (auth_code) {
-        // Send the authorization code to your server for token exchange
-        //window.showInformationMessage(`uri handler: Auth code: ${JSON.stringify({ auth_code })}`);
         const token = await exchangeAuthCodeForToken(auth_code);
-        window.showInformationMessage(`Uri Handler: Token from exchange: ${token}`);
-        return token
+        //instance._token = token;
+        _tokenEmitter.fire(token);
+        //return token
     } else {
     window.showErrorMessage('Authorization failed: No code received');
+    return '';
     }
 }
+
 
 async function exchangeAuthCodeForToken(code : any) {
 try {

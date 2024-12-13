@@ -24,8 +24,9 @@ export async function activate (context: vscode.ExtensionContext) {
     // Handle the authenticated user, e.g., create/save a user.
     const user = await fetchUserInfo(session.accessToken); // Fetch user info.
     window.showInformationMessage(`Welcome, ${user.name}!`);
-    if (!user) {
+    if (user) {
        await authProvider.updateSessionWithUserInfo(session.accessToken, user, session);
+       window.showInformationMessage(`Globalcontext: ${context.globalState.get('currentSession')}`)
     } else { window.showErrorMessage('User is null !!'); }
 }
 
