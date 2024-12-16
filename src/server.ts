@@ -24,6 +24,11 @@ const client = new cassandra.Client({
   keyspace: 'code_stats', // Replace with your keyspace
 });
 
+interface Auth0TokenResponse {
+  access_token: string; 
+  token_type: string;
+  expires_in: number;
+}
 
 export function getServerRunning() {
 
@@ -65,7 +70,7 @@ export function getServerRunning() {
     }
     try {
       // use https or http??
-      const response = await axios.post(`https://${AUTH0_DOMAIN}/oauth/token`, {
+      const response = await axios.post<Auth0TokenResponse>(`https://${AUTH0_DOMAIN}/oauth/token`, {
         grant_type: 'authorization_code',
         client_id: AUTH0_CLIENT_ID,
         client_secret: AUTH0_CLIENT_SECRET,

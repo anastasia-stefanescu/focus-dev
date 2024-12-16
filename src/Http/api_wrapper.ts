@@ -1,4 +1,4 @@
-import { AxiosError } from "axios";
+//import { AxiosError } from "axios";
 
 import axios from 'axios';
 import { logActivity } from '../Database/database';
@@ -28,12 +28,12 @@ export const postActivity = async (endpoint: string, content: any) => {
         const response = await axios.post(base_url + endpoint, content );
         console.log('Response:', response.data);
     } catch (error) {
-        if (axios.isAxiosError(error)) {
-            let e = error as AxiosError;
-            console.error('Axios error:', e.response?.data);
-        } else {
-            console.error('Unknown error:', error);
-        }
+        //if (axios.isAxiosError(error)) {
+            //let e = error as AxiosError;
+            console.error('Axios error:', error);
+        // } else {
+        //     console.error('Unknown error:', error);
+        // }
     }
 };
 

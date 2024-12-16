@@ -37,9 +37,9 @@ AUTH0
 WHEN FIRST RUNNING:
  - package.json .main set to "main": "./src/extension.ts"
  - set commonjs in tsconfig
- - use everywhere require instead of imports
+ - use everywhere imports
  - npm install -g typescript (for installing tsc)
- - npm run build   - use it to compile files
+ - tsc / npm run build   - use it to compile files, after each change!
 
 
  - we need to set the tsconfig to compile the dist folder to commonjs

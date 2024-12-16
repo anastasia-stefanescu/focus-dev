@@ -103,23 +103,24 @@ function getFromSystemFile(key:string) {
 //update session summary from server (get the instance and update it)
 // execute vscode command refresh plugin
 
-
-export async function fetchUserInfo(accessToken: string): Promise<{ id: string; name: string }> {
-  const url = `https://${AUTH0_DOMAIN}/userinfo`;
-
-  try {
-      const response = await axios.get(url, {
-          headers: {
-              Authorization: `Bearer ${accessToken}`,
-          },
-      });
-
-      const data = response.data;
-      return {
-          id: data.sub || data.id,
-          name: data.name || data.username,
-      };
-  } catch (error) {
-      throw new Error('Failed to fetch user info: ' + error);
+interface UserData {
+    sub?: string;
+    id?: string;
+    name?: string;
+    username?: string;
   }
+
+export async function fetchUserData(accessToken: string) {
+    const url = `https://${AUTH0_DOMAIN}/userinfo`;
+    const response = await axios.get<UserData>(url, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  const data = response.data;
+  return {
+    id: data.sub || data.id,
+    name: data.name || data.username,
+  };
 }

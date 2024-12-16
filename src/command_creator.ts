@@ -1,7 +1,7 @@
 import * as vscode from 'vscode'; 
 import path from 'path';
 import { ExtensionContext, Disposable} from "vscode";
-import { window, ViewColumn  } from "vscode";
+import { commands, window, ViewColumn  } from "vscode";
 import { Uri } from 'vscode';
 import { SidebarViewProvider } from './Sidebar/webview_provider';
 import { AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET, REDIRECT_URI} from './Constants';
@@ -10,27 +10,26 @@ import { _tokenEmitter } from './Authentication/auth_provider';
 export function createCommands(  ctx: ExtensionContext /* add: kpm controller, storageManager */ ) 
     // { dispose: () => { }; }
     {
-    let commands = [];
-
-
-    // The kpmController is also a subscription
+    let cmds = [];
 
     //The sidebar:
     // - registerWebviewViewProvider
-    // - launch the web url of the (web?) dashbhttps://github.com/anastasia-stefanescu/Code-statsoard
+    // - launch the web url of the (web?) dashboard  https://github.com/anastasia-stefanescu/Code-stats
     // - display the side bar => activate the view ?
-    const sidebarViewProvider /* : SidebarViewProvider */ = new SidebarViewProvider(ctx);
-    
-    // The command has been defined in the package.json file. Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('code-stats.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		vscode.window.showInformationMessage('Hello World from code-stats!'); // Display a message box to the user
-	});
+    // const sidebarViewProvider = new SidebarViewProvider(context.extensionUri);
+    // context.subscriptions.push(window.registerWebviewViewProvider('code-stats.webviewProvider', sidebarViewProvider, {
+    //     webviewOptions: {
+    //         retainContextWhenHidden: false,
+    //         enableScripts: true
+    //     } as any
+    // }));
 
-	commands.push(disposable);
+    const showView = vscode.commands.registerCommand('code-stats.showLogin', () => {
+        vscode.commands.executeCommand('workbench.view.extension.statsDashboard');
+    });
+    cmds.push(showView);
 
-    const viewDashboard = vscode.commands.registerCommand('code-stats.viewDashboard', () => {
+    const viewDashboard = commands.registerCommand('code-stats.viewDashboard', () => {
         const panel = vscode.window.createWebviewPanel(
             'dashboard', // Identifies the type of the webview. Used internally
             'Dashboard', // Title of the panel displayed to the user
@@ -47,18 +46,9 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
         panel.webview.html = getWebviewContent();
         window.showInformationMessage('Viewing Dashboard');
     });
-    commands.push(viewDashboard); 
+    cmds.push(viewDashboard); 
 
-    // const loginWithAuth0 = vscode.commands.registerCommand('code-stats.authLogin', async () => {
-    //     const authUrl = `http://${AUTH0_DOMAIN}/authorize?client_id=${AUTH0_CLIENT_ID}&response_type=code&redirect_uri=${REDIRECT_URI}&scope=openid profile email`;
-    //     vscode.env.openExternal(vscode.Uri.parse(authUrl));
-
-    //     return new Promise<string>((resolve) => {
-    //         tokenEmitter.event(resolve); // Resolve when token is fired
-    //     });
-
-    //   });
-    const loginWithAuth0 = vscode.commands.registerCommand('code-stats.authLogin', async () => {
+    const loginWithAuth0 = commands.registerCommand('code-stats.authLogin', async () => {
         return new Promise<string>((resolve, reject) => {
             // Subscribes to the token emitter
             const listener = _tokenEmitter.event(token => {
@@ -71,10 +61,10 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
             vscode.env.openExternal(vscode.Uri.parse(authUrl));
         });
     });
-    commands.push(loginWithAuth0);
+    cmds.push(loginWithAuth0);
 
 
-    return Disposable.from(...commands);
+    return Disposable.from(...cmds);
 
 }
 

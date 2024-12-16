@@ -19,15 +19,14 @@
     "@types/express": "^5.0.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "^20.17.9",
-    "@types/vscode": "^1.95.0",
+    "@types/vscode": "^1.96.0",
     "@typescript-eslint/eslint-plugin": "^8.10.0",
     "@typescript-eslint/parser": "^8.7.0",
     "@vscode/test-cli": "^0.0.10",
     "@vscode/test-electron": "^2.4.1",
     "eslint": "^9.13.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.7.2",
-    "vscode": "^1.1.37"
+    "typescript": "^5.7.2"
   },
   "contributes": {
     "viewsContainers": {
@@ -42,8 +41,8 @@
     "views": {
       "statsDashboard": [
         {
-          "id": "statsView",
-          "name": "Dashboard"
+          "id": "code-stats.webviewProvider",
+          "name": "Extension window"
         }
       ]
     },
@@ -56,7 +55,15 @@
       {
         "command": "code-stats.authLogin",
         "title": "Login with Auth0"
-      }
+      },
+      {
+        "command": "code-stats.showLogin",
+        "title": "Show Login"
+      },
+      {
+        "command": "code-stats.startAuthentication",
+        "title": "Start Authentication"
+    }
     ]
   },
   "scripts": {
@@ -64,8 +71,7 @@
     "start": "node dist/server.js",
     "dev": "ts-node server.ts",
     "vscode:prepublish": "npm run compile",
-    "compile": "tsc watch -p ./",
-    "postinstall": "node ./node_modules/vscode/bin/install"
+    "compile": "tsc watch -p ./"
   },
   "dependencies": {
     "axios": "^1.7.9",
