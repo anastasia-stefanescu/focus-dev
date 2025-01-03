@@ -1,0 +1,30 @@
+version: "3.9"
+services:
+  inference:
+    build:
+      context: ./services/inference
+    ports:
+      - "3003:3003" # here modified from 5000
+    environment:
+      - ENV=development # production
+    depends_on:
+      - database
+
+  database:
+    build:
+      context: ./services/database
+    ports:
+      - "9042:9042"  # Cassandra's default port
+    volumes:
+      - cassandra-data:/var/lib/cassandra
+  
+  stats:
+    build:
+      context: ./services/stats
+    ports:
+      - "3002:3002"
+    depends_on:
+      - database
+
+volumes:
+  cassandra-data:

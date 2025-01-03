@@ -20,8 +20,8 @@ app.use(cors());
 
 const client = new cassandra.Client({
   contactPoints: ['127.0.0.1'], // Replace with your Cassandra nodes
-  localDataCenter: 'datacenter1', // Adjust for your setup
-  keyspace: 'code_stats', // Replace with your keyspace
+  localDataCenter: 'datacenter1', 
+  keyspace: 'code_stats',
 });
 
 interface Auth0TokenResponse {
