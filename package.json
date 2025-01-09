@@ -69,7 +69,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
-    "dev": "ts-node server.ts",
+    "dev": "ts-node src/server.ts",
     "vscode:prepublish": "npm run compile",
     "compile": "tsc watch -p ./"
   },

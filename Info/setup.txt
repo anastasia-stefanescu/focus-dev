@@ -1,18 +1,3 @@
-CASSANDRA
-
-    brew install cassandra
-    brew services start cassandra
-
-    cqlsh 
-
-    // Create a Keyspace 
-    CREATE KEYSPACE code_stats
-    WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
-    DESCRIBE keyspaces;
-    USE code_stats;
-
-NODEJS
-
 PACKAGES
     npm install @types/vscode --save-dev
     npm install --save-dev @types/express

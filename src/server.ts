@@ -1,12 +1,9 @@
 import express from 'express';
-import cassandra from 'cassandra-driver';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import axios from 'axios';
 
 import { AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET, AUTH0_DOMAIN, REDIRECT_URI } from "./Constants";
-import { fetchActivities } from "./Database/database";
-import { server_postActivity } from "./Http/api_wrapper";  
 import { Request, Response } from "express";
 //import { getRedirectUri } from './Authentication/auth_actions_handler';
 import {window} from 'vscode';
@@ -17,12 +14,6 @@ const port = 3001;
 // Middleware
 app.use(bodyParser.json());
 app.use(cors());
-
-const client = new cassandra.Client({
-  contactPoints: ['127.0.0.1'], // Replace with your Cassandra nodes
-  localDataCenter: 'datacenter1', 
-  keyspace: 'code_stats',
-});
 
 interface Auth0TokenResponse {
   access_token: string; 
@@ -35,25 +26,6 @@ export function getServerRunning() {
   app.get('/', (req: Request, res:Response) => {
     res.send('Hello, TypeScript with Node.js!');
   });
-
-  // API Endpoints
-  app.post('/activity', server_postActivity);
-
-  app.get('/dashboard', async (req:Request, res:Response) => {
-    //const query = 'SELECT * FROM activities';
-    try {
-      const result = await fetchActivities();
-      res.json(result.rows);
-    } catch (error) {
-      res.status(500).send('Error fetching data');
-    }
-  });
-
-  // app.get('/authorize',  async (req: Request, res: Response) => {
-  //   const { state } = req.query as {state : string};
-  //   const redirectUri = getRedirectUri(state);
-  //   res.redirect(redirectUri);
-  // });
 
   app.get('/login', (req: Request, res: Response) => {
     const authUrl = `http://${AUTH0_DOMAIN}/authorize?` +

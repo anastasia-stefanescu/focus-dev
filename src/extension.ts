@@ -2,8 +2,10 @@
 import * as vscode from 'vscode';
 import { createCommands } from './command_creator';
 import { window, Uri, ExtensionContext, commands } from 'vscode';
-import { getServerRunning } from './server';
 import {authentication} from 'vscode';
+import { getServerRunning } from './server';
+import { ActivityRequest } from './Constants';
+import { post_to_services, get_from_services } from './API/api_wrapper';
 import { MyAuth0AuthProvider } from './Authentication/auth_provider';
 import { fetchUserData } from './Authentication/user_handler';
 import { SidebarViewProvider } from './Sidebar/webview_provider';
@@ -46,6 +48,14 @@ export async function activate (context: vscode.ExtensionContext) {
   });
   context.subscriptions.push(startAuthenticationCommand);
 
+  // see if the server works
+  window.showInformationMessage('Starting send request');
+  const aux : ActivityRequest = {
+    activityDuration: 100, 
+    startTime: 17000, 
+    activityType: 'coding'
+  };
+  await post_to_services('/dashboard/activity', aux);
 
 }
 

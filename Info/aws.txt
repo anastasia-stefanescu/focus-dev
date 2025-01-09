@@ -1,0 +1,30 @@
+
+It seems the AWS CLI is not installed on your Mac M1. Follow these steps to install and configure it:
+
+Step 1: Install AWS CLI on Mac M1
+Download the AWS CLI Installer for Mac: Run the following command in your terminal to download the installer:
+
+curl "https://awscli.amazonaws.com/AWSCLIV2.pkg" -o "AWSCLIV2.pkg"
+Install the Package: Use the installer command to install the AWS CLI package:
+
+sudo installer -pkg AWSCLIV2.pkg -target /
+Verify the Installation: Check the installed version of AWS CLI:
+
+aws --version
+You should see output like:
+
+aws-cli/2.x.x Python/3.x.x Darwin/x86_64 (or arm64 for M1/M2)
+
+
+If you are running the code locally, you need to configure your AWS credentials.
+
+Run the following AWS CLI command to set up credentials:
+
+aws configure
+
+It will prompt you for:
+
+AWS Access Key ID
+AWS Secret Access Key
+Default region name
+These credentials are stored in the ~/.aws/credentials file.

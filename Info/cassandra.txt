@@ -1,0 +1,17 @@
+CASSANDRA
+
+    brew install cassandra
+    brew services start cassandra
+
+    cqlsh 
+
+    // Create a Keyspace 
+    CREATE KEYSPACE code_stats
+    WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
+    DESCRIBE keyspaces;
+    USE code_stats;
+
+    DESCRIBE tables / [table_name];
+    alter table activities add startTime int;
+
+    create table activities (id UUID primary key, start_time int, action_duration int, action_type text);

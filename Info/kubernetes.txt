@@ -1,0 +1,73 @@
+KUBERNETES
+ * Install azure-cli
+    brew install azure-cli
+
+ * Install aks cli:
+    az aks install-cli \
+    --install-location ~/kubectl \
+    --kubelogin-install-location ~/kubelogin
+
+    echo 'export PATH=$PATH:~' >> ~/.zshrc
+    source ~/.zshrc
+
+ * Make sure Docker is installed and running
+
+ * Login through cli:
+    az login
+
+ * Create resource group 
+    az group create --name code-stats --location westeurope
+        {
+        "id": "/subscriptions/f3591615-d34f-47c7-a2d7-9a943776f825/resourceGroups/code-stats",
+        "location": "westeurope",
+        "managedBy": null,
+        "name": "code-stats",
+        "properties": {
+            "provisioningState": "Succeeded"
+        },
+        "tags": null,
+        "type": "Microsoft.Resources/resourceGroups"
+        }
+
+ * Create AKS Cluster
+    (Create Resource -> Azure kubernetes service)
+    (ssh-keygen -t rsa -b 2048)
+
+    Might need to register:
+     -microsoft.insights:
+        az provider register --namespace Microsoft.Insights
+        az provider show --namespace Microsoft.Insights --query "registrationState"
+     - resource provider:
+        az provider register --namespace Microsoft.Compute
+        az provider show --namespace Microsoft.Compute --query "registrationState"
+
+    az aks create \
+    --resource-group code_stats_paying \
+    --name myAKSCluster \
+    --location eastus2 \
+    --node-count 1 \
+    --node-vm-size "Standard_B2s"
+
+    az aks create \
+    --resource-group cloudML \
+    --name myAKSCluster \
+    --node-count 3 \
+    --enable-addons monitoring \
+    --generate-ssh-keys \
+    --enable-managed-identity
+
+    To interact with the cluster using kubectl, download its credentials:
+        az aks get-credentials --resource-group myResourceGroup --name myAKSCluster
+    This saves the Kubernetes context in your ~/.kube/config file.
+
+    Stop the cluster:
+        az aks stop \
+        --resource-group code_stats_paying \
+        --name myAKSCluster
+
+    Later
+         - deploy an application to AKS by creating a Kubernetes deployment YAML file 
+         - Enable Horizontal Pod Autoscaling for your deployment:
+            kubectl autoscale deployment nginx-deployment --cpu-percent=50 --min=2 --max=5
+
+kubectl version --client
