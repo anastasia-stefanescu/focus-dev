@@ -1,0 +1,4 @@
+$schema: https://azuremlschemas.azureedge.net/latest/environment.schema.json
+name: my-local-inference-env
+conda_file: /Users/alinstefanescu/Documents/code-stats/services/inference/environment.yml
+description: Local environment for BERT model inference

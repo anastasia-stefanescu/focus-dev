@@ -41,12 +41,14 @@ KUBERNETES
         az provider register --namespace Microsoft.Compute
         az provider show --namespace Microsoft.Compute --query "registrationState"
 
+   THIS ONE WAS USED
     az aks create \
     --resource-group code_stats_paying \
     --name myAKSCluster \
     --location eastus2 \
     --node-count 1 \
     --node-vm-size "Standard_B2s"
+   --------------
 
     az aks create \
     --resource-group cloudML \
@@ -64,6 +66,18 @@ KUBERNETES
         az aks stop \
         --resource-group code_stats_paying \
         --name myAKSCluster
+
+    Start cluster:
+        Set env variables:
+            RESOURCE_GROUP=code_stats_paying
+            AKS_CLUSTER_NAME=myAKSCluster
+            az aks start --name $AKS_CLUSTER_NAME --resource-group $RESOURCE_GROUP
+        az aks start \
+        --resource-group code_stats_paying \
+        --name myAKSCluster
+
+    Check status:
+         az aks show --name $AKS_CLUSTER_NAME --resource-group $RESOURCE_GROUP --query "powerState.code" --output tsv
 
     Later
          - deploy an application to AKS by creating a Kubernetes deployment YAML file 

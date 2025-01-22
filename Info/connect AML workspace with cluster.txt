@@ -1,0 +1,116 @@
+Set variables for easier use
+    RESOURCE_GROUP=code_stats_paying
+    LOCATION="eastus2"
+    WORKSPACE_NAME="code_stats_paying_workspace"
+    AKS_CLUSTER_NAME="myAKSCluster"
+
+CREATE WORKSPACE
+    az ml workspace create \
+        --name $WORKSPACE_NAME \
+        --resource-group $RESOURCE_GROUP \
+        --location $LOCATION
+
+    verify: 
+        az ml workspace list --resource-group $RESOURCE_GROUP
+
+ADD NECESSARY EXTENSIONS
+    az extension add --name aks-preview
+    az extension update --name aks-preview
+
+    az extension add --name ml -y
+
+    az extension add --name k8s-extension
+
+    az provider register --namespace Microsoft.MachineLearningServices
+    az provider register --namespace Microsoft.ContainerService
+    az provider register --namespace Microsoft.KubernetesConfiguration --wait 
+
+Configure kubectl to connect to your Kubernetes cluster using the az aks get-credentials command.
+    This command downloads credentials and configures the Kubernetes CLI to use them.
+        az aks get-credentials --resource-group $RESOURCE_GROUP --name $AKS_CLUSTER_NAME 
+
+DEPLOY AML extension on an AKS (https://learn.microsoft.com/en-us/azure/aks/deploy-extensions-az-cli)
+
+    To enable your AKS cluster to run training jobs or inference workloads, you must first deploy the AML extension on an AKS
+    The AML extension is built on the cluster extension for AKS, and its lifecycle can be managed easily with Azure CLI k8s-extension.
+    The extension ensures that AKS is configured correctly to function as a valid compute target for Azure ML jobs.
+            
+        FROM DOCUMENTATION:
+        az k8s-extension create \
+            --name myK8sExtension \
+            --extension-type Microsoft.AzureML.Kubernetes \
+            --scope cluster \
+            --cluster-name myAKSCluster \
+            --resource-group code_stats_paying \
+            --cluster-type managedClusters \
+            --configuration-settings enableInference=True allowInsecureConnections=True inferenceRouterServiceType=LoadBalancer
+
+        What inferenceRouterServiceType=LoadBalancer Does:
+            Configures the cluster to expose the inference service externally via a cloud provider-managed load balancer.
+            This setting is optional. If not set, AML will use the default service type, which is typically ClusterIP. A ClusterIP service is only accessible within the Kubernetes cluster, making it suitable for internal workloads.
+            You can add or update this configuration later when deploying inference workloads.
+
+        Test it was installed:
+        az k8s-extension list \
+            --resource-group code_stats_paying \
+            --cluster-name myAKSCluster \
+            --cluster-type managedClusters
+
+
+Attach the AKS Cluster to Your AML Workspace (https://learn.microsoft.com/en-us/azure/machine-learning/how-to-attach-kubernetes-to-workspace?view=azureml-api-2&tabs=cli)
+
+    Get cluster id: 
+        az aks show --resource-group $RESOURCE_GROUP --name $AKS_CLUSTER_NAME --query id --output tsv
+
+    Compute attach won't create the Kubernetes namespace automatically or validate whether the kubernetes namespace existed.
+    You need to verify that the specified namespace exists in your cluster, otherwise, any Azure Machine Learning workloads submitted to this compute will fail.
+
+    Check what namespaces you have:
+        kubectl get namespaces
+    Create one:
+        kubectl create namespace aml-workloads-namespace
+    
+    To access Azure Container Registry (ACR) for a Docker image, and a Storage Account 
+        for training data, attach Kubernetes compute with a system-assigned or user-assigned managed identity enabled.
+    Grant the Azure ML workspace's identity (either  or UserAssigned) appropriate permissions to use the namespace. 
+    For SystemAssigned, grant the workspace's identity the admin role for the namespace:
+        kubectl create rolebinding azureml-admin-binding \
+            --clusterrole=admin \
+            --serviceaccount=aml-workloads-namespace:default \
+            --namespace=aml-workloads-namespace
+
+    Enable monitoring:
+        az aks enable-addons \
+            --addons monitoring \
+            --resource-group code_stats_paying \
+            --name myAKSCluster
+    
+    ATTACH BY ATTACHING A COMPUTE TARGET:
+        az ml compute attach \
+        --resource-group code_stats_paying \
+        --workspace-name code_stats_paying_workspace \
+        --type Kubernetes \
+        --name k8s-compute \
+        --resource-id "/subscriptions/f3591615-d34f-47c7-a2d7-9a943776f825/resourceGroups/code_stats_paying/providers/Microsoft.ContainerService/managedClusters/myAKSCluster" \
+        --identity-type SystemAssigned \
+        --namespace aml-workloads-namespace 
+
+    Verify:
+        az ml compute list \
+            --resource-group code_stats_paying \
+            --workspace-name code_stats_paying_workspace
+    You can also verify by going to the AML workspace, and then to Studio -> Compute -> Kubernetes Clusters where you can see attached clusters
+
+    Confirm workloads can be submitted successfully!
+
+    To detach a compute target:
+        az ml compute detach \
+            --resource-group code_stats_paying \
+            --workspace-name code_stats_paying_workspace \
+            --name k8s-compute
+
+
+Other:
+    Check Resource Quotas: Check whether the quotas for your subscription are sufficient to create 
+    the resources needed for your Kubernetes compute target. You can check this by running:
+        az vm list-usage --location "eastus2" --out table

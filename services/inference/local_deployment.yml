@@ -1,0 +1,14 @@
+$schema: https://azuremlschemas.azureedge.net/latest/managedOnlineDeployment.schema.json
+name: my-local-deployment
+endpoint_name: my-local-endpoint
+environment: 
+  build:
+    path: /Users/alinstefanescu/Documents/code-stats/services/inference/env
+    #file: local_environment.yml
+model:
+  path: /Users/alinstefanescu/Documents/code-stats/services/inference/fine_tuned_bert
+code_configuration:
+    code: /Users/alinstefanescu/Documents/code-stats/services/inference
+    scoring_script: cloud_inference.py
+instance_type: Standard_DS1_v2
+instance_count: 1
