@@ -1,8 +1,5 @@
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
-import pandas as pd
-import joblib
-import os
 import json
 
 # Global variable to store the model

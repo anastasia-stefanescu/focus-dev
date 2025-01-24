@@ -1,10 +1,9 @@
 $schema: https://azuremlschemas.azureedge.net/latest/managedOnlineDeployment.schema.json
-name: my-local-deployment
-endpoint_name: my-local-endpoint
+name: local-deployment
+endpoint_name: local-endpoint
 environment: 
-  build:
-    path: /Users/alinstefanescu/Documents/code-stats/services/inference/env
-    #file: local_environment.yml
+  conda_file: /Users/alinstefanescu/Documents/code-stats/services/inference/environment.yaml
+  image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
 model:
   path: /Users/alinstefanescu/Documents/code-stats/services/inference/fine_tuned_bert
 code_configuration:

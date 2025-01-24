@@ -1,0 +1,27 @@
+For local testing:
+    Get pods:
+        kubectl get pods -l app=cassandra
+        ex: cassandra-0    1/1     Running   0          5m
+    
+    Forward your local port 9042 (or any free port you choose) to the Cassandra pod’s port 9042:
+    This command keeps running in your terminal. As long as it’s active, connections to localhost:9042 on your machine are forwarded to cassandra-0 in the cluster.
+        kubectl port-forward cassandra-0 9042:9042
+
+    Connect Using cqlsh
+        cqlsh 127.0.0.1 9042
+
+    Note: Port-forwarding is ephemeral; once you close the kubectl port-forward session, 
+          the connection from your local machine will drop. 
+          
+Cloud testing:      
+    Expose Cassandra as a LoadBalancer or NodePort Service
+
+    kubectl get svc cassandra-service -> this should show both external ip and cluster ip
+        NAME                TYPE           CLUSTER-IP     EXTERNAL-IP    PORT(S)    AGE
+        cassandra-service   LoadBalancer   10.0.168.171   20.x.x.x       9042:NNNN  1m
+
+    Connect Using cqlsh
+        cqlsh 20.x.x.x 9042
+
+Create tables through external ip? 
+

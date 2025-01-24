@@ -1,14 +1,10 @@
 import express from 'express';
-import cassandra from 'cassandra-driver';
-import bodyParser from 'body-parser';
 import cors from 'cors';
-import axios from 'axios';
 import { activityRouter } from './routes/activityRouter';
 import { dashboardRouter } from './routes/dashboardRouter';
 import { inferenceRouter } from './routes/inferenceRouter';
 import { test_endpoint  } from './server_actions';
  
-import { Request, Response } from "express";
 
 const port = 3002;
 
@@ -19,7 +15,7 @@ app.set('port', port);
 app.use(express.json());
 app.use(cors());
 
-app.get('/', (req: Request, res:Response) => {
+app.get('/', (req, res) => {
     res.send('Hello, TypeScript with Node.js!');
 });
 

@@ -1,0 +1,27 @@
+    az ml online-endpoint update \
+    --local \
+    --file /Users/alinstefanescu/Documents/code-stats/services/inference/local_endpoint.yml \
+    --resource-group code_stats_paying \
+    --workspace-name code_stats_paying_workspace
+
+    az ml online-endpoint delete --local \
+        --name example-local-endpoint \
+        --resource-group code_stats_paying \
+        --workspace-name code_stats_paying_workspace
+
+    az ml online-endpoint list \
+        --resource-group code_stats_paying \
+        --workspace-name code_stats_paying_workspace \
+        --local
+
+    az ml online-deployment list \
+        --endpoint-name local-endpoint \
+        --resource-group code_stats_paying \
+        --workspace-name code_stats_paying_workspace \
+        --local
+
+    az ml online-deployment delete --local \
+        --name local-deployment \
+        --endpoint-name local-endpoint \
+        --resource-group code_stats_paying \
+        --workspace-name code_stats_paying_workspace

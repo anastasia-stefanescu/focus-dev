@@ -1,0 +1,46 @@
+1. Build the Docker Image: Run the following command in the directory containing your Dockerfile:
+    docker build -t backend-server .
+
+2. Set Up Azure Container Registry (ACR)
+    Create an Azure Container Registry to store your Docker images:
+        az acr create \
+        --resource-group code_stats_paying \
+        --name codestatspayingcontainerregistry \ 
+        --sku Basic
+        az acr login --name  codestatspayingcontainerregistry
+
+    ATTACH ACR TO AKS VIA UI !
+
+3. Push your Docker images to the Azure Container Registry:
+
+        # docker tag backend-server codestatspayingcontainerregistry.azurecr.io/backend-server:v1
+        # docker push <your-registry-name>.azurecr.io/backend-server:v1
+
+        docker tag backend-server:latest codestatspayingcontainerregistry.azurecr.io/backend-server:latest
+        docker push codestatspayingcontainerregistry.azurecr.io/backend-server:latest
+
+        Verify:
+            az acr repository list --name codestatspayingcontainerregistry --output table
+            az acr repository show-tags --name codestatspayingcontainerregistry --repository backend-server --output table
+
+4. Deploy Containers to AKS
+    Combine Kubernetes deployment.yaml and service.yaml files to define how your containers should run.
+
+    Deploy for cassandra:
+        kubectl apply -f /Users/alinstefanescu/Documents/code-stats/services/database/cassandra_deployment.yaml
+    Check it works:
+        kubectl get pods -l app=cassandra
+
+    Deploy the backend: 
+        kubectl apply -f /Users/alinstefanescu/Documents/code-stats/services/backend-server/backend_deployment.yaml
+    Check it works:
+        kubectl get pods -l app=backend
+
+
+Commands for verifying the deployment:
+docker build -t backend-server . (be in the correct dir!)
+docker tag backend-server:latest codestatspayingcontainerregistry.azurecr.io/backend-server:latest
+docker push codestatspayingcontainerregistry.azurecr.io/backend-server:latest                      
+kubectl apply -f /Users/alinstefanescu/Documents/code-stats/services/backend-server/backend_deployment.yaml
+docker pull codestatspayingcontainerregistry.azurecr.io/backend-server:latest            
+docker run -p 3002:3002 codestatspayingcontainerregistry.azurecr.io/backend-server:latest

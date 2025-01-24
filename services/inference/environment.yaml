@@ -1,12 +1,14 @@
 name: my-inference-env
+channels:
+  - conda-forge
 dependencies:
   - python=3.9.*
+  - numpy
+  - scikit-learn
   - pip:
     - transformers
     - torch
-    - scikit-learn
     - pandas
-    - numpy
     - pytorch_lightning
     - azureml-defaults
     - requests

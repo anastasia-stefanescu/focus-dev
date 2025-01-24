@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cassandra-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cassandra
+  template:
+    metadata:
+      labels:
+        app: cassandra
+    spec:
+      containers:
+      - name: cassandra
+        image: cassandra:4.1  # official Cassandra image
+        ports:
+        - containerPort: 9042
+        env:
+        - name: CASSANDRA_CLUSTER_NAME
+          value: "MyCluster"
+        - name: CASSANDRA_DC
+          value: "datacenter1"
+        - name: CASSANDRA_RACK
+          value: "rack1"
+        - name: CASSANDRA_SEEDS
+          value: "127.0.0.1"
+        # Resources, volume mounts, etc.
+  # volumeClaimTemplates:
+  # - metadata:
+  #     name: cassandra-data
+  #   spec:
+  #     accessModes: ["ReadWriteOnce"]
+  #     storageClassName: "default"
+  #     resources:
+  #       requests:
+  #         storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cassandra-service
+spec:
+  selector:
+    app: cassandra
+  ports:
+    - protocol: TCP
+      port: 9042
+      targetPort: 9042
+  type: LoadBalancer
