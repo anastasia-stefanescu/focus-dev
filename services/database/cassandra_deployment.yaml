@@ -19,7 +19,7 @@ spec:
         - containerPort: 9042
         env:
         - name: CASSANDRA_CLUSTER_NAME
-          value: "MyCluster"
+          value: "MyCassCluster"
         - name: CASSANDRA_DC
           value: "datacenter1"
         - name: CASSANDRA_RACK

@@ -1,5 +1,6 @@
-0. Create a compute instance for the Workspace in AML
+0. Create a compute instance for the Workspace in AML (not actually necessary?)
     https://learn.microsoft.com/en-us/azure/machine-learning/how-to-deploy-online-endpoints?view=azureml-api-2&tabs=azure-studio
+
 
 1. Register the Model in AML
     az ml model create \
@@ -16,6 +17,7 @@
 3. Create an Environment
     The environment specifies the dependencies required for your model and scoring script. 
     You can either use a predefined Azure environment or create a custom one.
+
 
     - Create YAML file as in environment.yaml 
 
@@ -47,30 +49,25 @@
         Store the environment as a reusable artifact in your Azure ML workspace.
 
 4. Create a LOCAL deployment of the model for testing (only possible through CLI / )
+    NEED  TO HAVE DOCKER & CONDA!!!!!!
     See examples here: https://github.com/Azure/azureml-examples/tree/main/cli/endpoints/online/deploy-with-packages/custom-model
      - Do a YML file for the local endpoint in v2 schema:
-         | $schema: https://azuremlschemas.azureedge.net/latest/managedOnlineEndpoint.schema.json
-         | name: my-local-endpoint
-         | description: Local endpoint for model inference testing
-            
+         
     - Create the local endpoint
         ENDPOINT_NAME=my-local-bert-endpoint
 
             az ml online-endpoint create \
             --local \
             -n local-endpoint \
-            -f /Users/alinstefanescu/Documents/code-stats/services/inference/local_endpoint.yml \
+            -f /Users/alinstefanescu/Documents/code-stats/services/azure-example/endpoint.yml \
             --resource-group code_stats_paying \
             --workspace-name code_stats_paying_workspace
-
-            
 
         Verify:
             az ml online-endpoint list \
             --local \
             --resource-group code_stats_paying \
             --workspace-name code_stats_paying_workspace
-
 
         By default, it usually listens on http://localhost:5001/score (unless you specify a different port). You can send HTTP requests to this local endpoint, and it will handle inference using the locally stored model.
         For example, when you make a request with curl:
@@ -79,45 +76,42 @@
     - Create a yml v2 file for the deployment, which should reference the initial environment.yaml
         It will also use a default ubuntu image for the environment, on top of which the dependencies are installed.
         (see local_deployment.yml)
-        $schema: https://azuremlschemas.azureedge.net/latest/managedOnlineDeployment.schema.json
-            name: my-local-deployment
-            endpoint_name: my-local-endpoint
-            environment: 
-            conda_file: /Users/alinstefanescu/Documents/code-stats/services/inference/environment.yaml
-            image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
-            model:
-            path: /Users/alinstefanescu/Documents/code-stats/services/inference/fine_tuned_bert
-            code_configuration:
-                code: /Users/alinstefanescu/Documents/code-stats/services/inference
-                scoring_script: cloud_inference.py
-            instance_type: Standard_DS1_v2
-            instance_count: 1
-
+        
     - Create local deployment of the local endpoint:
         -> See local_deployment.yml
 
             az ml online-deployment create \
             --local \
-            -n local-deployment \
-            -f /Users/alinstefanescu/Documents/code-stats/services/inference/local_deployment.yml \
+            -n example-deployment \
+            -f /Users/alinstefanescu/Documents/code-stats/services/azure-example/blue-deployment.yml \
             --resource-group code_stats_paying \
             --workspace-name code_stats_paying_workspace
 
         Verify: 
             az ml online-deployment show \
             --local \
-            -n my-local-bert-deployment-1 \
+            -n example-deployment \
             --resource-group code_stats_paying \
             --workspace-name code_stats_paying_workspace \
-            --endpoint-name my-local-endpoint
+            --endpoint-name example-endpoint
 
         Invoke:
            az ml online-endpoint invoke \
            --local \
-           --name my-local-endpoint \
-           --request-file services/inference/request.json \
+           --name example-endpoint \
+           --request-file /Users/alinstefanescu/Documents/code-stats/services/azure-example/sample-request.json \
            --resource-group code_stats_paying \
            --workspace-name code_stats_paying_workspace
+
+        !!!!!If you want to use a REST client (like curl), you must have the scoring URI. 
+        To get the scoring URI, run:
+            az ml online-endpoint show --local -n example-endpoint
+            Ex: http://localhost:55024/score
+         In the returned data, find the scoring_uri attribute.
+
+        In the example score.py file, the run() method logs some output to the console.
+        You can view this output by using the get-logs command:
+            az ml online-deployment get-logs --local -n example-deployment --endpoint example-endpoint
 
 4. Deploy the Model as an Online Endpoint
     az ml online-endpoint create \

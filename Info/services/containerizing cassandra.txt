@@ -1,4 +1,11 @@
-For local testing:
+Deploy for cassandra:
+        kubectl apply -f /Users/alinstefanescu/Documents/code-stats/services/database/cassandra_deployment.yaml
+    Check it works:
+        kubectl get pods -l app=cassandra
+    Verify service:
+        kubectl get svc cassandra-service
+
+For interacting with the service from local testing:
     Get pods:
         kubectl get pods -l app=cassandra
         ex: cassandra-0    1/1     Running   0          5m
@@ -16,7 +23,8 @@ For local testing:
 Cloud testing:      
     Expose Cassandra as a LoadBalancer or NodePort Service
 
-    kubectl get svc cassandra-service -> this should show both external ip and cluster ip
+    kubectl get svc cassandra-service 
+    -> this should show both external ip and cluster ip
         NAME                TYPE           CLUSTER-IP     EXTERNAL-IP    PORT(S)    AGE
         cassandra-service   LoadBalancer   10.0.168.171   20.x.x.x       9042:NNNN  1m
 

@@ -1,6 +1,19 @@
-1. Build the Docker Image: Run the following command in the directory containing your Dockerfile:
-    docker build -t backend-server .
+0.  Before pushing images & deploying, make sure you are logged in:
+    az login
+    az acr login --name codestatspayingcontainerregistry
 
+1. Build the Docker Image: Run the following command in the directory containing your Dockerfile:
+    BE IN THE CORRECT FOLDER!!!
+        docker build -t backend-server . 
+    FOR LOCAL MAC, BUILD THE IMAGE IN x86:
+        docker buildx create --use --name multiarchbuilder
+
+        docker buildx build \
+            --platform linux/amd64 \
+            -t codestatspayingcontainerregistry.azurecr.io/backend-server:runs-locally \
+            --push \
+            .
+    
 2. Set Up Azure Container Registry (ACR)
     Create an Azure Container Registry to store your Docker images:
         az acr create \
@@ -9,7 +22,20 @@
         --sku Basic
         az acr login --name  codestatspayingcontainerregistry
 
-    ATTACH ACR TO AKS VIA UI !
+    Get Resource ID:
+        az acr show --name codestatspayingcontainerregistry --query id -o tsv
+            /subscriptions/f3591615-d34f-47c7-a2d7-9a943776f825/resourceGroups/code_stats_paying/providers/Microsoft.ContainerRegistry/registries/codestatspayingcontainerregistry
+
+    Verify the AcrPull Role Assignment:
+        az role assignment list \
+        --scope "/subscriptions/f3591615-d34f-47c7-a2d7-9a943776f825/resourceGroups/code_stats_paying/providers/Microsoft.ContainerRegistry/registries/codestatspayingcontainerregistry" \
+        --output table
+
+    ATTACH ACR TO AKS ! (OR VIA UI)
+    az aks update -n myAKSCluster -g code_stats_paying --attach-acr codestatspayingcontainerregistry
+    az aks show -n codestatspayingcontainerregistry -g code_stats_paying --query "autoUpgradeProfile" --output json
+
+    az acr repository list --name codestatspayingcontainerregistry --output table
 
 3. Push your Docker images to the Azure Container Registry:
 
@@ -23,13 +49,14 @@
             az acr repository list --name codestatspayingcontainerregistry --output table
             az acr repository show-tags --name codestatspayingcontainerregistry --repository backend-server --output table
 
+        Make sure the docker image runs locally:
+            docker pull codestatspayingcontainerregistry.azurecr.io/backend-server:latest            
+            docker run -p 3002:3002 codestatspayingcontainerregistry.azurecr.io/backend-server:latest
+
 4. Deploy Containers to AKS
     Combine Kubernetes deployment.yaml and service.yaml files to define how your containers should run.
 
-    Deploy for cassandra:
-        kubectl apply -f /Users/alinstefanescu/Documents/code-stats/services/database/cassandra_deployment.yaml
-    Check it works:
-        kubectl get pods -l app=cassandra
+    
 
     Deploy the backend: 
         kubectl apply -f /Users/alinstefanescu/Documents/code-stats/services/backend-server/backend_deployment.yaml
@@ -37,7 +64,7 @@
         kubectl get pods -l app=backend
 
 
-Commands for verifying the deployment:
+Commands for verifying the deployment (BE LOGGED IN AZ AND ACR, CLUSTER RUNNING):
 docker build -t backend-server . (be in the correct dir!)
 docker tag backend-server:latest codestatspayingcontainerregistry.azurecr.io/backend-server:latest
 docker push codestatspayingcontainerregistry.azurecr.io/backend-server:latest                      

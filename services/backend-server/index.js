@@ -1,4 +1,4 @@
-import app from "./server";
+import app from "./server.js";
 import AWS from 'aws-sdk';
 
 export const lambda = new AWS.Lambda({ region: 'us-east-1' });

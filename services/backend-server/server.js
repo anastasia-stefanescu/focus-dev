@@ -1,9 +1,8 @@
 import express from 'express';
 import cors from 'cors';
-import { activityRouter } from './routes/activityRouter';
-import { dashboardRouter } from './routes/dashboardRouter';
-import { inferenceRouter } from './routes/inferenceRouter';
-import { test_endpoint  } from './server_actions';
+import { activityRouter } from './routes/activityRouter.js';
+import { dashboardRouter } from './routes/dashboardRouter.js';
+import { inferenceRouter } from './routes/inferenceRouter.js';
  
 
 const port = 3002;

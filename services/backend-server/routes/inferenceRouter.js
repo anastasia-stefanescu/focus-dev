@@ -1,5 +1,5 @@
 import express from 'express';
-import { inferenceController } from '../controllers/inferenceController';
+import { inferenceController } from '../controllers/inferenceController.js';
 
 const inferenceRouter = express.Router();
 

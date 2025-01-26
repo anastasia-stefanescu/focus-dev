@@ -1,0 +1,2 @@
+NAME                TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
+cassandra-service   ClusterIP   10.0.241.176   <none>        9042/TCP   2d21h

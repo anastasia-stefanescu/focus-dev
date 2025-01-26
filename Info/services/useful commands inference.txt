@@ -15,13 +15,13 @@
         --local
 
     az ml online-deployment list \
-        --endpoint-name local-endpoint \
+        --endpoint-name example-endpoint \
         --resource-group code_stats_paying \
         --workspace-name code_stats_paying_workspace \
         --local
 
     az ml online-deployment delete --local \
-        --name local-deployment \
-        --endpoint-name local-endpoint \
+        --name example-deployment \
+        --endpoint-name my-endpoint \
         --resource-group code_stats_paying \
         --workspace-name code_stats_paying_workspace

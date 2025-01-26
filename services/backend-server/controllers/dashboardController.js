@@ -1,9 +1,8 @@
-import { Request, Response } from 'express';
-import {lambda} from '../index';
-import { fetchActivities } from '../../database/database';
+import {lambda} from '../index.js';
+import { fetchActivities } from './database.js';
 
 export const dashboardController = {
-    async sendActivitiesToAWS(req: Request, res: Response){
+    async sendActivitiesToAWS(req, res){
 
         console.log("REACHED!!!! ")
 
@@ -36,7 +35,7 @@ export const dashboardController = {
         
     },
 
-    async sendMentalStateDataToAWS(req:Request, res:Response) {
+    async sendMentalStateDataToAWS(req, res) {
         //first call database
         const {begin, end} = req.body;
         const dataFromDb = await fetchActivities(begin, end); // returns json?
