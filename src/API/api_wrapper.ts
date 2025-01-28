@@ -10,6 +10,7 @@ export const post_to_services = async (endpoint: string, content: any) => {
     try {
         const response = await axios.post(base_url + endpoint, content );
         console.log('Response:', response.data);
+        window.showInformationMessage('got from AWS:', response.data);
     } catch (error) {
       console.error('Axios error:', error);
     }

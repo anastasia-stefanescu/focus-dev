@@ -29,7 +29,9 @@ def run(raw_data):
     method and return the result back
     """
     logging.info("model 1: request received")
-    data = json.loads(raw_data)["data"]
+    data = json.loads(raw_data).get("data", None)#["data"]
+    if data is None:
+        raise ValueError("Input JSON must contain a 'text' field.")
     data = numpy.array(data)
     result = model.predict(data)
     logging.info("Request processed")

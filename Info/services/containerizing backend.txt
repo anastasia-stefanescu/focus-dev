@@ -34,7 +34,7 @@
     ATTACH ACR TO AKS ! (OR VIA UI)
     az aks update -n myAKSCluster -g code_stats_paying --attach-acr codestatspayingcontainerregistry
     az aks show -n codestatspayingcontainerregistry -g code_stats_paying --query "autoUpgradeProfile" --output json
-
+    (ALSO CHECK IN AZURE PORTAL)
     az acr repository list --name codestatspayingcontainerregistry --output table
 
 3. Push your Docker images to the Azure Container Registry:
@@ -62,6 +62,7 @@
         kubectl apply -f /Users/alinstefanescu/Documents/code-stats/services/backend-server/backend_deployment.yaml
     Check it works:
         kubectl get pods -l app=backend
+        kubectl get svc backend-service
 
 
 Commands for verifying the deployment (BE LOGGED IN AZ AND ACR, CLUSTER RUNNING):
@@ -71,3 +72,37 @@ docker push codestatspayingcontainerregistry.azurecr.io/backend-server:latest
 kubectl apply -f /Users/alinstefanescu/Documents/code-stats/services/backend-server/backend_deployment.yaml
 docker pull codestatspayingcontainerregistry.azurecr.io/backend-server:latest            
 docker run -p 3002:3002 codestatspayingcontainerregistry.azurecr.io/backend-server:latest
+
+
+--------Connecting to cloud server
+
+1. Check services are running:
+    Check if your Pods are healthy:
+        kubectl get pods
+        kubectl describe pod <POD_NAME>
+    Ensure the application logs don’t indicate errors:
+        kubectl logs <POD_NAME>
+    Verify the LoadBalancer is properly forwarding traffic
+        kubectl describe svc backend-service
+
+2. Check nsg rules of the vnet of cluster:
+    By default, AKS creates a separate resource group for the cluster's resources (node pools, NSGs, etc.).
+    Run the following command to find the node resource group
+        az aks show --resource-group code_stats_paying --name myAKSCluster --query nodeResourceGroup -o tsv
+        => MC_code_stats_paying_myAKSCluster_eastus2
+
+    Once you have the node resource group name, list all NSGs in that group:
+        az network nsg list --resource-group MC_code_stats_paying_myAKSCluster_eastus2 -o table
+        => 
+        Location    Name                        ProvisioningState    ResourceGroup                              ResourceGuid
+        ----------  --------------------------  -------------------  -----------------------------------------  ------------------------------------
+        eastus2     aks-agentpool-11922941-nsg  Succeeded            mc_code_stats_paying_myakscluster_eastus2  962b3fa0-b210-47b3-b55f-9c6a1178d4ba
+
+    To view the rules of a specific NSG
+        az network nsg rule list --resource-group mc_code_stats_paying_myakscluster_eastus2 --nsg-name aks-agentpool-11922941-nsg -o table
+
+        Name                                                      ResourceGroup                              Priority    SourcePortRanges    SourceAddressPrefixes    SourceASG    Access    Protocol    Direction    DestinationPortRanges    DestinationAddressPrefixes    DestinationASG
+        --------------------------------------------------------  -----------------------------------------  ----------  ------------------  -----------------------  -----------  --------  ----------  -----------  -----------------------  ----------------------------  ----------------
+        k8s-azure-lb_allow_IPv4_556f7044ec033071ec0dfcf7cd85bc93  mc_code_stats_paying_myakscluster_eastus2  500         *                   Internet                 None         Allow     Tcp         Inbound      443 80                   48.211.249.130                None
+        k8s-azure-lb_allow_IPv4_d39272f7f57ed937951650d93992ad77  mc_code_stats_paying_myakscluster_eastus2  501         *                   Internet                 None         Allow     Tcp         Inbound      80                       52.251.15.216                 None
+        k8s-azure-lb_allow_IPv4_1c1469ea5965a3c35706638d03894dd4  mc_code_stats_paying_myakscluster_eastus2  502         *                   Internet                 None         Allow     Tcp         Inbound      9042                     135.232.56.109                None

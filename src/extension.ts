@@ -55,8 +55,9 @@ export async function activate (context: vscode.ExtensionContext) {
     startTime: 17000, 
     activityType: 'coding'
   };
-  await post_to_services('/dashboard/activity', aux);
 
+  
+  await post_to_services('/dashboard/activity', aux);
 }
 
 export function deactivate() {};

@@ -28,3 +28,24 @@ AWS Access Key ID
 AWS Secret Access Key
 Default region name
 These credentials are stored in the ~/.aws/credentials file.
+
+
+-------TO USE THE LAMBDA function
+
+    - make sure you're using node 22
+    - start the backend server
+    - run the extension
+
+    Verify your permissions for the Lambda function (s3 bucket & quicksight ): https://us-east-1.console.aws.amazon.com/iam/home?region=us-east-1#/roles/details/Interact_with_CodeStats_Backend_and_Quicksight-role-1ev3s71j?section=permissions
+    Verify permissions for Quicksight : aws-quicksight-service-role-v0 https://us-east-1.console.aws.amazon.com/iam/home?region=us-east-1#/roles/details/aws-quicksight-service-role-v0
+
+    Download SAM CLI and AWS Toolkit vsc plugin
+
+    
+
+SAM CLI Commands
+do npm init & npm install in the src folder 
+
+test your function locally:
+    sam build
+    sam (local) invoke InteractwithCodeStatsBackendandQuicksight --event event.json
