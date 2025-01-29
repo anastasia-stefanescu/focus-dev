@@ -1,0 +1,12 @@
+{
+    "fileLocations": [
+      {
+        "URIs": [
+          "s3://codestatsbucket/test_function/code-stats-activities.json"
+        ]
+      }
+    ],
+    "globalUploadSettings": {
+      "format": "JSON"
+    }
+}

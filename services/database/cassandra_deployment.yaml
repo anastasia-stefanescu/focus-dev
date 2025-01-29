@@ -25,8 +25,14 @@ spec:
         - name: CASSANDRA_RACK
           value: "rack1"
         - name: CASSANDRA_SEEDS
-          value: "127.0.0.1"
-        # Resources, volume mounts, etc.
+          #value: "127.0.0.1"
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+  #       volumeMounts:
+  #       - name: cassandra-data
+  #         mountPath: /var/lib/cassandra
+  #       # Resources, volume mounts, etc.
   # volumeClaimTemplates:
   # - metadata:
   #     name: cassandra-data
@@ -35,7 +41,7 @@ spec:
   #     storageClassName: "default"
   #     resources:
   #       requests:
-  #         storage: 10Gi
+  #         storage: 1Gi
 ---
 apiVersion: v1
 kind: Service

@@ -1,0 +1,9 @@
+npx tsc - to keep frontend up to date
+
+log in to az, install all dependencies
+log in to aws cli, sam , aws-sdk (how to log in to aws on laptop??)
+
+check cluster - kubectl, services, pods, nodes
+
+
+

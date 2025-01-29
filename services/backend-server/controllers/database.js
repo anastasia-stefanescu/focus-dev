@@ -17,7 +17,7 @@ export const logActivity = async (activityDuration, startTime, activityType) => 
 //beginInterval < startTime and startTime < endInterval
 
 export const fetchActivities = async (beginInterval, endInterval) => {
-  const query = `SELECT * from activities where (${beginInterval} < startTime and startTime  < ${endInterval})`;
+  const query = `SELECT * from activities where (${beginInterval} < start_time and start_time  < ${endInterval})`;
   console.log(query);
   const result = await client.execute(query);
   console.log(result);

@@ -1,20 +1,7 @@
 
-It seems the AWS CLI is not installed on your Mac M1. Follow these steps to install and configure it:
-
-Step 1: Install AWS CLI on Mac M1
-Download the AWS CLI Installer for Mac: Run the following command in your terminal to download the installer:
-
-curl "https://awscli.amazonaws.com/AWSCLIV2.pkg" -o "AWSCLIV2.pkg"
-Install the Package: Use the installer command to install the AWS CLI package:
-
-sudo installer -pkg AWSCLIV2.pkg -target /
-Verify the Installation: Check the installed version of AWS CLI:
-
-aws --version
-You should see output like:
-
-aws-cli/2.x.x Python/3.x.x Darwin/x86_64 (or arm64 for M1/M2)
-
+Install AWS CLI (for easier interrogations): https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
+        curl "https://awscli.amazonaws.com/AWSCLIV2.pkg" -o "AWSCLIV2.pkg"
+        sudo installer -pkg AWSCLIV2.pkg -target /
 
 If you are running the code locally, you need to configure your AWS credentials.
 
@@ -36,12 +23,99 @@ These credentials are stored in the ~/.aws/credentials file.
     - start the backend server
     - run the extension
 
+--- to put data into s3 bucket
+    Create s3 bucket if you don't have one
+
     Verify your permissions for the Lambda function (s3 bucket & quicksight ): https://us-east-1.console.aws.amazon.com/iam/home?region=us-east-1#/roles/details/Interact_with_CodeStats_Backend_and_Quicksight-role-1ev3s71j?section=permissions
     Verify permissions for Quicksight : aws-quicksight-service-role-v0 https://us-east-1.console.aws.amazon.com/iam/home?region=us-east-1#/roles/details/aws-quicksight-service-role-v0
 
     Download SAM CLI and AWS Toolkit vsc plugin
-
     
+--- to put data into quicksight
+    Create a s3 data source: Go to Quicksight and create a new dataset if you don't have one ()
+
+    To find out the created data source arn:
+        aws quicksight list-data-sources --aws-account-id 443370690315 --region us-east-1
+        aws quicksight describe-data-source --aws-account-id 123456789012 --data-source-id "dataSourceId123" --region us-west-2
+
+    Make sure the data source was created correctly and you can visualise what's in it!
+
+-- after creating the dataset:
+    aws quicksight list-data-sets --aws-account-id 443370690315 --region us-east-1
+
+-- list analysises:
+    aws quicksight list-analyses --aws-account-id 443370690315 --region us-east-1
+
+    {
+            "Arn": "arn:aws:quicksight:us-east-1:443370690315:analysis/56a0e256-6776-4058-84de-9e7c3d4cea4b",
+            "AnalysisId": "56a0e256-6776-4058-84de-9e7c3d4cea4b",
+            "Name": "Test_analysis_1",
+            "Status": "CREATION_SUCCESSFUL",
+            "CreatedTime": "2025-01-29T16:58:39.551000+02:00",
+            "LastUpdatedTime": "2025-01-29T16:58:39.551000+02:00"
+        },
+
+-- create template of analysis:
+    aws quicksight create-template \
+        --aws-account-id 443370690315 \
+        --template-id 'my-test-template-1' \
+        --name 'test-template' \
+        --source-entity '{"SourceAnalysis": {"Arn": "arn:aws:quicksight:us-east-1:443370690315:analysis/56a0e256-6776-4058-84de-9e7c3d4cea4b", "DataSetReferences": [{"DataSetPlaceholder": "test_data_source", "DataSetArn": "arn:aws:quicksight:us-east-1:443370690315:dataset/efae9db3-ce3f-4457-81ac-f6ac1504ff6c"}]}}' \
+        --region us-east-1
+
+        aws quicksight describe-template --aws-account-id 443370690315 --template-id my-test-template-1 --region us-east-1
+
+        {
+    "Status": 200,
+    "Template": {
+        "Arn": "arn:aws:quicksight:us-east-1:443370690315:template/my-test-template-1",
+        "Name": "test-template",
+        "Version": {
+            "CreatedTime": "2025-01-29T17:34:43.129000+02:00",
+            "VersionNumber": 1,
+            "Status": "CREATION_SUCCESSFUL",
+            "DataSetConfigurations": [
+                {
+                    "Placeholder": "test_data_source",
+                    "DataSetSchema": {
+                        "ColumnSchemaList": [
+                            {
+                                "Name": "activityType",
+                                "DataType": "STRING"
+                            },
+                            {
+                                "Name": "startTime",
+                                "DataType": "INTEGER"
+                            },
+                            {
+                                "Name": "activityDuration",
+                                "DataType": "INTEGER"
+                            }
+                        ]
+                    },
+                    "ColumnGroupSchemaList": []
+                }
+            ],
+            "SourceEntityArn": "arn:aws:quicksight:us-east-1:443370690315:analysis/56a0e256-6776-4058-84de-9e7c3d4cea4b",
+            "Sheets": [
+                {
+                    "SheetId": "af92996e-0245-42ca-a406-6db4f20f167f",
+                    "Name": "Sheet 1"
+                }
+            ]
+        },
+        "TemplateId": "my-test-template-1",
+        "LastUpdatedTime": "2025-01-29T17:34:43.125000+02:00",
+        "CreatedTime": "2025-01-29T17:34:43.125000+02:00"
+    },
+    "RequestId": "76613c93-70a8-46f5-ae6b-95dee32a8dd0"
+        }
+
+--create dashboard:
+    aws quicksight describe-dashboard --aws-account-id 443370690315 --dashboard-id test_dashboard_id --region us-east-1
+
+
+-- register domain to get embedding: https://us-east-1.quicksight.aws.amazon.com/sn/admin#/embedding
 
 SAM CLI Commands
 do npm init & npm install in the src folder 
@@ -49,3 +123,9 @@ do npm init & npm install in the src folder
 test your function locally:
     sam build
     sam (local) invoke InteractwithCodeStatsBackendandQuicksight --event event.json
+
+    !!AWS SAM CLI handles the containerization of your Lambda function when you use sam local start-lambda.
+    It runs your Lambda in a Docker container and exposes it on port 3001 by default. 
+    You do not need to manually containerize or specify a port; SAM does this for you under the hood. 
+    The endpoint http://127.0.0.1:3001 is where SAM listens for Lambda invocation requests.
+        sam local start-lambda

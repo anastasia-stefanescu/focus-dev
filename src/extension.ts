@@ -9,6 +9,7 @@ import { post_to_services, get_from_services } from './API/api_wrapper';
 import { MyAuth0AuthProvider } from './Authentication/auth_provider';
 import { fetchUserData } from './Authentication/user_handler';
 import { SidebarViewProvider } from './Sidebar/webview_provider';
+import { testing_cluster_and_services } from './test_cloud';
 
 // The `activate` function does not return anything, so its return type is `void`.
 export async function activate (context: vscode.ExtensionContext) {
@@ -48,16 +49,10 @@ export async function activate (context: vscode.ExtensionContext) {
   });
   context.subscriptions.push(startAuthenticationCommand);
 
-  // see if the server works
-  window.showInformationMessage('Starting send request');
-  const aux : ActivityRequest = {
-    activityDuration: 100, 
-    startTime: 17000, 
-    activityType: 'coding'
-  };
+  // test cloud 
 
-  
-  await post_to_services('/dashboard/activity', aux);
+  // see if the server works
+  await testing_cluster_and_services();
 }
 
 export function deactivate() {};
