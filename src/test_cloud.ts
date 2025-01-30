@@ -5,10 +5,10 @@ import { post_to_services, get_from_services } from "./API/api_wrapper";
 
 
 export async function testing_cluster_and_services () {
-    //await put_into_database();
+    await put_into_database();
 
-    const activities = await get_from_database();
-    window.showInformationMessage('got activities:', String(activities));
+    // const activities = await get_from_database();
+    // window.showInformationMessage('got activities:', String(activities));
 
     // const result = await send_to_inference();
     // window.showInformationMessage('got result:', result ?? '');
@@ -17,8 +17,8 @@ export async function testing_cluster_and_services () {
 export async function put_into_database() {
     window.showInformationMessage('Starting send request');
     const aux = {
-        activityDuration: 270, 
-        startTime: 39000, 
+        activityDuration: 350, 
+        startTime: 40000, 
         activityType: 'coding'
     };
 
