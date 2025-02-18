@@ -1,0 +1,39 @@
+npx tsc - to keep frontend up to date
+npm install in code stats, backend-server
+
+install azure-cli through brew:
+    brew install azure-cli
+Install aks cli:
+    az aks install-cli \
+    --install-location ~/kubectl \
+    --kubelogin-install-location ~/kubelogin
+
+    echo 'export PATH=$PATH:~' >> ~/.zshrc
+    source ~/.zshrc
+Login:
+    az login
+    az acr login --name codestatspayingcontainerregistry
+
+To interact with cluster using kubectl:
+    az aks get-credentials --resource-group code_stats_paying --name myAKSCluster
+
+Check pods are assigned correctly:
+   kubectl get nodes
+   kubectl get pods -o wide
+
+Install cqlsh
+    brew install cassandra
+    brew services start cassandra
+
+Install AWS CLI (for easier interrogations): https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
+        curl "https://awscli.amazonaws.com/AWSCLIV2.pkg" -o "AWSCLIV2.pkg"
+        sudo installer -pkg AWSCLIV2.pkg -target /
+
+    aws configure
+
+Download SAM CLI:
+    https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html
+
+    Go to lambda function folder:
+        sam build 
+

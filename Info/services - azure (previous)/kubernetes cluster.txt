@@ -80,9 +80,9 @@ KUBERNETES
     Check status:
          az aks show --name $AKS_CLUSTER_NAME --resource-group $RESOURCE_GROUP --query "powerState.code" --output tsv
 
-    Later
-         - deploy an application to AKS by creating a Kubernetes deployment YAML file 
-         - Enable Horizontal Pod Autoscaling for your deployment:
-            kubectl autoscale deployment nginx-deployment --cpu-percent=50 --min=2 --max=5
+! Better to scale down the cluster than close it completely!!!
 
-kubectl version --client
+
+Check pods are assigned correctly:
+   kubectl get nodes
+   kubectl get pods -o wide

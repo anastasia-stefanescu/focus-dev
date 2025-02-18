@@ -1,0 +1,21 @@
+Using multiple Emitters
+    In case you want to send the events to multiple Snowplow collectors, you can provide a list of emitter configurations in the newTracker call – one for each collector. This may look as follows.
+
+Create your own Emitter
+    Emitter is an object responsible for queuing tracked events and making requests to the Snowplow collector.
+
+    By default, the Node tracker makes use of the fetch API to make the HTTP requests. If you want to use a different library or logic for queuing and sending events, you can provide a custom Emitter implementation.
+
+    Emitters must conform to an Emitter interface, which looks like: ....
+
+
+Verifying Events Are Sent to Snowplow
+
+    Open VSCode in Debug Mode (F5).
+    Perform tracked actions (open files, move the cursor, start debugging, etc.).
+    Open Developer Tools (Help > Toggle Developer Tools) and check the Network tab for requests to https://collector.mydomain.net.
+    If you're using Snowplow Micro, check logs:
+        docker run -p 9090:9090 snowplow/snowplow-micro:latest
+
+
+https://docs.snowplow.io/docs/sources/trackers/javascript-trackers/node-js-tracker/migration-guides/v3-to-v4-migration-guide/

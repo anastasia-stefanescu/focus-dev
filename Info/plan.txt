@@ -1,0 +1,12 @@
+ -- move things to AWS (also create persistent storage) !!!
+ -- create tracking code (see what snowplow can do on behalf of you)
+ -- see how snowplow works
+ -- model for analysing comments and such
+ -- ! LLM for real-time suggestions and feedback!
+ -- display dashboard & data, perhaps aggreggate data using just snowplow
+ -- ?? create a printable report???
+ -- ?? ensure safety of data
+ -- frontend & backend tests, end-to-end tests, ci/cd pipeline
+ -- recreate cloud architecture
+
+ -- refacut partea de cloud pe AWS

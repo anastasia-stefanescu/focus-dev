@@ -10,12 +10,6 @@ export const dashboardController = {
         // const {begin, end} = req.body;
         // const dataFromDb = await fetchActivities(begin, end); // returns json?
 
-        const csvData = `Timestamp,Action,User,File
-        2025-01-01 10:00:00,Edit,john.doe,app.js
-        2025-01-01 10:15:00,Create,jane.smith,index.html
-        2025-01-01 10:30:00,Delete,john.doe,styles.css`
-        
-
         const params = {
             FunctionName: 'Interact_with_CodeStats_Backend_and_Quicksight',
             InvocationType: 'RequestResponse',

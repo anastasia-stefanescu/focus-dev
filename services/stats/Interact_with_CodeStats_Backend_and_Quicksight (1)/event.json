@@ -1,7 +1,29 @@
 {
-    "data":[{
-        "activityDuration": 100,
-        "startTime": 17000,
+    "data":[
+        {
+        "activityDuration": "100",
+        "startTime": "17000",
         "activityType": "coding"
-    }]
+        },
+        {
+            "activityDuration": "220",
+            "startTime": "25500",
+            "activityType": "debugging"
+        },
+        {
+            "activityDuration": "80",
+            "startTime": "30000",
+            "activityType": "coding"
+        },
+        {
+            "activityDuration": "190",
+            "startTime": "32000",
+            "activityType": "debugging"
+        },
+        {
+            "activityDuration": "500",
+            "startTime": "35000",
+            "activityType": "coding"
+        }
+    ]
 }

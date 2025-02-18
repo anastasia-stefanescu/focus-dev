@@ -1,0 +1,10 @@
+1. Create an EKS Cluster
+    Go to the EKS dashboard in the AWS Management Console and create a new cluster.
+     - will need to create a IAM User 
+
+    Choose your VPC (or create a new one if necessary), and configure the cluster settings.\
+        Using the default one
+
+    Once the cluster is created, set up kubectl to interact with the cluster:
+        aws eks --region <region> update-kubeconfig --name <cluster_name>
+

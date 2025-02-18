@@ -73,6 +73,14 @@ kubectl apply -f /Users/alinstefanescu/Documents/code-stats/services/backend-ser
 docker pull codestatspayingcontainerregistry.azurecr.io/backend-server:latest            
 docker run -p 3002:3002 codestatspayingcontainerregistry.azurecr.io/backend-server:latest
 
+az login
+az acr login --name codestatspayingcontainerregistry
+docker buildx build \
+            --platform linux/amd64 \
+            -t codestatspayingcontainerregistry.azurecr.io/backend-server:runs-locally \
+            --push \
+            .
+kubectl apply -f /Users/alinstefanescu/Documents/code-stats/services/backend-server/backend_deployment.yaml
 
 --------Connecting to cloud server
 
@@ -106,3 +114,5 @@ docker run -p 3002:3002 codestatspayingcontainerregistry.azurecr.io/backend-serv
         k8s-azure-lb_allow_IPv4_556f7044ec033071ec0dfcf7cd85bc93  mc_code_stats_paying_myakscluster_eastus2  500         *                   Internet                 None         Allow     Tcp         Inbound      443 80                   48.211.249.130                None
         k8s-azure-lb_allow_IPv4_d39272f7f57ed937951650d93992ad77  mc_code_stats_paying_myakscluster_eastus2  501         *                   Internet                 None         Allow     Tcp         Inbound      80                       52.251.15.216                 None
         k8s-azure-lb_allow_IPv4_1c1469ea5965a3c35706638d03894dd4  mc_code_stats_paying_myakscluster_eastus2  502         *                   Internet                 None         Allow     Tcp         Inbound      9042                     135.232.56.109                None
+
+        No outbound rules? By default, these shouldn't be restricted
