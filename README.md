@@ -1,9 +1,10 @@
 # Code Stats - Efficiency Tracker VSCode Extension for programmers 
 
 A Visual Studio Code Extension (destined for self-use!) that monitors and puts together detailed statistics on developers’ activities within the IDE
-The Extension also aims to identify a possible state of mind of the programmer (such as focus, frustration) and provide suggestions on how to manage their emotions.
 
-It tracks actions such as:
+The Extension also aims to identify a possible state of mind of the programmer (such as focus, frustration) and provide suggestions on how to manage their emotions
+
+## It tracks actions such as:
 - writing code
 - debugging
 - executing code
