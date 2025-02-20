@@ -41,8 +41,10 @@
     "views": {
       "statsDashboard": [
         {
-          "id": "code-stats.webviewProvider",
-          "name": "Extension window"
+          "id": "code-stats.webView",
+          "type": "webview",
+          "name": "Extension window",
+          "icon": "resources/icon.svg"
         }
       ]
     },
@@ -51,6 +53,14 @@
         "command": "code-stats.viewDashboard",
         "title": "View Dashboard",
         "category": "Dashboard"
+      },
+      {
+        "command": "code-stats.refreshDashboard",
+        "title": "Refresh dashboard"
+      },
+      {
+        "command": "code-stats.displaySidebar",
+        "title": "Display sidebar"
       },
       {
         "command": "code-stats.authLogin",

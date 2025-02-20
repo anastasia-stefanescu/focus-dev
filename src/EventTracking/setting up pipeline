@@ -1,0 +1,80 @@
+---------------------------------------------
+SETTING UP SNOWPLOW PIPELINE WITH TERRAFORM
+
+https://docs.snowplow.io/docs/get-started/snowplow-community-edition/what-is-deployed/?warehouse=postgres&cloud=aws
+
+https://docs.snowplow.io/docs/get-started/snowplow-community-edition/quick-start/?cloud=aws&warehouse=postgres
+
+- install terraform ( with brew for example)
+- make sure you have aws cli v2 installed, create a IAM User if you don't have one and attach to it AdministratorAccess:
+    aws iam create-user --user-name AnastasiaStefanescu
+    aws iam attach-user-policy --user-name AnastasiaStefanescu --policy-arn arn:aws:iam::aws:policy/AdministratorAccess
+  Create access key for interaction from the outside, and save the access keys:
+    aws iam create-access-key --user-name AnastasiaStefanescu
+
+- Choose Storage option: PostgreSQL because it's included in free tier in AWS
+- Choose Real-time streaming options: Kinesis because it's the only one available on AWS
+- Check VPC in your region
+
+- Set up Iglu Server:
+    This will allow you to create and evolve your own custom events and entities. Iglu Server stores the schemas for your events and entities and fetches them as your events are processed by the pipeline.
+
+    Clone SP quickstart example repo: https://github.com/snowplow/quickstart-examples
+    Update the input variables in terraform.tfvars:
+        cd terraform/aws/iglu_server/default
+        nano terraform.tfvars # or other text editor of your choosing
+
+        accept_limited_use_license = true
+        Default VPC Id: vpc-02505b04ebd4b42f1
+        Subnet 1: subnet-058af60eb026c212a
+        Subnet 2: subnet-054cced544cbc565c
+        Change password (optional):  "my_iglu_db_password"
+        My ip: 188.25.42.93
+        A random UUIDv4: d73680de-bddd-4c8e-80f2-58cba1587b8f
+        Generate SSH key:
+            ssh-keygen -t rsa -b 4096
+            => /Users/[username]/.ssh/id_rsa_iglu_server.pub
+                The key fingerprint is:
+                    SHA256:0hjjLMsW093Po/uAr2yBrvZlyz6DqP2ydXbJHIklUgg [username]@[pc_name].local
+        Get SSH key with: cat ~/.ssh/id_rsa_iglu_server.pub
+            ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDFmUrbKs0xvEkchSdrMZDqCbFVKYQtEQHm36onRxajCDdNOjVNnPpFH8DGcGzMksi7pFWU2Jo/I5CG8YifI04/1OsE1iuyroSq4zZINN0bjifgsJe0v5hcJKtwLsk1uC68W2xhlMKN9KY7px0ld1Z6j5Ia4KXKQrNftQOOPIZT+Umao1f5bip67kmAKSWGF6lhc856DMV0Xjm6j5hU1vX37sW6877R4YXP8Go411Sc5xSLUSPWZCgLZfXKE8Byq8IKWoUeiRma0NNCw5z0OgCaNviBvArbnyHdsTVXZJnvp5RcDzrde4NRezxig7utWK+ut+oshWgy1ByUfdJU4a1OHZXvLK26QKwFhMsdkNZuK0J+f+CM+3UHDy8zC5E4Icq5fj6MPdXjE09zEZmzAtmVo9T58KwNWhsQA6Hy2EUQGz5U4b60MnoUlgbrTJjVS4EdMG03bPOuCRRCrtjz2jjki4pB3ahteb4nzCclmQuc10+cX3ZNxFH3Ia3qWHj7dErzd0adnXkl7aPfYrlnfWeeE7zQLl2DNRcLjq9381WEy0xhJ0cE+LUdKblvnMVKjM0BFrZjk7xxkACtDG/zxMLJT1R4V/PKsvddKSPnIqQeXEsDzbXzYx0LiO3EYpCU31oShBGDavQhPKOIwA9mYzH2RaHGupFXEd0wnlugW8sbaQ== alinstefanescu@calculatorgalben.local
+
+    Create Iglu server stack:
+        terraform init
+        terraform plan -out tfplan
+        terraform apply "tfplan"
+        (May need to run last two commands twice for the first time?)
+    These will output:
+        iglu_server_dns_name = "sp-iglu-lb-1622690025.us-east-1.elb.amazonaws.com"
+
+    Set up the pipeline:
+        cd terraform/aws/pipeline/default
+        nano terraform.tfvars # or other text editor of your choosing
+
+        Update:
+            accept_limited_use_license = true 
+            # WARNING: You MUST change this as each bucket must be globally unique
+            s3_bucket_name = "snowplow-terraform-myBucket-1" (if you want to)
+
+            For further planning & applying:
+                # To use an existing bucket set this to false and update the name above
+                s3_bucket_deploy = true
+            Default VPC Id: vpc-02505b04ebd4b42f1
+            Subnet 1: subnet-058af60eb026c212a
+            Subnet 2: subnet-054cced544cbc565c
+            My ip: 188.25.42.93
+            SSH key (need a new one?)
+            iglu_server_dns_name = "http://sp-iglu-lb-1622690025.us-east-1.elb.amazonaws.com"
+            Same UUID as when creating the server: d73680de-bddd-4c8e-80f2-58cba1587b8f
+            
+              
+            Enable PostgreSQL: postgres_db_enabled = true
+                ( The password is: postgres_db_password = "Hell0Postgres_db!" )
+                postgres_db_ip_allowlist        = ["188.25.42.93/32"]
+
+        Outputs:
+            collector_dns_name = "sp-collector-lb-765753505.us-east-1.elb.amazonaws.com"
+            postgres_db_address = "sp-pipeline-rds-20250219220834716700000002.cteeo44qmp7d.us-east-1.rds.amazonaws.com"
+            postgres_db_id = "db-4KWW4OKFGK24QMKK37M7H35OUM"
+            postgres_db_port = 5432
+

@@ -17,14 +17,6 @@ export async function activate (context: vscode.ExtensionContext) {
   
   context.subscriptions.push(createCommands(context));
 
-  const sidebarViewProvider = new SidebarViewProvider(context.extensionUri);
-  context.subscriptions.push(window.registerWebviewViewProvider('code-stats.webviewProvider', sidebarViewProvider, {
-      webviewOptions: {
-          retainContextWhenHidden: false,
-          enableScripts: true
-      } as any
-  }));
-
   getServerRunning();
 
   const startAuthenticationCommand = vscode.commands.registerCommand('code-stats.startAuthentication', async () => {
@@ -52,7 +44,7 @@ export async function activate (context: vscode.ExtensionContext) {
   // test cloud 
 
   // see if the server works
-  await testing_cluster_and_services();
+  //await testing_cluster_and_services();
 }
 
 export function deactivate() {};

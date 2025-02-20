@@ -43,35 +43,6 @@ export class SidebarViewProvider implements WebviewViewProvider {
         vscode.commands.executeCommand('code-stats.startAuthentication');
     }
 
-    //called when the view becomes first visible (first loaded or user hides and then shows again the view)
-    // public resolveWebviewView(webviewView: WebviewView) { //as parameters we should add WebviewViewResolverContext and CancellationToken
-    //     this._view = webviewView;
-    //     webviewView.webview.options = { enableScripts: true }; // here add the extensionUri for localResourceRoots; enableCommandUris: true, localResourceRoots: [this._extensionUri],
-        
-
-    //     //interface WebviewMessage { command: string; //type of command sent - 'getStats', 'command_execute', action?: string; payload?: any;
-    //     webviewView.webview.onDidReceiveMessage(async (message: any) => {
-	// 		const cmd = message.action.includes('code-stats.') ? message.action : `codetime.${message.action}`;
-    //         switch (message.command) {
-    //         case 'command_execute':
-    //             if (message.payload && Object.keys(message.payload).length) {
-    //             commands.executeCommand(cmd, message.payload);
-    //             } else {
-    //             commands.executeCommand(cmd);
-    //             }
-    //             break;
-    //         }
-	// 	});
-
-    //     webviewView.webview.html = this.getWebviewContent();
-    // }
-
-    //Refresh
-    //Close
-
-    //create anon user if it wasn't already
-
-
 
     private getWebviewContent(): string {
         return `<!DOCTYPE html>
@@ -129,6 +100,37 @@ export class SidebarViewProvider implements WebviewViewProvider {
             </html>`;
       }
     }   
+
+        //called when the view becomes first visible (first loaded or user hides and then shows again the view)
+    // public resolveWebviewView(webviewView: WebviewView) { //as parameters we should add WebviewViewResolverContext and CancellationToken
+    //     this._view = webviewView;
+    //     webviewView.webview.options = { enableScripts: true }; // here add the extensionUri for localResourceRoots; enableCommandUris: true, localResourceRoots: [this._extensionUri],
+        
+
+    //     //interface WebviewMessage { command: string; //type of command sent - 'getStats', 'command_execute', action?: string; payload?: any;
+    //     webviewView.webview.onDidReceiveMessage(async (message: any) => {
+	// 		const cmd = message.action.includes('code-stats.') ? message.action : `codetime.${message.action}`;
+    //         switch (message.command) {
+    //         case 'command_execute':
+    //             if (message.payload && Object.keys(message.payload).length) {
+    //             commands.executeCommand(cmd, message.payload);
+    //             } else {
+    //             commands.executeCommand(cmd);
+    //             }
+    //             break;
+    //         }
+	// 	});
+
+    //     webviewView.webview.html = this.getWebviewContent();
+    // }
+
+    //Refresh
+    //Close
+
+    //create anon user if it wasn't already
+
+
+
 
     // private _getHtmlForWebview(webview: vscode.Webview) {
 	// 	// Get the local path to main script run in the webview, then convert it to a uri we can use in the webview.

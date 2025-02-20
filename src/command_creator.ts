@@ -12,10 +12,46 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
     {
     let cmds = [];
 
+    const sidebar: SidebarViewProvider = new SidebarViewProvider(ctx.extensionUri);
+    window.showInformationMessage('sidebar web provider initialized with extensionUri:', String(ctx.extensionUri));
+
     //The sidebar:
-    // - registerWebviewViewProvider
-    // - launch the web url of the (web?) dashboard  https://github.com/anastasia-stefanescu/Code-stats
-    // - display the side bar => activate the view ?
+    
+    // cmds.push(
+    //     // - launch the web url of the (web?) dashboard  https://github.com/anastasia-stefanescu/Code-stats
+    //     commands.registerCommand('codetime.softwareKpmDashboard', () => {
+    //       //launchWebUrl(`${app_url}/dashboard/code_time`)
+    // }));
+
+    // - registerWebviewViewProvider (initialize sidebar web view provider & )
+    cmds.push(
+        // 'codetime.webView' = package.json/views/statsDashboard/id
+        window.registerWebviewViewProvider('code-stats.webView', sidebar, {
+          webviewOptions: {
+            retainContextWhenHidden: false,
+            enableScripts: true // !!
+          } as any
+        })
+    );
+    
+    // - refresh the webview
+    cmds.push(
+        commands.registerCommand('code-stats.refreshDashboard', () => {
+          sidebar.refresh();
+        })
+    );
+    
+    // - display the side bar 
+    cmds.push(
+        commands.registerCommand('code-stats.displaySidebar', () => {
+          // opens the sidebar manually from a the above command
+          // statsDashboard = package.json/views/statsDashboard
+          commands.executeCommand('workbench.view.extension.statsDashboard');
+        })
+    );
+
+
+
     // const sidebarViewProvider = new SidebarViewProvider(context.extensionUri);
     // context.subscriptions.push(window.registerWebviewViewProvider('code-stats.webviewProvider', sidebarViewProvider, {
     //     webviewOptions: {
@@ -24,29 +60,29 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
     //     } as any
     // }));
 
-    const showView = vscode.commands.registerCommand('code-stats.showLogin', () => {
-        vscode.commands.executeCommand('workbench.view.extension.statsDashboard');
-    });
-    cmds.push(showView);
+    // const showView = vscode.commands.registerCommand('code-stats.showLogin', () => {
+    //     vscode.commands.executeCommand('workbench.view.extension.statsDashboard');
+    // });
+    // cmds.push(showView);
 
-    const viewDashboard = commands.registerCommand('code-stats.viewDashboard', () => {
-        const panel = vscode.window.createWebviewPanel(
-            'dashboard', // Identifies the type of the webview. Used internally
-            'Dashboard', // Title of the panel displayed to the user
-            ViewColumn.One,  // or .Beside -  can also have {enableScripts: true, retainContextWhenHidden: true} -> Editor column to show the new webview panel in.
-            {
-                enableScripts: true,
-            }
-        );
-        const onDiskPath = Uri.file(path.join(ctx.extensionPath, 'media', 'cat.gif'));
+    // const viewDashboard = commands.registerCommand('code-stats.viewDashboard', () => {
+    //     const panel = vscode.window.createWebviewPanel(
+    //         'dashboard', // Identifies the type of the webview. Used internally
+    //         'Dashboard', // Title of the panel displayed to the user
+    //         ViewColumn.One,  // or .Beside -  can also have {enableScripts: true, retainContextWhenHidden: true} -> Editor column to show the new webview panel in.
+    //         {
+    //             enableScripts: true,
+    //         }
+    //     );
+    //     const onDiskPath = Uri.file(path.join(ctx.extensionPath, 'media', 'cat.gif'));
 
-        // And get the special URI to use with the webview
-        const catGifSrc = panel.webview.asWebviewUri(onDiskPath);
+    //     // And get the special URI to use with the webview
+    //     const catGifSrc = panel.webview.asWebviewUri(onDiskPath);
 
-        panel.webview.html = getWebviewContent();
-        window.showInformationMessage('Viewing Dashboard');
-    });
-    cmds.push(viewDashboard); 
+    //     panel.webview.html = getWebviewContent();
+    //     window.showInformationMessage('Viewing Dashboard');
+    // });
+    // cmds.push(viewDashboard); 
 
     const loginWithAuth0 = commands.registerCommand('code-stats.authLogin', async () => {
         return new Promise<string>((resolve, reject) => {
@@ -74,7 +110,7 @@ function getWebviewContent() {
   <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Cat Coding</title>
+      <title> Coding Stats</title>
   </head>
   <body>
       <img src="https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif" width="300" />

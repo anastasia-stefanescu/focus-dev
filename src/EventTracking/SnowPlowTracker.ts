@@ -10,7 +10,7 @@ import { newTracker, buildSelfDescribingEvent } from '@snowplow/node-tracker';
 export class mySnowPlowTracker {
     private static instance : mySnowPlowTracker;
     public tracker: any;
-    private disposable: Disposable;
+    //private disposable: Disposable;
 
     constructor() {
         let subscriptions: Disposable[] = [];
@@ -96,17 +96,17 @@ export class mySnowPlowTracker {
     }
 
     private trackExecution() {
-        commands.onDidExecuteCommand((command) => {
-            this.tracker.trackSelfDescribingEvent({
-                event: {
-                    schema: "iglu:com.example/command_executed/jsonschema/1-0-0",
-                    data: {
-                        command: command.command, // Command name (e.g., "workbench.action.debug.start")
-                        timestamp: new Date().toISOString(),
-                    }
-                }
-            });
-        });
+        // commands.onDidExecuteCommand((command) => {
+        //     this.tracker.trackSelfDescribingEvent({
+        //         event: {
+        //             schema: "iglu:com.example/command_executed/jsonschema/1-0-0",
+        //             data: {
+        //                 command: command.command, // Command name (e.g., "workbench.action.debug.start")
+        //                 timestamp: new Date().toISOString(),
+        //             }
+        //         }
+        //     });
+        // });
 
         debug.onDidStartDebugSession((session) => {
             this.tracker.trackSelfDescribingEvent({
