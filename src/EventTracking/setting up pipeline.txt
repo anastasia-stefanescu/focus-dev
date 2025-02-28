@@ -30,7 +30,7 @@ https://docs.snowplow.io/docs/get-started/snowplow-community-edition/quick-start
         Subnet 2: subnet-054cced544cbc565c
         Change password (optional):  "my_iglu_db_password"
         My ip: 188.25.42.93
-        A random UUIDv4: d73680de-bddd-4c8e-80f2-58cba1587b8f
+        A random UUIDv4: a31bca4d-e307-4405-ae6f-1768d7826019
         Generate SSH key:
             ssh-keygen -t rsa -b 4096
             => /Users/[username]/.ssh/id_rsa_iglu_server.pub
@@ -65,7 +65,7 @@ https://docs.snowplow.io/docs/get-started/snowplow-community-edition/quick-start
             My ip: 188.25.42.93
             SSH key (need a new one?)
             iglu_server_dns_name = "http://sp-iglu-lb-1622690025.us-east-1.elb.amazonaws.com"
-            Same UUID as when creating the server: d73680de-bddd-4c8e-80f2-58cba1587b8f
+            Same UUID as when creating the server: a31bca4d-e307-4405-ae6f-1768d7826019
             
               
             Enable PostgreSQL: postgres_db_enabled = true
@@ -73,6 +73,8 @@ https://docs.snowplow.io/docs/get-started/snowplow-community-edition/quick-start
                 postgres_db_ip_allowlist        = ["188.25.42.93/32"]
 
         Outputs:
+            (The collector returned is just an Elastic Load Balancer!!)
+            
             collector_dns_name = "sp-collector-lb-765753505.us-east-1.elb.amazonaws.com"
             postgres_db_address = "sp-pipeline-rds-20250219220834716700000002.cteeo44qmp7d.us-east-1.rds.amazonaws.com"
             postgres_db_id = "db-4KWW4OKFGK24QMKK37M7H35OUM"

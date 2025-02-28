@@ -1,0 +1,75 @@
+WHAT WAS CREATED:
+ - 7 EC2 instances attached to 7 autoscaling groups
+ - 4 Kinesis data streams
+ - S3 Bucket ( "snowplow-terraform-anastasiastefanescu-bucket-1" )
+ 
+
+WHAT ELSE IS USED:
+ - default VPC + subnets + Route Table + Internet gateway
+
+STOPPING THE SERVERS:
+
+Observations:
+ - terminated instances will be automatically also be deleted from view in a while
+ - decreasing desired nr. of instances => automatically terminating instances
+
+Update Autoscaling groups:
+    Set desired instances to min 0, max 1
+
+Detach the EC2 instances from the Auto Scaling Group (replace IDs)
+    aws autoscaling detach-instances \
+        --instance-ids i-01f3e1803efd4ba77 \
+        --auto-scaling-group-name sp-iglu-server \
+        --should-decrement-desired-capacity
+
+    aws autoscaling detach-instances \
+        --instance-ids i-0aa696c97f977a4d2 \
+        --auto-scaling-group-name sp-collector-server \
+        --should-decrement-desired-capacity
+
+    aws autoscaling detach-instances \
+        --instance-ids i-06510831657f0a297 \
+        --auto-scaling-group-name sp-postgres-loader-enriched-server \
+        --should-decrement-desired-capacity
+
+    aws autoscaling detach-instances \
+        --instance-ids i-0a14ee7d0174133eb \
+        --auto-scaling-group-name sp-postgres-loader-bad-server \
+        --should-decrement-desired-capacity
+
+    aws autoscaling detach-instances \
+        --instance-ids i-0aa696c97f977a4d2 \
+        --auto-scaling-group-name sp-collector-server \
+        --no-should-decrement-desired-capacity
+
+    aws autoscaling detach-instances \
+        --instance-ids i-0b081ba6046f3718f \
+        --auto-scaling-group-name sp-s3-loader-bad-server  \
+        --should-decrement-desired-capacity
+
+    aws autoscaling detach-instances \
+        --instance-ids i-088ba60ebcab2c847 \
+        --auto-scaling-group-name  sp-s3-loader-enriched-server\
+        --should-decrement-desired-capacity
+    
+    aws autoscaling detach-instances \
+        --instance-ids i-0ae2e13d32c604375 \
+        --auto-scaling-group-name  sp-enrich-server\
+        --should-decrement-desired-capacity
+
+Stop the instances in Console:
+    Stop/ Start the instances 
+
+STARTING THE INSTANCES
+    Start instances
+
+    Attach them to autoscaling groups, should-increment-desired-capacity
+
+WHAT YOU WILL BE CHARGED FOR EVEN AFTER STOPPING INSTANCES if you don't delete them:
+    EC2 instances:
+        Elastic IP Addresses
+        EBS Volumes
+    Autoscaling groups:
+        ELBs
+
+    

@@ -1,0 +1,9 @@
+https://docs.snowplow.io/docs/get-started/tracking/?offering=community
+
+Quick start with the tracker:
+https://docs.snowplow.io/docs/sources/trackers/javascript-trackers/web-tracker/quick-start-guide/
+
+
+Use http://<collector_dns_name> (http, not https), where collector_dns_name is the output of the pipeline Terraform module.
+    http://sp-collector-lb-765753505.us-east-1.elb.amazonaws.com
+    and Application ID  - test
