@@ -151,7 +151,6 @@ export class mySnowPlowTracker {
 }
 
 
-
 // const tracker = newTracker({
 //     namespace: "my-tracker", // Namespace to identify the tracker instance. It will be attached to all events which the tracker fires.
 //     appId: "my-app", // Application identifier

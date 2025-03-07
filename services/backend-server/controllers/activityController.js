@@ -2,9 +2,11 @@ import { logActivity, fetchActivities } from './database.js';
 
 export const activityController = {
     async addActivity(req, res){
+        console.log('Inside add activity controller!!');
         //send another request to db service
-        const {activityDuration, startTime, activityType} = req.body;
-        await logActivity(activityDuration, startTime, activityType);
+        const {activitySession, activityDuration, startTime, activityType} = req.body;
+        const date = new Date(startTime);
+        await logActivity(activitySession, activityDuration, date, activityType);
     },
 
     async getActivities(req, res) {

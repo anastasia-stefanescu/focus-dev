@@ -1,28 +1,23 @@
 import * as vscode from 'vscode'; 
 import path from 'path';
 import { ExtensionContext, Disposable} from "vscode";
-import { commands, window, ViewColumn  } from "vscode";
+import { commands, window, ViewColumn, workspace, debug } from "vscode";
 import { Uri } from 'vscode';
 import { SidebarViewProvider } from './Sidebar/webview_provider';
 import { AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET, REDIRECT_URI} from './Constants';
 import { _tokenEmitter } from './Authentication/auth_provider';
+import { post_to_services } from './API/api_wrapper';
+import { v4 as uuidv4 } from 'uuid'; 
 
 export function createCommands(  ctx: ExtensionContext /* add: kpm controller, storageManager */ ) 
     // { dispose: () => { }; }
     {
     let cmds = [];
 
+    //===============================================
     const sidebar: SidebarViewProvider = new SidebarViewProvider(ctx.extensionUri);
-    window.showInformationMessage('sidebar web provider initialized with extensionUri:', String(ctx.extensionUri));
-
-    //The sidebar:
+    //window.showInformationMessage('sidebar web provider initialized with extensionUri:', String(ctx.extensionUri));
     
-    // cmds.push(
-    //     // - launch the web url of the (web?) dashboard  https://github.com/anastasia-stefanescu/Code-stats
-    //     commands.registerCommand('codetime.softwareKpmDashboard', () => {
-    //       //launchWebUrl(`${app_url}/dashboard/code_time`)
-    // }));
-
     // - registerWebviewViewProvider (initialize sidebar web view provider & )
     cmds.push(
         // 'codetime.webView' = package.json/views/statsDashboard/id
@@ -50,40 +45,7 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
         })
     );
 
-
-
-    // const sidebarViewProvider = new SidebarViewProvider(context.extensionUri);
-    // context.subscriptions.push(window.registerWebviewViewProvider('code-stats.webviewProvider', sidebarViewProvider, {
-    //     webviewOptions: {
-    //         retainContextWhenHidden: false,
-    //         enableScripts: true
-    //     } as any
-    // }));
-
-    // const showView = vscode.commands.registerCommand('code-stats.showLogin', () => {
-    //     vscode.commands.executeCommand('workbench.view.extension.statsDashboard');
-    // });
-    // cmds.push(showView);
-
-    // const viewDashboard = commands.registerCommand('code-stats.viewDashboard', () => {
-    //     const panel = vscode.window.createWebviewPanel(
-    //         'dashboard', // Identifies the type of the webview. Used internally
-    //         'Dashboard', // Title of the panel displayed to the user
-    //         ViewColumn.One,  // or .Beside -  can also have {enableScripts: true, retainContextWhenHidden: true} -> Editor column to show the new webview panel in.
-    //         {
-    //             enableScripts: true,
-    //         }
-    //     );
-    //     const onDiskPath = Uri.file(path.join(ctx.extensionPath, 'media', 'cat.gif'));
-
-    //     // And get the special URI to use with the webview
-    //     const catGifSrc = panel.webview.asWebviewUri(onDiskPath);
-
-    //     panel.webview.html = getWebviewContent();
-    //     window.showInformationMessage('Viewing Dashboard');
-    // });
-    // cmds.push(viewDashboard); 
-
+    //===============================================
     const loginWithAuth0 = commands.registerCommand('code-stats.authLogin', async () => {
         return new Promise<string>((resolve, reject) => {
             // Subscribes to the token emitter
@@ -99,9 +61,56 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
     });
     cmds.push(loginWithAuth0);
 
+    //===============================================
+    // register VCode API user events
+
+    const saveEvent = workspace.onDidSaveTextDocument(async (document) => {
+        await handleEvent(`!Saved file: ${document.fileName}`, 'textDocument', 0, 15000);
+        // trimite la backend
+      });
+
+    const openEvent = workspace.onDidOpenTextDocument(async (document) => {
+        await handleEvent(`Opened file!!!: ${document.fileName}`, 'textDocument', 0, 17000);
+      });
+
+    const closeEvent = workspace.onDidCloseTextDocument(async (document) => {
+        await handleEvent(`Closed file: ${document.fileName}`, 'textDocument', 0, 19000);
+      });
+
+    const startDebug = debug.onDidStartDebugSession(async (session) => {
+        await handleEvent(`Started debug session: ${session}`, 'debug', 0, 24000);
+      });
+
+    const stopDebug = debug.onDidTerminateDebugSession(async (session) => {
+        // send current debug session id
+        await handleEvent(`Finished debug session: ${session}`, 'debug', 270, 29000);
+      });
+
+    const changedWindowState = window.onDidChangeWindowState(async (state) => {
+        await handleEvent(`Changed window state: ${state}`, 'window', 0, 35000);
+      });
+
+    cmds.push(saveEvent);
+    cmds.push(closeEvent);
+    cmds.push(openEvent);
+    cmds.push(startDebug);
+    cmds.push(stopDebug);
+    cmds.push(changedWindowState);
 
     return Disposable.from(...cmds);
+}
 
+
+async function handleEvent(message:string, activityType: string, activityDuration:number, startTime:number) {
+    window.showInformationMessage(message);
+    const newDate = new Date();
+    const aux = {
+        activitySession: uuidv4(),
+        activityDuration: activityDuration, 
+        startTime: newDate.toISOString(), 
+        activityType: activityType
+    };
+    await post_to_services('/activity', aux);
 }
 
 function getWebviewContent() {

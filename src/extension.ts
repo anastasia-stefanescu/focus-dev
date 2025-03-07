@@ -1,7 +1,7 @@
 //const vscode from 'vscode');
 import * as vscode from 'vscode';
 import { createCommands } from './command_creator';
-import { window, Uri, ExtensionContext, commands } from 'vscode';
+import { window, Uri, ExtensionContext, commands, workspace } from 'vscode';
 import {authentication} from 'vscode';
 import { getServerRunning } from './server';
 import { ActivityRequest } from './Constants';

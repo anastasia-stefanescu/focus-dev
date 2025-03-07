@@ -21,7 +21,6 @@ export async function put_into_database() {
         startTime: 40000, 
         activityType: 'coding'
     };
-
     await post_to_services('/activity', aux);
 }
 

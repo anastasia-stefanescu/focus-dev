@@ -7,6 +7,13 @@ WHAT WAS CREATED:
 WHAT ELSE IS USED:
  - default VPC + subnets + Route Table + Internet gateway
 
+DELETING EVERYTHING THAT WAS CREATED:
+ - delete the 4 data streams ( 1$ / day)
+ - delete EC2 instances and autoscaling groups ()
+ - manage VPC ( 0.65$ / day)
+ - delete S3 bucket
+ - tax (0.25$ / day)
+
 STOPPING THE SERVERS:
 
 Observations:

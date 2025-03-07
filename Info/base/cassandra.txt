@@ -15,3 +15,4 @@ CASSANDRA
     alter table activities add startTime int;
 
     create table activities (id UUID primary key, start_time int, action_duration int, action_type text);
+    create table activities2 (id UUID primary key, action_session UUID, start_time date, action_duration int, action_type text);
