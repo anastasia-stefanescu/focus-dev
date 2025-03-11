@@ -6,9 +6,9 @@ Set variables for easier use
 
 CREATE WORKSPACE
     az ml workspace create \
-        --name $WORKSPACE_NAME \
-        --resource-group $RESOURCE_GROUP \
-        --location $LOCATION
+        --name code_stats_paying_workspace \
+        --resource-group code_stats_paying \
+        --location eastus2
 
     verify: 
         az ml workspace list --resource-group $RESOURCE_GROUP

@@ -31,7 +31,7 @@ https://docs.snowplow.io/docs/get-started/snowplow-community-edition/quick-start
         Change password (optional):  "my_iglu_db_password"
         My ip: 188.25.42.93
         A random UUIDv4: a31bca4d-e307-4405-ae6f-1768d7826019
-        Generate SSH key:
+        Generate SSH ke
             ssh-keygen -t rsa -b 4096
             => /Users/[username]/.ssh/id_rsa_iglu_server.pub
                 The key fingerprint is:

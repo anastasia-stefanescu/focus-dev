@@ -58,8 +58,8 @@
 
             az ml online-endpoint create \
             --local \
-            -n local-endpoint \
-            -f /Users/alinstefanescu/Documents/code-stats/services/azure-example/endpoint.yml \
+            -n example-endpoint \
+            -f /Users/anastasiastefanescu/Documents/code-stats/services/azure-example/endpoint.yml \
             --resource-group code_stats_paying \
             --workspace-name code_stats_paying_workspace
 
@@ -69,7 +69,8 @@
             --resource-group code_stats_paying \
             --workspace-name code_stats_paying_workspace
 
-        By default, it usually listens on http://localhost:5001/score (unless you specify a different port). You can send HTTP requests to this local endpoint, and it will handle inference using the locally stored model.
+        By default, it usually listens on http://localhost:5001/score (unless you specify a different port). 
+        You can send HTTP requests to this local endpoint, and it will handle inference using the locally stored model.
         For example, when you make a request with curl:
             curl -X POST http://localhost:5001/score -H "Content-Type: application/json" -d '{"text": "This is a test sentence."}'
 
@@ -83,7 +84,7 @@
             az ml online-deployment create \
             --local \
             -n example-deployment \
-            -f /Users/alinstefanescu/Documents/code-stats/services/azure-example/blue-deployment.yml \
+            -f /Users/anastasiastefanescu/Documents/code-stats/services/azure-example/blue-deployment.yml \
             --resource-group code_stats_paying \
             --workspace-name code_stats_paying_workspace
 
@@ -99,13 +100,13 @@
            az ml online-endpoint invoke \
            --local \
            --name example-endpoint \
-           --request-file /Users/alinstefanescu/Documents/code-stats/services/azure-example/sample-request.json \
+           --request-file /Users/anastasiastefanescu/Documents/code-stats/services/azure-example/sample-request.json \
            --resource-group code_stats_paying \
            --workspace-name code_stats_paying_workspace
 
         !!!!!If you want to use a REST client (like curl), you must have the scoring URI. 
         To get the scoring URI, run:
-            az ml online-endpoint show --local -n example-endpoint
+            az ml online-endpoint show --local -n example-endpoint --resource-group code_stats_paying --workspace-name code_stats_paying_workspace
             Ex: http://localhost:55024/score
          In the returned data, find the scoring_uri attribute.
 

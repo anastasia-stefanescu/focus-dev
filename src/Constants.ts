@@ -4,6 +4,7 @@ export const REDIRECT_URI = "vscode://my-extension.code-stats";
 export const AUTH0_DOMAIN = "dev-scav60kgla32afjs.us.auth0.com";
 
 export const service_database_port = 3002;
+export const inference_port = 3002;
 
 export interface ActivityRequest {
     activityDuration: number,

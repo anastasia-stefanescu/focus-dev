@@ -9,6 +9,14 @@ export const activityController = {
         await logActivity(activitySession, activityDuration, date, activityType);
     },
 
+    async addComment(req, res){
+        console.log('Inside add comment controller!!');
+        //send another request to db service
+        const {activitySession, activityDuration, startTime, activityType} = req.body;
+        const date = new Date(startTime);
+        await logActivity(activitySession, activityDuration, date, activityType);
+    },
+
     async getActivities(req, res) {
         const {begin, end} = req.body;
         // transform to date object

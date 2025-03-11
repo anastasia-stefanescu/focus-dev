@@ -1,14 +1,16 @@
 import axios from 'axios';
-import { service_database_port } from '../Constants';
+import { service_database_port, inference_port } from '../Constants';
 import { window } from 'vscode';
 
-const base_url = `http://localhost:${service_database_port}`;
+let base_url = `http://localhost:${service_database_port}`;
 //const cloud_url = `http://52.251.15.216:80`
 // UNCOMMENT THIS WHEN USING CLOUD!!!!!!!!
 
 //send to server
 export const post_to_services = async (endpoint: string, content: any) => {
-    window.showInformationMessage(`Inside post to service ${endpoint}`);
+    if (endpoint == '/inference') 
+      base_url = `http://localhost:${inference_port}`;
+    window.showInformationMessage(`Inside post to service ${base_url + endpoint}`);
     try {
         const response = await axios.post(base_url + endpoint, content);
         console.log('Response:', response.data);
