@@ -2,4 +2,17 @@ https://github.com/snowplow/snowplow-docker.git
 
 https://dev.to/lazypro/building-a-snowplow-playground-127
 
-https://github.com/pacuna/snowplow-pipeline/tree/master
+https://github.com/pacuna/snowplow-pipeline -> clone this, after do:
+docker compose up -data
+
+The pipeline works in the following way:
+
+    1. A request is sent to the Scala Collector
+    # The collector runs as a web service specified on the following interface and port.
+        interface = "0.0.0.0"
+        port = 8080
+    2. The raw event (thift event) is put into the snowplow_raw_good (or bad) topic
+    3. The enricher grabs the raw events, parses them and put them into the snowplow_parsed_good (or bad) topic
+    4. A custom events processor grabs the parsed event, which is in a tab-delimited/json hybrid format and turns it into a proper Json event using the python analytics SDK from Snowplow. This event is then put into a final topic called snowplow_json_event.
+    5. (WIP) A custom script grabs the final Json events and loads them into some storage solution (such as BigQuery or Redshift)
+
