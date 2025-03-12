@@ -1,6 +1,10 @@
 WHAT WAS CREATED:
  - 7 EC2 instances attached to 7 autoscaling groups
  - 4 Kinesis data streams
+ - 2 EC2 Load Balancers
+ - 2 EC2 Target Groups
+ - 1 EC2 Volume
+ - 12 EC2 Security Groups
  - S3 Bucket ( "snowplow-terraform-anastasiastefanescu-bucket-1" )
  
 
@@ -10,6 +14,8 @@ WHAT ELSE IS USED:
 DELETING EVERYTHING THAT WAS CREATED:
  - delete the 4 data streams ( 1$ / day)
  - delete EC2 instances and autoscaling groups ()
+ - delete EC2 Load Balancers
+ - delete EC2 Target Groups
  - manage VPC ( 0.65$ / day)
  - delete S3 bucket
  - tax (0.25$ / day)

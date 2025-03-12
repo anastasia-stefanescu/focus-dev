@@ -41,6 +41,8 @@ export async function activate (context: vscode.ExtensionContext) {
   });
   context.subscriptions.push(startAuthenticationCommand);
 
+  // send a comment to inference service
+  
   // test cloud 
 
   // see if the server works

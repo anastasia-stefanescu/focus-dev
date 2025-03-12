@@ -1,0 +1,5 @@
+https://github.com/snowplow/snowplow-docker.git
+
+https://dev.to/lazypro/building-a-snowplow-playground-127
+
+https://github.com/pacuna/snowplow-pipeline/tree/master
