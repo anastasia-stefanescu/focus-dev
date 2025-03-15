@@ -10,11 +10,14 @@ import { MyAuth0AuthProvider } from './Authentication/auth_provider';
 import { fetchUserData } from './Authentication/user_handler';
 import { SidebarViewProvider } from './Sidebar/webview_provider';
 import { testing_cluster_and_services } from './test_cloud';
+import { CurrentSessionVariables } from './EventTracking/event_management';
 
 // The `activate` function does not return anything, so its return type is `void`.
 export async function activate (context: vscode.ExtensionContext) {
   const authProvider = new MyAuth0AuthProvider(context);
-  
+
+  const eventsVariables = new CurrentSessionVariables();
+
   context.subscriptions.push(createCommands(context));
 
   getServerRunning();
