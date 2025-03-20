@@ -40,15 +40,15 @@ export class mySnowPlowTracker {
       }
 
     private setTrackingEvents() {
-        // this.trackFileEvents(); // save, close files => save is done even when Autosave is on
+        // this.trackFileEvents(); // ✅ save, close files => save is done even when Autosave is on
                                     // see what was changed? otherwise we don't need to track them
-        this.trackExecution(); // debug starting & stopping, code execution, also terminal shell execution? (needs shell integration)
-        this.trackVSCWindowFocus(); // vsc window loses or gains focus
-        // actual typing; 
-        // copy, pasting (verify what was copied was pasted)
+        this.trackExecution(); // ✅ debug starting & stopping, code execution, also terminal shell execution? (needs shell integration)
+        this.trackVSCWindowFocus(); // ✅ vsc window loses or gains focus
+        // ✅ actual typing; 
+        // ✅ copy, pasting (verify what was copied was pasted) 
         // extract comments
         // extract git commit messages
-        // detect copilot/ other extension generating
+        // ✅ detect copilot/ other extension generating 
         
     }
 

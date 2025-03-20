@@ -72,20 +72,22 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
         window.showInformationMessage('Copied content:', copiedText);
         instance.setCopiedText(copiedText);
         // we save the selection first, then execute the copy!!
-        await vscode.commands.executeCommand('editor.action.clipboardCopyAction');
+        //await vscode.commands.executeCommand('editor.action.clipboardCopyAction');
       }
+      
     });
 
     const cutDisposable = vscode.commands.registerCommand('editor.action.clipboardCutAction', async () => {
       window.showInformationMessage('User cut content!');
-        const editor = window.activeTextEditor;
-        if (editor) {
-          const copiedText = editor.document.getText(editor.selection);
-          window.showInformationMessage('Cut content:', copiedText);
-          instance.setCopiedText(copiedText);
+      const editor = window.activeTextEditor;
+      if (editor) {
+        const copiedText = editor.document.getText(editor.selection);
+        window.showInformationMessage('Cut content:', copiedText);
+        instance.setCopiedText(copiedText);
 
-          await vscode.commands.executeCommand('editor.action.clipboardCutAction');
-        }
+        
+      }
+      //await vscode.commands.executeCommand('editor.action.clipboardCutAction');
     });
 
     const pasteDisposable = vscode.commands.registerCommand('editor.action.clipboardPasteAction', async () => {
@@ -93,7 +95,7 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
         const clipboardText = await env.clipboard.readText();
         window.showInformationMessage('User pasted:', clipboardText);
         
-        await vscode.commands.executeCommand('editor.action.clipboardPasteAction');
+        //await vscode.commands.executeCommand('editor.action.clipboardPasteAction');
     });
 
 
@@ -139,13 +141,18 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
     // Undo and Redo, save, formatters are fired
     // discarding changes with Git
     const code_change = workspace.onDidChangeTextDocument(async (event) => {
-      await verifyDocumentChange(event); // TextDocumentChangeEvent
+
+      const now = Date.now();
+      const lastCopiedText = (await env.clipboard.readText()).toString()
+      await verifyDocumentChange(event, lastCopiedText); // TextDocumentChangeEvent
     })
 
     
 
     
     cmds.push(copyDisposable);
+    cmds.push(cutDisposable);
+    cmds.push(pasteDisposable);
     cmds.push(saveEvent);
     cmds.push(closeEvent);
     cmds.push(openEvent);

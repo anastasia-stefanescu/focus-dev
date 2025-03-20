@@ -4,16 +4,28 @@ import { TextDocumentChangeEvent, TextDocumentContentChangeEvent, TextDocumentCh
 import { window } from "vscode";
 import { handleEvent, instance } from "./event_management";
 
+interface Change {
+    type: string,
+    noLines: number
+}
+
+const normalNoLines = 5 // change when in flow??
+
 // onDidChangeTextDocument is triggered when:
     // the user types something
     // Undo and Redo, save, formatters are fired
     // discarding changes with Git
-export async function verifyDocumentChange(event: TextDocumentChangeEvent ):string {
+export function verifyDocumentChange(event: TextDocumentChangeEvent, lastCopiedText:string ) { //  Change[]
     const { contentChanges, document, reason } = event;
 
-    if (reason == 1 || reason == 2) 
-    if (contentChanges.length === 0) return 'nothing';
+    // if (reason == 1 || reason == 2) ??
+    if (contentChanges.length === 0) {
+        return "nothing"
+        // const change :Change = { type: "nothing", noLines:0}
+        // return [change];
+    }
 
+    // const allChanges : Change[] = [];
     // Each change is stored in event.contentChanges, which contains:
     // range → The affected range (start & end positions before the change).
     // text → The new text that replaced the range (empty if deleted).  
@@ -21,23 +33,27 @@ export async function verifyDocumentChange(event: TextDocumentChangeEvent ):stri
         const { text, range } = change;
         const numLines = text.split('\n').length;
 
-        if (text.length <5 ) { // normal typing
-            await handleEvent(`Typed ${text.length} lines in ${document}`, '', 'coding', 'start', new Date());
-        }
-        else {
-            if (numLines > 5) { // text was either pasted or generated
-                const last_copy = instance.getCopiedText();
-                if (last_copy == text) { // text was copied
-                    await handleEvent(`Copy-pasted ${text.length} lines in ${document}`, '', 'copy-paste', 'start', new Date());
-                } 
-                else { // imported from somewhere else or generated
-                    // window unfocused + immediate apparition of code => pasted from external sources, not generated
+        //if (text.length == 0) { // Something else was done, or text was deleted. We're just checking if text appeared.
+            // const change :Change = { type: "other", noLines:0}
+            // allChanges.push(change);
 
-
-                    // AI-generated code appears almost instantaneously compared to human typing speeds.
-                    // Might be accompanied by 'Enter' to accept a generation of code
+        if (text.length > 0) {
+            //CHECK RATE OF TYPING!!!!
+            // save last time of chang + previous last time of change and compare, if we had a text addition!!
+            if (numLines < 5 ) { // normal typing
+                //return "coding"
+                await handleEvent(`Typed ${numLines} lines in ${document}`, '', 'coding', 'start', new Date());
+            }
+            else { // NOT ACTUALLY TYPED, BUT PASTED/GENERATED
+                if (numLines > 5) { 
+                    // We already checked pasting cases - here we differentiate between pasting and generating
+                    if (lastCopiedText != text) { 
+                        //generated. AI-generated code appears almost instantaneously compared to human typing speeds.
+                        //code appearing from git pulls?
+                        //return "generating"
+                        await handleEvent(`Generated ${numLines} lines in ${document}`, '', 'generating', 'start', new Date());
+                    }
                 }
-
             }
         }
     });

@@ -150,5 +150,6 @@ export async function handleEvent(message:string, local_session_id: string, acti
 }
 
 export async function sendEvent(event:Event) {
-    await post_to_services('/activity', event);
+    window.showInformationMessage(`${event.activityType}`);
+    //await post_to_services('/activity', event);
 }

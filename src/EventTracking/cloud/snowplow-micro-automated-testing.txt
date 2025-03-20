@@ -1,0 +1,28 @@
+https://docs.snowplow.io/docs/data-product-studio/data-quality/snowplow-micro/basic-usage/
+
+git clone https://github.com/snowplow-incubator/snowplow-micro-examples.git
+
+cd snowplow-micro-examples
+
+docker-compose up
+->This will:
+
+    Start serving the app on localhost:8000
+    Launch Snowplow Micro, mounting the micro directory and setting the port 9090 for accessing Micro's REST API endpoints. Inside the micro directory are:
+    The configuration for Snowplow Micro.
+    The configuration for Iglu resolvers.
+    The iglu-client-embedded directory containing the custom schemas used for tracking.
+
+npm install -> This step will install Nightwatch and Cypress.
+
+To run all tests: We will be testing that tracking is properly configured on our site.
+npm test
+npm run test:nightwatch
+npm run cypress:run
+npm run cypress:open
+
+Inside the .github/workflows/ directory you can find the .yml files we use to test this exaple app with Micro and Nightwatch/Cypress. A general workflow file would definitely use the Snowplow Micro step, which for our example is:
+
+- name: Start Micro
+    run: docker-compose up -d
+    working-directory: snowplow-micro-examples
