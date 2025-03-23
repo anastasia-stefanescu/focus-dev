@@ -2,34 +2,8 @@ import { TextEditor, window } from "vscode";
 import { post_to_services } from "../API/api_wrapper";
 import { v4 as uuidv4 } from 'uuid'; 
 import { start } from "repl";
+import { Event } from "./event_models";
 
-export let instance : CurrentSessionVariables;
-
-export interface Event {
-    activityId: string,
-    activityDuration: number | undefined, 
-    startTime: string, 
-    endTime:string | undefined,
-    activityType: string
-}
-
-// copy - from another window?, paste, cut, delete | save, open, close | git updates
-export interface spontaneousEvent {
-    activityId: string,
-    time: string, 
-    activityType: string,
-    contentLength: number | undefined
-}
-
-// debug, run, shell run | window focus (multiple windows?) 
-// document changes (typing, generating code, comments)
-export interface continuousEvent {
-    activityId: string,
-    activityDuration: number | undefined, 
-    startTime: string, 
-    endTime:string | undefined,
-    activityType: string
-}
 
 // should also add window id here - there might be multiple windows open
 //      and the user might copy-paste from another one of his windows 
@@ -38,6 +12,8 @@ export interface continuousEvent {
 
 export class CurrentSessionVariables {
 
+    private static instance : CurrentSessionVariables;
+
     // multiple debug sessions can be active at the same time
     private crt_debug_sessions: { [key: string]: Event} = {};
     private crt_exec_sessions: { [key: string]: Event} = {};
@@ -45,25 +21,34 @@ export class CurrentSessionVariables {
     // By design, the VS Code API only works within a single instance (or window).
     //private opened_windows : { [key: string]: boolean} = {};
 
+    // what were we using these for??
     private crt_is_in_focus : boolean = true;
     private last_came_in_focus : Date = new Date();
 
-    private crt_copied_text = ''; // source of copy??
-    //private crt_pasted_text = '';
+    private last_time_of_paste : Date = new Date();
+    private last_time_of_undo_redo: Date = new Date();
 
+    private last_copied_text: string = '';
+    
     public CurrentSessionVariables() {
-        instance = this;
 
         //this.opened_windows = window.visibleTextEditors;
     }
 
-    public getInstance() {
-        return instance;
-
+    public static getInstance() {
+        if (!CurrentSessionVariables.instance)
+            CurrentSessionVariables.instance = new CurrentSessionVariables();
+        return CurrentSessionVariables.instance;
     }
 
-    public getCopiedText() { return this.crt_copied_text; }
-    public setCopiedText(text:string) { this.crt_copied_text = text; }
+    public getLastTimeofPaste() { return this.last_time_of_paste; }
+    public setLastTimeofPaste(date:Date) { this.last_time_of_paste = date; }
+
+    public getLastCopiedText() { return this.last_copied_text;}
+    public setLastCopiedText(text:string) { this.last_copied_text = text; }
+
+    public getLastTimeofUndoRedo() { return this.last_time_of_undo_redo;}
+    public setLastTimeofUndoRedo(date: Date) { this.last_time_of_undo_redo = date; }
 
     public getLastCameInFocus() { return this.last_came_in_focus; }
 

@@ -73,7 +73,54 @@
       {
         "command": "code-stats.startAuthentication",
         "title": "Start Authentication"
+      },
+      {
+        "command": "custom.pasteWithMessage",
+        "title": "Paste with Message"
+      },
+      {
+        "command": "custom.trackUndo",
+        "title": "Track Undo"
+      },
+      {
+        "command": "custom.trackRedo",
+        "title": "Track Redo"
+      },
+      {
+        "command": "custom.trackCopy",
+        "title": "Track Copy"
+      },
+      {
+        "command": "custom.trackCut",
+        "title": "Track Cut"
       }
+    ],
+    "keybindings": [
+        {
+            "command": "custom.pasteWithMessage",
+            "key": "cmd+v",   
+            "when": "editorTextFocus"
+        },
+        {
+          "command": "custom.trackUndo",
+          "key": "cmd+z",   
+          "when": "editorTextFocus"
+        },
+        {
+          "command": "custom.trackRedo",
+          "key": "cmd+shift+z",   
+          "when": "editorTextFocus"
+        },
+        {
+          "command": "custom.trackCopy",
+          "key": "cmd+c",   
+          "when": "editorTextFocus"
+        },
+        {
+          "command": "custom.trackCut",
+          "key": "cmd+x",   
+          "when": "editorTextFocus"
+        }
     ]
   },
   "scripts": {

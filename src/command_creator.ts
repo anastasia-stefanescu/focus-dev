@@ -7,7 +7,7 @@ import { SidebarViewProvider } from './Sidebar/webview_provider';
 import { AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET, REDIRECT_URI} from './Constants';
 import { _tokenEmitter } from './Authentication/auth_provider';
 import { post_to_services } from './API/api_wrapper';
-import { handleEvent, instance } from './EventTracking/event_management';
+import { CurrentSessionVariables, handleEvent} from './EventTracking/event_management';
 import { verifyDocumentChange } from './EventTracking/event_processing';
 
 export function createCommands(  ctx: ExtensionContext /* add: kpm controller, storageManager */ ) 
@@ -64,39 +64,70 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
 
     //===============================================
     // listen to built-in copy/paste commands 
-    const copyDisposable = vscode.commands.registerCommand('editor.action.clipboardCopyAction', async () => {
-      window.showInformationMessage('User copied content!');
+    const copyDisposable = vscode.commands.registerCommand('custom.trackCopy', async () => {
+
+      window.showInformationMessage('Before executing copy');
       const editor = window.activeTextEditor;
-      if (editor) {
+      if (editor) { // we save the selection first, then execute the copy!!
         const copiedText = editor.document.getText(editor.selection);
+
+        await vscode.env.clipboard.writeText(copiedText); // Copy to system clipboard
         window.showInformationMessage('Copied content:', copiedText);
-        instance.setCopiedText(copiedText);
-        // we save the selection first, then execute the copy!!
-        //await vscode.commands.executeCommand('editor.action.clipboardCopyAction');
+
+        CurrentSessionVariables.getInstance().setLastCopiedText(copiedText);
+        
+        await vscode.commands.executeCommand('editor.action.clipboardCopyAction');
       }
       
     });
 
-    const cutDisposable = vscode.commands.registerCommand('editor.action.clipboardCutAction', async () => {
-      window.showInformationMessage('User cut content!');
+    const cutDisposable = vscode.commands.registerCommand('custom.trackCut', async () => {
+      window.showInformationMessage('Before executing cut');
       const editor = window.activeTextEditor;
       if (editor) {
         const copiedText = editor.document.getText(editor.selection);
         window.showInformationMessage('Cut content:', copiedText);
-        instance.setCopiedText(copiedText);
-
-        
+        CurrentSessionVariables.getInstance().setLastCopiedText(copiedText);
       }
-      //await vscode.commands.executeCommand('editor.action.clipboardCutAction');
+      await vscode.commands.executeCommand('editor.action.clipboardCutAction');
     });
 
-    const pasteDisposable = vscode.commands.registerCommand('editor.action.clipboardPasteAction', async () => {
-        window.showInformationMessage('User pasted content!');
-        const clipboardText = await env.clipboard.readText();
-        window.showInformationMessage('User pasted:', clipboardText);
+    // we have do define a custom command for pasting here!!
+    //  bind your new command (custom.pasteWithMessage) to a key combination ( adding it to your keybindings.json) or use it from the Command Palette.
+    const pasteDisposable = vscode.commands.registerCommand('custom.pasteWithMessage', async () => {
+        const now = new Date();
+        window.showInformationMessage(`Before execution of paste: ${now}`);
+        CurrentSessionVariables.getInstance().setLastTimeofPaste(now);
         
-        //await vscode.commands.executeCommand('editor.action.clipboardPasteAction');
+        // here don't put await??? -> no, it's a infinite loop
+        await vscode.commands.executeCommand('editor.action.clipboardPasteAction');
+
+        const clipboardText = await env.clipboard.readText();
+        const now2 = new Date();
+        window.showInformationMessage(`After execution of paste at ${now2}: ${clipboardText}`);
     });
+
+    // check if these work normally!!!!!
+    const undoDisposable = vscode.commands.registerCommand('custom.trackUndo', async () => {
+      const now = new Date();
+
+      window.showInformationMessage(`Undo at ${now}`);
+
+      CurrentSessionVariables.getInstance().setLastTimeofUndoRedo(now);
+
+      await vscode.commands.executeCommand('editor.action.undo')
+    });
+
+    const redoDisposable = vscode.commands.registerCommand('custom.trackRedo', async () => {
+      const now = new Date();
+
+      window.showInformationMessage(`Redo at ${now}`);
+
+      CurrentSessionVariables.getInstance().setLastTimeofUndoRedo(now);
+
+      await vscode.commands.executeCommand('editor.action.redo')
+    });
+
 
 
     // register VCode API user events
@@ -135,16 +166,13 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
         else 
           await handleEvent(`Window ${window_session_id} lost focus: ${state}`, '', 'window', 'start', new Date());
       });
-
-    // onDidChangeTextDocument is triggered when:
-    // the user types something
-    // Undo and Redo, save, formatters are fired
-    // discarding changes with Git
+      
     const code_change = workspace.onDidChangeTextDocument(async (event) => {
 
-      const now = Date.now();
+      const now = new Date();
+      window.showInformationMessage(`Doc changet at ${now}`);
       const lastCopiedText = (await env.clipboard.readText()).toString()
-      await verifyDocumentChange(event, lastCopiedText); // TextDocumentChangeEvent
+      await verifyDocumentChange(event, lastCopiedText, now); // TextDocumentChangeEvent
     })
 
     
@@ -153,6 +181,8 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
     cmds.push(copyDisposable);
     cmds.push(cutDisposable);
     cmds.push(pasteDisposable);
+    cmds.push(undoDisposable);
+    cmds.push(redoDisposable);
     cmds.push(saveEvent);
     cmds.push(closeEvent);
     cmds.push(openEvent);

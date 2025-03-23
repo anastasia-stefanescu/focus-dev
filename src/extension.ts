@@ -16,8 +16,6 @@ import { CurrentSessionVariables } from './EventTracking/event_management';
 export async function activate (context: vscode.ExtensionContext) {
   const authProvider = new MyAuth0AuthProvider(context);
 
-  const eventsVariables = new CurrentSessionVariables();
-
   context.subscriptions.push(createCommands(context));
 
   getServerRunning();
@@ -43,6 +41,26 @@ export async function activate (context: vscode.ExtensionContext) {
     }
   });
   context.subscriptions.push(startAuthenticationCommand);
+
+  // Hook into the Inline Completion API
+  const originalRegister = vscode.languages.registerInlineCompletionItemProvider;
+
+  (vscode.languages as any).registerInlineCompletionItemProvider = function (...args) {
+      const provider = args[1]; // The actual provider function
+      const newProvider = {
+          provideInlineCompletionItems: async function (...pArgs) {
+              const result = await provider.provideInlineCompletionItems(...pArgs);
+              
+              if (result?.items && result.items.length > 0) {
+                  console.log("AI Suggestion Received:", result.items.map(item => item.insertText));
+              }
+
+              return result;
+          }
+      };
+      
+      return originalRegister.apply(this, [args[0], newProvider, args[2]]);
+  };
 
   // send a comment to inference service
   
