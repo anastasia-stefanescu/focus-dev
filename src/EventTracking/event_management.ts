@@ -119,15 +119,15 @@ export async function handleEvent(message:string, local_session_id: string, acti
     let event : Event|undefined = undefined;
     if (activityType in list) {
         if (activityType == "start") { // just started debug session
-            instance.startSession(local_session_id, activityTime, activityName);
+            CurrentSessionVariables.getInstance().startSession(local_session_id, activityTime, activityName);
         }
         else {
-            event = instance.stopSession(local_session_id, activityTime, activityName);
+            event = CurrentSessionVariables.getInstance().stopSession(local_session_id, activityTime, activityName);
         }
     }
     else {
 
-        event = instance.createEvent(undefined, activityTime, undefined, activityName)
+        event = CurrentSessionVariables.getInstance().createEvent(undefined, activityTime, undefined, activityName)
     }
 
     if (event != undefined)

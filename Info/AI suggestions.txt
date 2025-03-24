@@ -1,0 +1,4 @@
+// The args contain:
+      //    args[0]: selector : a filter that can be language/array of languages/a more complex filter (e.g., "javascript" or "python").
+      //    args[1]: The inline completion provider (which supplies suggestions).
+      //    args[2]: Optional metadata.
