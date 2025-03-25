@@ -1,3 +1,13 @@
+Snowplow Micro is a very small version of a full Snowplow data collection pipeline that can be embedded in automated test suites 
+and so enable Snowplow users to test their data collection setup and then release new versions of their apps, websites and servers with confidence 
+that new changes won’t break the tracking set up. 
+
+Snowplow Micro comes to fill a missing piece in automated test suites: the tests that validate that data collection has been setup properly.
+
+To check data collection, it is necessary to fire a set of events, process them and see if the output of that processing is as expected. 
+Snowplow Micro is easy to integrate with your test tool and then run as part of your automated testing workflow. 
+This repository aims to show in detail all the steps to do this using Nightwatch and Cypress as examples of test tools, to build end-to-end GitHub Actions testing workflows.
+
 https://docs.snowplow.io/docs/data-product-studio/data-quality/snowplow-micro/basic-usage/
 
 git clone https://github.com/snowplow-incubator/snowplow-micro-examples.git

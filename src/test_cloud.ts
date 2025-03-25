@@ -1,6 +1,5 @@
 
 import { window } from "vscode";
-import { ActivityRequest } from "./Constants";
 import { post_to_services, get_from_services } from "./API/api_wrapper";
 
 

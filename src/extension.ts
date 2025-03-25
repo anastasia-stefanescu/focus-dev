@@ -6,7 +6,6 @@ import {authentication, Disposable, TextDocument, Position, } from 'vscode';
 import { InlineCompletionContext, CancellationToken, DocumentSelector, InlineCompletionItemProvider} from 'vscode';
 import { InlineCompletionList, InlineCompletionItem, languages } from 'vscode';
 import { getServerRunning } from './server';
-import { ActivityRequest } from './Constants';
 import { post_to_services, get_from_services } from './API/api_wrapper';
 import { MyAuth0AuthProvider } from './Authentication/auth_provider';
 import { fetchUserData } from './Authentication/user_handler';

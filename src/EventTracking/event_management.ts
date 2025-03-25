@@ -2,7 +2,8 @@ import { TextEditor, window } from "vscode";
 import { post_to_services } from "../API/api_wrapper";
 import { v4 as uuidv4 } from 'uuid'; 
 import { start } from "repl";
-import { Event } from "./event_models";
+import { DocumentChangeInfo, Event, ProjectChangeInfo } from "./event_models";
+import { DEFAULT_CHANGE_EMISSION_INTERVAL } from "../Constants";
 
 
 // should also add window id here - there might be multiple windows open
@@ -13,6 +14,10 @@ import { Event } from "./event_models";
 export class CurrentSessionVariables {
 
     private static instance : CurrentSessionVariables;
+
+    private projectChangeInfo: ProjectChangeInfo | undefined = undefined;
+    private projectChangeInfoTimer: NodeJS.Timeout | undefined = undefined;
+    private lastKpmEmitTime: number = 0;
 
     // multiple debug sessions can be active at the same time
     private crt_debug_sessions: { [key: string]: Event} = {};
@@ -40,6 +45,23 @@ export class CurrentSessionVariables {
             CurrentSessionVariables.instance = new CurrentSessionVariables();
         return CurrentSessionVariables.instance;
     }
+
+    public getProjectChangeInfo() { return this.projectChangeInfo; }
+    public setProjectChangeInfo(projectChangeInfo: ProjectChangeInfo) { this.projectChangeInfo = projectChangeInfo; }
+    public getTimer() { return this.projectChangeInfoTimer; }
+    public setTimer(timer: NodeJS.Timeout) { this.projectChangeInfoTimer = timer; }
+
+    public getDocumentChangeInfo(fileName:string) { 
+        if(this.projectChangeInfo && this.projectChangeInfo.docs_changed[fileName]) 
+            return this.projectChangeInfo.docs_changed[fileName]; 
+        return undefined;
+    }
+    public setDocumentChangeInfo(fileName:string, documentChangeInfo: DocumentChangeInfo) {
+        if (this.projectChangeInfo) {
+            this.projectChangeInfo.docs_changed[fileName] = documentChangeInfo;
+        }
+    }
+    
 
     public getLastTimeofPaste() { return this.last_time_of_paste; }
     public setLastTimeofPaste(date:Date) { this.last_time_of_paste = date; }
@@ -102,6 +124,28 @@ export class CurrentSessionVariables {
         }
 
         return event;
+    }
+
+    public async emitProjectChangeData() {
+        const one_minute_ago: number = new Date().getTime() - DEFAULT_CHANGE_EMISSION_INTERVAL;
+
+        if (this.projectChangeInfoTimer) {
+            // clear the timer if it exists
+            clearTimeout(this.projectChangeInfoTimer);
+            this.projectChangeInfoTimer = undefined;
+
+            // ME: for all the changes?
+            const payload = this.projectChangeInfo || null;
+            if (payload && payload.docs_changed && Object.keys(payload.docs_changed).length) { // make sure project doc_changes have keystrokes
+                window.showInformationMessage('Emitting data');
+                //emitData("user_event", payload);
+                // see other checks from editor flow!!!!
+            }
+
+            // reset the data
+            this.projectChangeInfo = undefined;
+        }
+        this.lastKpmEmitTime = new Date().getTime();
     }
 }
 

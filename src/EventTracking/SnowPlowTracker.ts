@@ -9,8 +9,11 @@ import { newTracker, buildSelfDescribingEvent } from '@snowplow/node-tracker';
 
 export class mySnowPlowTracker {
     private static instance : mySnowPlowTracker;
+    private isTrackerReady : boolean = false;
     public tracker: any;
     //private disposable: Disposable;
+
+    // storage manager for caching???
 
     constructor() {
         let subscriptions: Disposable[] = [];
@@ -24,11 +27,11 @@ export class mySnowPlowTracker {
             eventMethod: "post", // Method - defaults to POST
             bufferSize: 1, // Only send events once n are buffered. Defaults to 1 for GET requests and 10 for POST requests.
           });
-
+        this.isTrackerReady = true; // check some type of connection status
         // this.tracker.setUserId(''); ??
         // this.tracker.setSessionId(''); ??
 
-        this.setTrackingEvents();
+        // this.setTrackingEvents();
     }
 
     static getInstance(): mySnowPlowTracker {

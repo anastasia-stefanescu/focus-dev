@@ -115,7 +115,19 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
 
       CurrentSessionVariables.getInstance().setLastTimeofUndoRedo(now);
 
-      await vscode.commands.executeCommand('editor.action.undo')
+      if (window.activeTextEditor) {
+          try {
+              await commands.executeCommand('workbench.action.files.undo');
+          } catch (error) {
+              if (error instanceof Error) {
+                  window.showErrorMessage('Undo command failed ' + error.message); // error message?
+              } else {
+                  vscode.window.showErrorMessage('Undo command failed with an unknown error');
+              }
+          }
+      } else {
+          vscode.window.showErrorMessage('No active editor. Undo command cannot be executed.');
+      }
     });
 
     const redoDisposable = vscode.commands.registerCommand('custom.trackRedo', async () => {
@@ -125,7 +137,15 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
 
       CurrentSessionVariables.getInstance().setLastTimeofUndoRedo(now);
 
-      await vscode.commands.executeCommand('editor.action.redo')
+      if (vscode.window.activeTextEditor) {
+          try {
+              await vscode.commands.executeCommand('editor.action.redo');
+          } catch (error) {
+              vscode.window.showErrorMessage('Redo command failed'); // error message?
+          }
+      } else {
+          vscode.window.showErrorMessage('No active editor. Redo command cannot be executed.');
+      }
     });
 
 
@@ -136,19 +156,19 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
 
     // export async function handleEvent(message:string, activityName:string, activityType: string, activityTime:Date) {
     
-    const saveEvent = workspace.onDidSaveTextDocument(async (document) => {
-        await handleEvent(`!Saved file: ${document.fileName}`, '', 'textDocument', 'start', new Date());
-        // trimite la backend
-        // verifica modificari??????? Cum facem modificarile???
-      });
+    // const saveEvent = workspace.onDidSaveTextDocument(async (document) => {
+    //     await handleEvent(`!Saved file: ${document.fileName}`, '', 'textDocument', 'start', new Date());
+    //     // trimite la backend
+    //     // verifica modificari??????? Cum facem modificarile???
+    //   });
 
-    const openEvent = workspace.onDidOpenTextDocument(async (document) => {
-        await handleEvent(`Opened file: ${document.fileName}`, '', 'textDocument', 'start', new Date());
-      });
+    // const openEvent = workspace.onDidOpenTextDocument(async (document) => {
+    //     await handleEvent(`Opened file: ${document.fileName}`, '', 'textDocument', 'start', new Date());
+    //   });
 
-    const closeEvent = workspace.onDidCloseTextDocument(async (document) => {
-        await handleEvent(`Closed file: ${document.fileName}`, '', 'textDocument', 'start', new Date());
-      });
+    // const closeEvent = workspace.onDidCloseTextDocument(async (document) => {
+    //     await handleEvent(`Closed file: ${document.fileName}`, '', 'textDocument', 'start', new Date());
+    //   });
 
     const startDebug = debug.onDidStartDebugSession(async (session) => {
         await handleEvent(`Started debug session ${session.name} with ID: ${session.id}`, session.id, 'debug', 'start', new Date());
@@ -161,16 +181,16 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
     const changedWindowState = window.onDidChangeWindowState(async (state) => {
         // if it's focused / unfocused, because we're handling it as continuous action??
         const window_session_id = env.sessionId;
-        if (state.focused)
-          await handleEvent(`Window ${window_session_id} gained focus: ${state}`, '', 'window', 'start', new Date());
-        else 
-          await handleEvent(`Window ${window_session_id} lost focus: ${state}`, '', 'window', 'start', new Date());
+        // if (state.focused)
+        //   await handleEvent(`Window ${window_session_id} gained focus: ${state}`, '', 'window', 'start', new Date());
+        // else 
+        //   await handleEvent(`Window ${window_session_id} lost focus: ${state}`, '', 'window', 'start', new Date());
       });
       
     const code_change = workspace.onDidChangeTextDocument(async (event) => {
 
       const now = new Date();
-      window.showInformationMessage(`Doc changet at ${now}`);
+      //window.showInformationMessage(`Doc changet at ${now}`);
       const lastCopiedText = (await env.clipboard.readText()).toString()
       await verifyDocumentChange(event, lastCopiedText, now); // TextDocumentChangeEvent
     })
@@ -183,9 +203,9 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
     cmds.push(pasteDisposable);
     cmds.push(undoDisposable);
     cmds.push(redoDisposable);
-    cmds.push(saveEvent);
-    cmds.push(closeEvent);
-    cmds.push(openEvent);
+    // cmds.push(saveEvent);
+    // cmds.push(closeEvent);
+    // cmds.push(openEvent);
     cmds.push(startDebug);
     cmds.push(stopDebug);
     cmds.push(changedWindowState);

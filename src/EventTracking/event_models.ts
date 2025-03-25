@@ -14,7 +14,10 @@ export class Event {
     activityType: string = "";
 }
 
-export class DocumentChangeInfo extends Event {
+// to add also multi cursor ?
+export class DocumentChangeInfo extends Event { 
+    start: number = 0; // in seconds
+    end: number = 0;
     fileName: string = "";
     filePath: string = "";
     lineCount: number = 0;
@@ -29,6 +32,7 @@ export class DocumentChangeInfo extends Event {
     multiAdds: number = 0; // !!
     autoIndents: number = 0;
     replacements: number = 0;
+    keystrokes: number = 0; // aici cate tastari efective s-au facut - poate fi util pt detectie
     changeType: string = '';
 }
 

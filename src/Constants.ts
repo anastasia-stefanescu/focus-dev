@@ -5,8 +5,4 @@ export const AUTH0_DOMAIN = "dev-scav60kgla32afjs.us.auth0.com";
 
 export const service_database_port = 3002;
 
-export interface ActivityRequest {
-    activityDuration: number,
-    startTime:number, 
-    activityType:string
-  }
+export const DEFAULT_CHANGE_EMISSION_INTERVAL = 60000; // 1 minute
