@@ -1,0 +1,24 @@
+Setup iglu server: 
+    https://docs.snowplow.io/docs/api-reference/iglu/iglu-repositories/iglu-server/setup/
+    
+
+
+
+
+
+You need to host the schema somewhere Snowplow can access it. You have a few options:
+✅ Iglu Central (Public schemas)
+✅ Iglu Server (Self-hosted)
+✅ GitHub Repository (With proper structure)
+
+For a self-hosted Iglu repo, you can use Iglu Server. Run Iglu Server with PostgreSQL (Recommended)
+    docker run --name iglu-db -e POSTGRES_USER=iglu -e POSTGRES_PASSWORD=iglu -e POSTGRES_DB=iglu -p 5432:5432 -d postgres:13
+
+Create a local file named iglu-config.hocon
+
+Run Iglu Server with the Configuration File
+Mount the config file and start Iglu Server:
+
+docker run -p 8080:8080 --link iglu-db \
+  -v /Users/alinstefanescu/Documents/code-stats/src/EventTracking/iglu/iglu-config.hocon:/config.hocon \
+  snowplow/iglu-server:latest --config /config.hocon

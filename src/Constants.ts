@@ -6,3 +6,5 @@ export const AUTH0_DOMAIN = "dev-scav60kgla32afjs.us.auth0.com";
 export const service_database_port = 3002;
 
 export const DEFAULT_CHANGE_EMISSION_INTERVAL = 60000; // 1 minute
+
+export const LOCAL_SNOWPLOW_ENDPOINT = "http://localhost:8080/com.snowplowanalytics.snowplow/tp2";

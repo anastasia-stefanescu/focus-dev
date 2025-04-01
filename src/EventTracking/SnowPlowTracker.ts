@@ -5,6 +5,7 @@ import { workspace, window, debug, commands } from "vscode";
 // https://docs.snowplow.io/docs/sources/trackers/javascript-trackers/node-js-tracker/node-js-tracker-v4/initialization/
 
 import { newTracker, buildSelfDescribingEvent } from '@snowplow/node-tracker';
+import { FullChangeData, ProjectChangeInfo } from "./event_models";
 
 
 export class mySnowPlowTracker {
@@ -15,6 +16,7 @@ export class mySnowPlowTracker {
 
     // storage manager for caching???
 
+    // CALL CONSTRUCTOR IN ACTIVATE?????
     constructor() {
         let subscriptions: Disposable[] = [];
 
@@ -23,7 +25,7 @@ export class mySnowPlowTracker {
             appId: "my-app", // Application identifier
             encodeBase64: false, // Whether to use base64 encoding for the self-describing JSON. Defaults to true.
           }, {
-            endpoint: "https://collector.mydomain.net", // Collector endpoint
+            endpoint: "https://collector.mydomain.net", // Collector endpoint; replace with own 
             eventMethod: "post", // Method - defaults to POST
             bufferSize: 1, // Only send events once n are buffered. Defaults to 1 for GET requests and 10 for POST requests.
           });
@@ -41,6 +43,20 @@ export class mySnowPlowTracker {
     
         return mySnowPlowTracker.instance;
       }
+
+    public trackDocumentChange(payload: FullChangeData) {
+        if (this.isTrackerReady) {
+            this.tracker.track(buildSelfDescribingEvent({
+                event: {
+                    schema: "iglu:com.example/project_change/jsonschema/1-0-0",
+                    data: {
+                        project: payload.projectName,
+                        timestamp: new Date().toISOString(),
+                    }
+                }
+            }), []); // timestamp is by default current time
+        }
+    }
 
     private setTrackingEvents() {
         // this.trackFileEvents(); // ✅ save, close files => save is done even when Autosave is on

@@ -94,3 +94,23 @@ How to view these events in a readable format? Consume enriched events
         You can start this way from any folder:
             kafka-topics.sh 
 )
+
+
+## Iglu server
+
+    Your PostgreSQL instance for the iglu server has these credentials:
+        Username: sp_user
+        Password: sp_password
+        Database: igludb
+    To check or generate an API key, follow these steps:
+        docker exec -it iglu-postgres psql -U sp_user -d igludb
+
+    To see what occupies a port:  lsof -i tcp:5432; kill -9 56586
+
+   Create your own schemas , respecting the folder structure
+
+   Send schemas to iglu server:
+        curl -X POST http://localhost:8081/api/schemas/com.example/document_change/1-0-0 \
+            -H "apikey: e3f1c45a-7652-4f98-bb38-8e1e763ebbe9" \
+            -H "Content-Type: application/json" \
+            -d @/Users/alinstefanescu/Documents/code-stats/src/EventTracking/iglu/schemas/com.example/document_change/1-0-0/schema.json

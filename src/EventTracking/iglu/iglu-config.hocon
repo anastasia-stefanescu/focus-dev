@@ -1,0 +1,15 @@
+{
+  database {
+    host = "iglu-db"
+    port = 5432
+    dbname = "iglu"
+    username = "iglu"
+    password = "iglu"
+    driver = "org.postgresql.Driver"
+  }
+
+  # Optional: Authentication settings
+  auth {
+    enabled = false
+  }
+}

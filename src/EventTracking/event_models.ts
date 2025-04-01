@@ -6,18 +6,18 @@ export class ProjectChangeInfo {
     resource: any = {}; // ?
 }
 
-export class Event {
-    activityId: string = "";
-    activityDuration: number | undefined;
-    startTime: string = ""; // nu!
-    endTime:string | undefined;
-    activityType: string = "";
+export class DocumentInfo {
+    fileName: string = "";
+    filePath: string = "";
+    language: string = "";
+    lineCount: number = 0;
+    characterCount: number = 0;
 }
 
 // to add also multi cursor ?
-export class DocumentChangeInfo extends Event { 
-    start: number = 0; // in seconds
-    end: number = 0;
+export class DocumentChangeInfo { 
+    start: string= ''; // in seconds or actual Date in string
+    end: string = '';
     fileName: string = "";
     filePath: string = "";
     lineCount: number = 0;
@@ -36,22 +36,31 @@ export class DocumentChangeInfo extends Event {
     changeType: string = '';
 }
 
-// copy - from another window?, paste, cut, delete | save, open, close | git updates
-export interface spontaneousEvent {
-    activityId: string,
-    time: string, 
-    activityType: string,
-    contentLength: number | undefined
+export class FullChangeData {
+    projectName: string = '';
+    projectDirectory: string = '';
+    fileChangeInfo: DocumentChangeInfo | undefined = undefined;
+    // repoInfo: any = {};
+    // pluginInfo: any = {};
+    
 }
 
-// debug, run, shell run | window focus (multiple windows?) 
-// document changes (typing, generating code, comments)
-export interface continuousEvent {
-    activityId: string,
-    activityDuration: number | undefined, 
-    startTime: string, 
-    endTime:string | undefined,
-    activityType: string
-}
+// // copy - from another window?, paste, cut, delete | save, open, close | git updates
+// export interface spontaneousEvent {
+//     activityId: string,
+//     time: string, 
+//     activityType: string,
+//     contentLength: number | undefined
+// }
+
+// // debug, run, shell run | window focus (multiple windows?) 
+// // document changes (typing, generating code, comments)
+// export interface continuousEvent {
+//     activityId: string,
+//     activityDuration: number | undefined, 
+//     startTime: string, 
+//     endTime:string | undefined,
+//     activityType: string
+// }
 
 

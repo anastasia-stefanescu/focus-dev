@@ -45,7 +45,7 @@ https://docs.snowplow.io/docs/get-started/snowplow-community-edition/quick-start
         terraform apply "tfplan"
         (May need to run last two commands twice for the first time?)
     These will output:
-        iglu_server_dns_name = "sp-iglu-lb-1622690025.us-east-1.elb.amazonaws.com"
+        iglu_server_dns_name = "sp-iglu-lb-187714128.us-east-1.elb.amazonaws.com"
 
     Set up the pipeline:
         cd terraform/aws/pipeline/default
@@ -62,9 +62,9 @@ https://docs.snowplow.io/docs/get-started/snowplow-community-edition/quick-start
             Default VPC Id: vpc-02505b04ebd4b42f1
             Subnet 1: subnet-058af60eb026c212a
             Subnet 2: subnet-054cced544cbc565c
-            My ip: 188.25.42.93
-            SSH key (need a new one?)
-            iglu_server_dns_name = "http://sp-iglu-lb-1622690025.us-east-1.elb.amazonaws.com"
+            My ip: 82.76.226.52
+            SSH key (need a new one?) -> NO?
+            !!! iglu_server_dns_name = "http://sp-iglu-lb-1622690025.us-east-1.elb.amazonaws.com"
             Same UUID as when creating the server: a31bca4d-e307-4405-ae6f-1768d7826019
             
               
@@ -75,8 +75,11 @@ https://docs.snowplow.io/docs/get-started/snowplow-community-edition/quick-start
         Outputs:
             (The collector returned is just an Elastic Load Balancer!!)
             
-            collector_dns_name = "sp-collector-lb-765753505.us-east-1.elb.amazonaws.com"
-            postgres_db_address = "sp-pipeline-rds-20250219220834716700000002.cteeo44qmp7d.us-east-1.rds.amazonaws.com"
-            postgres_db_id = "db-4KWW4OKFGK24QMKK37M7H35OUM"
+            collector_dns_name = "sp-collector-lb-1365566253.us-east-1.elb.amazonaws.com"
+            postgres_db_address = "sp-pipeline-rds-20250327155927638900000002.cteeo44qmp7d.us-east-1.rds.amazonaws.com"
+            postgres_db_id = "db-W2R4SU5YDKNAAQCKGPPVY4HCLM"
             postgres_db_port = 5432
 
+To test the instance:
+
+ssh -i ~/.ssh/id_rsa_code-stats ec2-user@ec2-54-226-191-50.compute-1.amazonaws.com

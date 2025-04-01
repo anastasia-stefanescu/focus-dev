@@ -6,6 +6,7 @@ WHAT WAS CREATED:
  - 1 EC2 Volume
  - 12 EC2 Security Groups
  - S3 Bucket ( "snowplow-terraform-anastasiastefanescu-bucket-1" )
+ - RDS - 2 databases
  
 
 WHAT ELSE IS USED:
@@ -19,6 +20,7 @@ DELETING EVERYTHING THAT WAS CREATED:
  - manage VPC ( 0.65$ / day)
  - delete S3 bucket
  - tax (0.25$ / day)
+ - delete the databases in RDS
 
 STOPPING THE SERVERS:
 

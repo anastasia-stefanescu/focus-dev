@@ -8,7 +8,7 @@ import { AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET, REDIRECT_URI} from 
 import { _tokenEmitter } from './Authentication/auth_provider';
 import { post_to_services } from './API/api_wrapper';
 import { CurrentSessionVariables, handleEvent} from './EventTracking/event_management';
-import { verifyDocumentChange } from './EventTracking/event_processing';
+import { verifyDocumentChange } from './EventTracking/event_processing_by_type';
 
 export function createCommands(  ctx: ExtensionContext /* add: kpm controller, storageManager */ ) 
     // { dispose: () => { }; }
@@ -156,19 +156,22 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
 
     // export async function handleEvent(message:string, activityName:string, activityType: string, activityTime:Date) {
     
-    // const saveEvent = workspace.onDidSaveTextDocument(async (document) => {
-    //     await handleEvent(`!Saved file: ${document.fileName}`, '', 'textDocument', 'start', new Date());
-    //     // trimite la backend
-    //     // verifica modificari??????? Cum facem modificarile???
-    //   });
+    const saveEvent = workspace.onDidSaveTextDocument(async (document) => {
+        await handleEvent(`!Saved file: ${document.fileName}`, '', 'textDocument', 'start', new Date());
+        // trebuie trimise modificarile la document
+        // trimite la backend
+        // verifica modificari??????? Cum facem modificarile???
+      });
 
-    // const openEvent = workspace.onDidOpenTextDocument(async (document) => {
-    //     await handleEvent(`Opened file: ${document.fileName}`, '', 'textDocument', 'start', new Date());
-    //   });
+    const openEvent = workspace.onDidOpenTextDocument(async (document) => {
+      // trebuie inchise celelalte file
+        await handleEvent(`Opened file: ${document.fileName}`, '', 'textDocument', 'start', new Date());
+      });
 
-    // const closeEvent = workspace.onDidCloseTextDocument(async (document) => {
-    //     await handleEvent(`Closed file: ${document.fileName}`, '', 'textDocument', 'start', new Date());
-    //   });
+    const closeEvent = workspace.onDidCloseTextDocument(async (document) => {
+      // trebuie trimise modificarile la document
+        await handleEvent(`Closed file: ${document.fileName}`, '', 'textDocument', 'start', new Date());
+      });
 
     const startDebug = debug.onDidStartDebugSession(async (session) => {
         await handleEvent(`Started debug session ${session.name} with ID: ${session.id}`, session.id, 'debug', 'start', new Date());
