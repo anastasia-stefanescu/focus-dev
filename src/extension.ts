@@ -12,6 +12,7 @@ import { fetchUserData } from './Authentication/user_handler';
 import { SidebarViewProvider } from './Sidebar/webview_provider';
 import { testing_cluster_and_services } from './test_cloud';
 import { CurrentSessionVariables } from './EventTracking/event_management';
+import { mySnowPlowTracker } from './EventTracking/SnowPlowTracker';
 
 // The `activate` function does not return anything, so its return type is `void`.
 export async function activate (context: vscode.ExtensionContext) {
@@ -26,7 +27,7 @@ export async function activate (context: vscode.ExtensionContext) {
     try {
         const session = await authentication.getSession(MyAuth0AuthProvider.id, [], { createIfNone: true });
         window.showInformationMessage(`Session creation. Logged in as: ${session.account.label}`);
-          
+
         if (session) {
           window.showInformationMessage(`Session creation succeeded. Logged in as: ${session.account.label}`);
           // Handle the authenticated user, e.g., create/save a user.
@@ -43,6 +44,10 @@ export async function activate (context: vscode.ExtensionContext) {
   });
   context.subscriptions.push(startAuthenticationCommand);
 
+  // activate snowplow tracker
+  const snowplowTrackerInstance = mySnowPlowTracker.getInstance();
+
+
   // Hook into the Inline Completion API ----------------------------------------------
   // https://github.com/microsoft/vscode-extension-samples/tree/main/inline-completions
 
@@ -52,18 +57,18 @@ export async function activate (context: vscode.ExtensionContext) {
 
   //   Override the API
 
-  (languages as any).registerInlineCompletionItemProvider = function (selector: DocumentSelector, 
+  (languages as any).registerInlineCompletionItemProvider = function (selector: DocumentSelector,
                                                                       provider: InlineCompletionItemProvider) : Disposable
-    { //  replace with a custom function  
+    { //  replace with a custom function
       window.showInformationMessage("Intercepting inline completions!");
 
       const newProvider : InlineCompletionItemProvider = { // Wrap inside a custom provider so we can modify its behavior
         // Calls the original provider function to get AI-generated suggestions
         provideInlineCompletionItems: async function ( document: TextDocument, position: Position, context: InlineCompletionContext, token: CancellationToken)
-         : Promise<InlineCompletionList | InlineCompletionItem[]> { 
+         : Promise<InlineCompletionList | InlineCompletionItem[]> {
             vscode.window.showInformationMessage("AI Suggestion Triggered!");
             const result = await provider.provideInlineCompletionItems(document, position, context, token); // here okay provider??
-            
+
             // If the AI provides suggestions, we capture them before they appear in the editor
             if (result) {
               const items = Array.isArray(result) ? result : result.items;
@@ -72,18 +77,18 @@ export async function activate (context: vscode.ExtensionContext) {
               }
               return result;
             }
-            else 
+            else
               return [];
         }
       };
-      
+
       //return originalRegister.apply(this, [args[0], newProvider, args[2]]);
       return originalRegister.call(languages, selector, newProvider); // here we use the new provider
   };
 
   // send a comment to inference service
-  
-  // test cloud 
+
+  // test cloud
 
   // see if the server works
   //await testing_cluster_and_services();
@@ -99,7 +104,7 @@ export async function reload() {
   // } catch (e: any) {
   //   logIt(`Failed to initialize websockets: ${e.message}`);
   // }
-  
+
   // // re-initialize user and preferences
   // await getUser();
 

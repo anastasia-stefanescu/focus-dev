@@ -1,18 +1,18 @@
 import { ExtensionContext, Memento } from 'vscode';
 
-export class LocalStorageManager {
-    private static instance: LocalStorageManager;
+export class MementoLocalStorage {
+    private static instance: MementoLocalStorage;
     private storage: Memento;
 
     private constructor(context: ExtensionContext) {
         this.storage = context.globalState; // or context.workspaceState for workspace-specific storage
     }
 
-    public static getInstance(context: ExtensionContext): LocalStorageManager {
-        if (!LocalStorageManager.instance) {
-            LocalStorageManager.instance = new LocalStorageManager(context);
+    public static getInstance(context: ExtensionContext): MementoLocalStorage {
+        if (!MementoLocalStorage.instance) {
+            MementoLocalStorage.instance = new MementoLocalStorage(context);
         }
-        return LocalStorageManager.instance;
+        return MementoLocalStorage.instance;
     }
 
     // Set a value in storage

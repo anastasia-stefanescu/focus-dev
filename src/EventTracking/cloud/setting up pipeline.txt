@@ -83,3 +83,6 @@ https://docs.snowplow.io/docs/get-started/snowplow-community-edition/quick-start
 To test the instance:
 
 ssh -i ~/.ssh/id_rsa_code-stats ec2-user@ec2-54-226-191-50.compute-1.amazonaws.com
+
+
+aws ec2 describe-instances --instance-ids i-0149eb63405869654 --query 'Reservations[*].Instances[*].ImageId'

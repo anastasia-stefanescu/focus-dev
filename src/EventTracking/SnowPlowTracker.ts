@@ -22,10 +22,10 @@ export class mySnowPlowTracker {
 
         this.tracker = newTracker({
             namespace: "my-tracker", // Namespace to identify the tracker instance. It will be attached to all events which the tracker fires.
-            appId: "my-app", // Application identifier
+            appId: "code-stats", // Application identifier
             encodeBase64: false, // Whether to use base64 encoding for the self-describing JSON. Defaults to true.
           }, {
-            endpoint: "https://collector.mydomain.net", // Collector endpoint; replace with own 
+            endpoint: "http://sp-collector-lb-187714128.us-east-1.elb.amazonaws.com", // Collector endpoint; replace with own
             eventMethod: "post", // Method - defaults to POST
             bufferSize: 1, // Only send events once n are buffered. Defaults to 1 for GET requests and 10 for POST requests.
           });
@@ -40,9 +40,11 @@ export class mySnowPlowTracker {
         if (!mySnowPlowTracker.instance) {
           mySnowPlowTracker.instance = new mySnowPlowTracker();
         }
-    
+
         return mySnowPlowTracker.instance;
       }
+
+
 
     public trackDocumentChange(payload: FullChangeData) {
         if (this.isTrackerReady) {
@@ -63,12 +65,12 @@ export class mySnowPlowTracker {
                                     // see what was changed? otherwise we don't need to track them
         this.trackExecution(); // ✅ debug starting & stopping, code execution, also terminal shell execution? (needs shell integration)
         this.trackVSCWindowFocus(); // ✅ vsc window loses or gains focus
-        // ✅ actual typing; 
-        // ✅ copy, pasting (verify what was copied was pasted) 
+        // ✅ actual typing;
+        // ✅ copy, pasting (verify what was copied was pasted)
         // extract comments
         // extract git commit messages
-        // ✅ detect copilot/ other extension generating 
-        
+        // ✅ detect copilot/ other extension generating
+
     }
 
     private trackFileEvents() {

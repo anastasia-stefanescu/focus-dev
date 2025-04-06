@@ -9,7 +9,7 @@ import { closeOtherFilesInfo, emitProjectChangeData } from "./event_sending";
 import { extractChangeData } from "./event_data_extraction";
 
 // DOCUMENT CHANGE
-export function verifyDocumentChange(event: TextDocumentChangeEvent, lastCopiedText:string, eventTime:Date ) { 
+export function verifyDocumentChange(event: TextDocumentChangeEvent, lastCopiedText:string, eventTime:Date ) {
     const { contentChanges, document, reason } = event; // de verificat daca documentul exista si fereastra este deschisa si focusata
 
     if (contentChanges.length === 0) {
@@ -32,8 +32,8 @@ export function verifyDocumentChange(event: TextDocumentChangeEvent, lastCopiedT
         // here we are looking to send 'unusual' events such as generating code, pasting from external sources, etc.
         // normal actions such as typing, deleting, copying, pasting, undo, redo, autocomplete, etc, are not sent immediately, what matters from them is just how much code was written and such.
         // we are especially looking at multiAdd changes => paste, undo/redo, generated code, autocompletion, multi-line code refactorization, git pulls/fetches
-        
-        if (undo_redo === false) { 
+
+        if (undo_redo === false) {
             if (changeInfo.changeType == 'multiAdd' && multiCursorInserts === false) { // not normal typing, one block of text was added; possible causes: paste, generated code, autocompletion
                 if (lastCopiedText != text) { // last globally copied text different than text that appeared => not paste
                     window.showInformationMessage('Not paste!!'); // generated code, autocompletion
@@ -54,19 +54,20 @@ export function verifyDocumentChange(event: TextDocumentChangeEvent, lastCopiedT
 
 // CLOSE / SAVE FILE
 export function handleCloseFile(fileName:string) {
-    closeOtherFilesInfo(fileName);
+    emitProjectChangeData();
 }
 
-// OPEN FILE 
+// OPEN FILE
 export function handleOpenFile(fileName:string) {
     closeOtherFilesInfo(fileName);
+    emitProjectChangeData(); // ?? 
 }
 
 export async function verifyPaste(clipboardText:string) {
     const lastCopiedText = CurrentSessionVariables.getInstance().getLastCopiedText();
     window.showInformationMessage('Last copied text inside VSCode:', lastCopiedText);
 
-    if (clipboardText != lastCopiedText) { 
+    if (clipboardText != lastCopiedText) {
         window.showInformationMessage('Pasted code from external source');
 
         //await handleEvent(`Pasted external code`, '', 'coding-external', 'start', new Date());
