@@ -1,0 +1,16 @@
+Using node-memcached vs node-cache vs fs vs others 
+
+Feature	                    node-cache	                      node-memcached
+Where data is stored	    In your app’s memory (RAM)	      In a separate Memcached server
+Shared across processes	    ❌ No — local only	              ✅ Yes — central store across processes
+Persistence	                ❌ No — reset on restart	          ✅ Some — stays alive while Memcached runs
+Expiration (TTL)	        ✅ Yes, built-in	                  ✅ Yes, built-in
+Performance (latency)	    🟢 Ultra-fast (no I/O)	           🟡 Fast but involves network I/O
+Scaling across machines	    ❌ Not possible	                  ✅ Designed for distributed caching
+Setup complexity	        ✅ Zero setup	                  ❌ Requires running Memcached server
+Best for	                Local cache for one app instance   Shared cache across many processes/apps - when multiple users work together
+
+For multiple users, if they wanted to see statistics of their shared projects, how would we do that??
+    Each could have their changes added to a 'common' database on cloud (each of them would still be separated)
+
+

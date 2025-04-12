@@ -54,13 +54,14 @@ export function verifyDocumentChange(event: TextDocumentChangeEvent, lastCopiedT
 
 // CLOSE / SAVE FILE
 export function handleCloseFile(fileName:string) {
+    // also save event
     emitProjectChangeData();
 }
 
 // OPEN FILE
 export function handleOpenFile(fileName:string) {
     closeOtherFilesInfo(fileName);
-    emitProjectChangeData(); // ?? 
+    emitProjectChangeData(); // ??
 }
 
 export async function verifyPaste(clipboardText:string) {

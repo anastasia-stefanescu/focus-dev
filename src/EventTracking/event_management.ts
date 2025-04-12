@@ -1,31 +1,38 @@
 import { TextEditor, window } from "vscode";
 import { post_to_services } from "../API/api_wrapper";
-import { v4 as uuidv4 } from 'uuid'; 
+import { v4 as uuidv4 } from 'uuid';
 import { start } from "repl";
-import { DocumentChangeInfo, FullChangeData, ProjectChangeInfo } from "./event_models";
+import { DocumentChangeInfo, ExecutionEventInfo, FullChangeData, ProjectChangeInfo, ProjectExecutionInfo, UserActivityEventInfo } from "./event_models";
 import { DEFAULT_CHANGE_EMISSION_INTERVAL } from "../Constants";
 import { mySnowPlowTracker } from "./SnowPlowTracker";
 import { emitProjectChangeData } from "./event_sending";
+import { addChange } from "./event_data_extraction";
+import { EventCache } from "../LocalStorage/local_storage_node-cache";
 
 
 // should also add window id here - there might be multiple windows open
-//      and the user might copy-paste from another one of his windows 
+//      and the user might copy-paste from another one of his windows
 // Add content length? -> for spontaneous activities such as typing, pasting, cutting, deleting, etc
 //      To obtain statistics for how much code was generated, from external sources, etc
 
 export class CurrentSessionVariables {
-
+    // By design, the VS Code API only works within a single instance (or window).
     private static instance : CurrentSessionVariables;
 
+    // also add different cache instances here!!!
+    private executionCache: EventCache<ExecutionEventInfo> | undefined = undefined;
+    private userActivityCache: EventCache<UserActivityEventInfo> | undefined = undefined;
+    private documentCache: EventCache<DocumentChangeInfo> | undefined = undefined;
+
+
     private projectChangeInfo: ProjectChangeInfo | undefined = undefined;
+    private projectExecutionInfo: ProjectExecutionInfo | undefined = undefined;
+    private projectUserActivityInfo: UserActivityEventInfo | undefined = undefined;
+
     private projectChangeInfoTimer: NodeJS.Timeout | undefined = undefined;
     private lastEmitTime: number = 0;
 
-    // multiple debug sessions can be active at the same time
-    private crt_debug_sessions: { [key: string]: Event} = {};
-    private crt_exec_sessions: { [key: string]: Event} = {};
 
-    // By design, the VS Code API only works within a single instance (or window).
     //private opened_windows : { [key: string]: boolean} = {};
 
     // !! current primary window !!
@@ -38,7 +45,7 @@ export class CurrentSessionVariables {
     private last_time_of_undo_redo: Date = new Date();
 
     private last_copied_text: string = '';
-    
+
     public CurrentSessionVariables() {
 
         //this.opened_windows = window.visibleTextEditors;
@@ -50,6 +57,25 @@ export class CurrentSessionVariables {
         return CurrentSessionVariables.instance;
     }
 
+    public getExecutionCache() {
+        if (!this.executionCache) {
+            this.executionCache = new EventCache<ExecutionEventInfo>();
+        }
+        return this.executionCache;
+    }
+    public getUserActivityCache() {
+        if (!this.userActivityCache) {
+            this.userActivityCache = new EventCache<UserActivityEventInfo>();
+        }
+        return this.userActivityCache;
+    }
+    public getDocumentCache() {
+        if (!this.documentCache) {
+            this.documentCache = new EventCache<DocumentChangeInfo>();
+        }
+        return this.documentCache;
+    }
+
     public getProjectChangeInfo() { return this.projectChangeInfo; }
     public setProjectChangeInfo(projectChangeInfo: ProjectChangeInfo | undefined) { this.projectChangeInfo = projectChangeInfo; }
     public getTimer() { return this.projectChangeInfoTimer; }
@@ -57,9 +83,9 @@ export class CurrentSessionVariables {
     public getLastEmitTime() { return this.lastEmitTime; }
     public setLastEmitTime(time: number) { this.lastEmitTime = time; }
 
-    public getDocumentChangeInfo(fileName:string) { 
-        if(this.projectChangeInfo && this.projectChangeInfo.docs_changed[fileName]) 
-            return this.projectChangeInfo.docs_changed[fileName]; 
+    public getDocumentChangeInfo(fileName:string) {
+        if(this.projectChangeInfo && this.projectChangeInfo.docs_changed[fileName])
+            return this.projectChangeInfo.docs_changed[fileName];
         return undefined;
     }
     public setDocumentChangeInfo(fileName:string, documentChangeInfo: DocumentChangeInfo) {
@@ -67,7 +93,17 @@ export class CurrentSessionVariables {
             this.projectChangeInfo.docs_changed[fileName] = documentChangeInfo;
         }
     }
-    
+    public getExecutionEventInfo(sessionId: string) {
+        if (this.projectExecutionInfo && this.projectExecutionInfo.execution_sessions[sessionId])
+            return this.projectExecutionInfo.execution_sessions[sessionId];
+        return undefined;
+    }
+    public setExecutionEventInfo(sessionId: string, executionEventInfo: ExecutionEventInfo) {
+        if (this.projectExecutionInfo) {
+            this.projectExecutionInfo.execution_sessions[sessionId] = executionEventInfo;
+        }
+    }
+
 
     public getLastTimeofPaste() { return this.last_time_of_paste; }
     public setLastTimeofPaste(date:Date) { this.last_time_of_paste = date; }
@@ -86,78 +122,78 @@ export class CurrentSessionVariables {
           window.showInformationMessage('Project change info intialized');
           this.projectChangeInfo = new ProjectChangeInfo();
         }
-      
+
         // porneste timer pentru project change pentru a emite datele colectate despre proiect la anumite intervale de timp
         if (!this.projectChangeInfoTimer) {
           window.showInformationMessage('Timer started');
           const timer = setTimeout(() => {
             emitProjectChangeData(); // EMIT!!!!
           }, DEFAULT_CHANGE_EMISSION_INTERVAL);
-      
+
           this.projectChangeInfoTimer = timer;
         }
-      
+
         // creeaza fila noua de schimbare pentru fisierul in care s-a produs schimbarea daca nu exista
         if (!this.projectChangeInfo.docs_changed[fileName]) {
           const docChangeInfo: DocumentChangeInfo = new DocumentChangeInfo();
-            docChangeInfo.fileName = fileName; 
+            docChangeInfo.fileName = fileName;
             //docChangeInfo.file_path = this.getRootPathForFile(fileName);
-      
+
             docChangeInfo.start = new Date().toISOString(); // seteaza timpul de start al schimbarii in fisier
-      
+
             this.projectChangeInfo.docs_changed[fileName] = docChangeInfo;
         }
-      
-        return this.projectChangeInfo.docs_changed[fileName];    
+
+        return this.projectChangeInfo.docs_changed[fileName];
       }
 
       public addChangeDataToDocumentInfo(fileName:string, changeInfo: DocumentChangeInfo) {
         if (this.projectChangeInfo) {
             const docChangeInfo = this.projectChangeInfo?.docs_changed[fileName];
-        
-            docChangeInfo.linesAdded += changeInfo.linesAdded;
-            docChangeInfo.linesDeleted += changeInfo.linesDeleted;
-            docChangeInfo.charactersAdded += changeInfo.charactersAdded;
-            docChangeInfo.charactersDeleted += changeInfo.charactersDeleted;
-            docChangeInfo.changeType = changeInfo.changeType; // should remain the same!
-        
-            switch (changeInfo.changeType) {
-            case 'singleDelete': {
-                docChangeInfo.singleDeletes += 1;
-                docChangeInfo.keystrokes += 1;
-                break;
-            }
-            case 'multiDelete': {
-                docChangeInfo.multiDeletes += 1;
-                docChangeInfo.keystrokes += 1;
-                break;
-            }
-            case 'singleAdd': {
-                docChangeInfo.singleAdds += 1;
-                docChangeInfo.keystrokes += 1;
-                break;
-            }
-            case 'multiAdd': {
-                docChangeInfo.multiAdds += 1;
-                docChangeInfo.keystrokes += 1;
-                break;
-            }
-            case 'autoIndent': {
-                docChangeInfo.autoIndents += 1;
-                docChangeInfo.keystrokes += 1;
-                break;
-            }
-            case 'replacement': {
-                docChangeInfo.replacements += 1;
-                docChangeInfo.keystrokes += 1;
-                break;
-            }
-            }
-        
+
+            // add changes to the file change info
+            addChange(docChangeInfo, changeInfo); // docChangeInfo is modified
+
             this.projectChangeInfo.docs_changed[fileName] = docChangeInfo;
             //return docChangeInfo;
         }
-    }
+      }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // function timeDifference(date1:Date, date2:Date):number {
 //     const diffInMs = Math.abs(date1.getTime() - date2.getTime());
@@ -186,7 +222,7 @@ export class CurrentSessionVariables {
 // }
 
 // public startSession(id:string, startTime:Date, type:string) {
-//     let dict : { [key: string]: Event} = this.getDict(type); // returns reference 
+//     let dict : { [key: string]: Event} = this.getDict(type); // returns reference
 
 //     const new_session: Event = this.createEvent(undefined, startTime, undefined, type)
 
@@ -194,7 +230,7 @@ export class CurrentSessionVariables {
 // }
 
 // public stopSession(id:string, endTime: Date, type:string) : Event {
-//     let dict : { [key: string]: Event} = this.getDict(type); // returns reference 
+//     let dict : { [key: string]: Event} = this.getDict(type); // returns reference
 
 //     const prev_session = dict[id];
 
@@ -202,7 +238,7 @@ export class CurrentSessionVariables {
 //     const seconds: number = timeDifference(start_date, endTime)
 
 //     const updated_debug_session : Event = this.createEvent(seconds, start_date, endTime, prev_session.activityType);
-    
+
 //     delete dict[id];
 
 //     return updated_debug_session;

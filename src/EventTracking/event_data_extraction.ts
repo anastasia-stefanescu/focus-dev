@@ -34,3 +34,47 @@ export function extractChangeData(change: TextDocumentContentChangeEvent): Docum
 
     return changeInfo;
 }
+
+export function addChange(docChangeInfo: DocumentChangeInfo, changeInfo: DocumentChangeInfo ) {
+  docChangeInfo.linesAdded += changeInfo.linesAdded;
+  docChangeInfo.linesDeleted += changeInfo.linesDeleted;
+  docChangeInfo.charactersAdded += changeInfo.charactersAdded;
+  docChangeInfo.charactersDeleted += changeInfo.charactersDeleted;
+  docChangeInfo.changeType = changeInfo.changeType; // should remain the same! - UPDATE:: WELL ACTUALLY DOES
+  // But it doesn't matter because we're not looking at it anymore
+
+  switch (changeInfo.changeType) {
+    case 'singleDelete': {
+      docChangeInfo.singleDeletes += 1;
+      docChangeInfo.keystrokes += 1;
+      break;
+    }
+    case 'multiDelete': {
+      docChangeInfo.multiDeletes += 1;
+      docChangeInfo.keystrokes += 1;
+      break;
+    }
+    case 'singleAdd': {
+      docChangeInfo.singleAdds += 1;
+      docChangeInfo.keystrokes += 1;
+      break;
+    }
+    case 'multiAdd': {
+      docChangeInfo.multiAdds += 1;
+      docChangeInfo.keystrokes += 1;
+      break;
+    }
+    case 'autoIndent': {
+      docChangeInfo.autoIndents += 1;
+      docChangeInfo.keystrokes += 1;
+      break;
+    }
+    case 'replacement': {
+      docChangeInfo.replacements += 1;
+      docChangeInfo.keystrokes += 1;
+      break;
+    }
+  }
+
+  return docChangeInfo
+}
