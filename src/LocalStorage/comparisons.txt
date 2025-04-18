@@ -1,4 +1,4 @@
-Using node-memcached vs node-cache vs fs vs others 
+Using node-memcached vs node-cache vs fs vs others
 
 Feature	                    node-cache	                      node-memcached
 Where data is stored	    In your app’s memory (RAM)	      In a separate Memcached server
@@ -14,3 +14,6 @@ For multiple users, if they wanted to see statistics of their shared projects, h
     Each could have their changes added to a 'common' database on cloud (each of them would still be separated)
 
 
+APPARENTLY, NODE-CACHE  IS IN MEMORY AND FOR EACH WINDOW/PROJECT/WORKSPACE RUNNING WITH MY EXTENSION ON IT,
+it creates a separate instance of cache
+- needs to be checked - mostly for documentation

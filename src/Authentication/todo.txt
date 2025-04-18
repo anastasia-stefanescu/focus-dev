@@ -1,0 +1,2 @@
+What to do with anonymous users?
+Create an anonymous user based on github email or mac addr - see src/menu/AccountManager

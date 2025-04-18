@@ -41,6 +41,16 @@ export function verifyDocumentChange(event: TextDocumentChangeEvent, lastCopiedT
                   verifyPaste(lastCopiedText);
                 }
             } // else, multi-line code refactorization, git pulls/fetches
+        } else {
+            // we have to see whether code was added / deleted
+            // no it just undoes the last event -> we have to delete the last event
+            // save in cache actually the last events so we can undo them? we save it until extension is stopped as normally
+            // implement sort of a git blame to know for sure?
+            // in any case, we count it as user activity
+
+            // we track what code was written at some point, whether it is deleted later, that doesn't really mean much, an effort was made
+
+            
         }
 
         // daca e schimbare generata de ceva extern, trebuie trimisa imediat??

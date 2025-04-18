@@ -1,30 +1,73 @@
 import { DEFAULT_CHANGE_EMISSION_INTERVAL } from "../Constants";
 import { CurrentSessionVariables } from "./event_management";
 import { window } from "vscode";
-import { FullChangeData, ProjectChangeInfo } from "./event_models";
+import { FullChangeData, ProjectChangeInfo, ProjectExecutionInfo, ProjectUserActivityInfo, UserActivityEventInfo } from "./event_models";
 import { mySnowPlowTracker } from "./SnowPlowTracker";
 import { all } from "axios";
 
-export async function emitProjectChangeData() {
+export async function emitFromCacheProjectChangeData() {
+}
+
+export async function emitToCacheProjectChangeData() {
+    // Checks if we have events of any of the 3 types to send
+
     const one_minute_ago: number = new Date().getTime() - DEFAULT_CHANGE_EMISSION_INTERVAL;
 
     const instance: CurrentSessionVariables = CurrentSessionVariables.getInstance();
 
-    if (instance.getProjectChangeInfo() && instance.getProjectChangeInfo()?.docs_changed) {
+    const projectChangeInfo = instance.getProjectChangeInfo();
+    const projectUserActivityInfo = instance.getProjectUserActivityInfo();
+    const projectExecutionInfo = instance.getProjectExecutionInfo();
+
+    const documentChangesExist = !!(projectChangeInfo && projectChangeInfo?.docs_changed);
+    const userActivityExists = !!(projectUserActivityInfo && projectUserActivityInfo?.userActivity);
+    const executionSessionsExist = !!(projectExecutionInfo && projectExecutionInfo?.execution_sessions);
+
+    if (documentChangesExist || userActivityExists || executionSessionsExist) {
         clearTimeout(instance.getTimer());
         instance.setTimer(undefined);
 
-        const payload = instance.getProjectChangeInfo() || null;
-        if (payload && payload.docs_changed && Object.keys(payload.docs_changed).length) { // make sure project doc_changes have keystrokes
-
-            window.showInformationMessage('Emitting data');
-            getAllProjectDataAndSend(payload); // emitData("user_event", full_project_data);
-            // see other checks from editor flow!!!!
+        if (documentChangesExist) {
+            saveToCacheDocumentChanges(projectChangeInfo);
+            instance.setProjectChangeInfo(undefined);
         }
-
-        instance.setProjectChangeInfo(undefined);
+        if (userActivityExists && projectUserActivityInfo.userActivity) {
+            saveToCacheUserActivity(projectUserActivityInfo.userActivity);
+            instance.setProjectUserActivityInfo(undefined);
+        }
+        if (executionSessionsExist) {
+            saveToCacheExecutionSessions(projectExecutionInfo);
+            instance.setProjectExecutionInfo(undefined);
+        }
     }
+
+    // for each of them separate??? Separate timers for each of them?
     instance.setLastEmitTime(new Date().getTime());
+}
+
+export function saveToCacheDocumentChanges(projectChangeInfo: ProjectChangeInfo) {
+    const payload = projectChangeInfo; // payload && payload.docs_changed && - already verified
+    if (Object.keys(payload.docs_changed).length) { // make sure project doc_changes have keystrokes
+        window.showInformationMessage('Sending docs change to cache');
+
+        // here we might not really need full project data!!!
+        getAllProjectDataAndSend(payload); // emitData("user_event", full_project_data);
+        // see other checks from editor flow!!!!
+    }
+}
+
+export function saveToCacheUserActivity(userActivity: UserActivityEventInfo) {
+    if (userActivity.total_actions > 0) {
+        window.showInformationMessage('Sending user activity to cache');
+        // emitData("user_event", payload);
+    }
+}
+
+export function saveToCacheExecutionSessions(executionSessionsInfo: ProjectExecutionInfo) {
+    if (executionSessionsInfo.execution_sessions > 0) {
+        window.showInformationMessage('Sending execution sessions to cache');
+        // emitData("user_event", payload);
+    }
 }
 
 export function getAllProjectDataAndSend(projectChangeInfo: ProjectChangeInfo) {
@@ -58,4 +101,4 @@ export function closeOtherFilesInfo(fileName:string) {
         });
     }
 }
-    
+

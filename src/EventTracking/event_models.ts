@@ -3,6 +3,7 @@ export class ProjectInfo {
     project_name: string = '';
     identifier: string = ''; // ?
     resource: any = {}; // ?
+    // branch?
 }
 export class ProjectChangeInfo extends ProjectInfo{
     docs_changed: any = {}; // dictionary
@@ -10,6 +11,10 @@ export class ProjectChangeInfo extends ProjectInfo{
 
 export class ProjectExecutionInfo {
     execution_sessions: any = {}; // dictionary
+}
+
+export class ProjectUserActivityInfo {
+    userActivity : UserActivityEventInfo | undefined;
 }
 
 export class DocumentInfo {
@@ -25,6 +30,7 @@ export class Event {
     end: string = '';
     projectName: string = '';
     projectDirectory: string = '';
+    // branch??
 
     constructor();
     constructor(cacheEvent: Partial<Event>);
@@ -79,6 +85,7 @@ export class UserActivityEventInfo extends Event{
     window_focus_changes: number = 0;
     // deployment actions??
     total_actions: number = 0; // all actions??
+    others: number = 0; // irrelevant stuff such as undo, redo, copy, paste, etc
 
     constructor();
     constructor(cacheEvent: Partial<UserActivityEventInfo>);
@@ -88,6 +95,7 @@ export class UserActivityEventInfo extends Event{
         this.git_actions = cacheEvent?.git_actions ?? 0;
         this.window_focus_changes = cacheEvent?.window_focus_changes ?? 0;
         this.total_actions = cacheEvent?.total_actions ?? 0;
+        this.others = cacheEvent?.others ?? 0;
     }
 
     concatenateData(cacheEvent: UserActivityEventInfo) {
@@ -96,7 +104,17 @@ export class UserActivityEventInfo extends Event{
         this.git_actions += cacheEvent.git_actions;
         this.window_focus_changes += cacheEvent.window_focus_changes;
         this.total_actions += cacheEvent.total_actions;
+        this.others += cacheEvent.others;
     }
+}
+
+export class SuccessIndicator { // can be about git commits / other actions or comments or some kind of execution
+    status: string = ''; // optional - execution/deployment : success, failure
+    message: string = ''; // optional - commit message: positive / negative / neutral
+}
+
+export class GitEvent {
+
 }
 
 // events of type DocumentChangeInfo are aggregated also in a DocumentChangeInfo object (first locally over a minute)
@@ -122,6 +140,8 @@ export class DocumentChangeInfo extends Event {
     keystrokes: number = 0; // aici cate tastari efective s-au facut - poate fi util pt detectie
     changeType: string = ''; // this becomes obsolete when we start aggregating, because multiple changes are aggregated
     source: string = ''; // user, AI, external, other
+
+    // writtenWithAI: AIinFile[] = []; // here we store the lines that were written with AI - this is a list of objects with start and end line numbers
 
     constructor();
     constructor(cacheEvent: Partial<DocumentChangeInfo>);
@@ -168,6 +188,13 @@ export class FullChangeData {
     fileChangeInfo: DocumentChangeInfo | undefined = undefined;
     // repoInfo: any = {};
     // pluginInfo: any = {};
+}
+
+export class AIinFile {
+    fileName: string = '';
+    filePath: string = '';
+    startLine: number = 0;
+    endLine: number = 0;
 }
 
 // // copy - from another window?, paste, cut, delete | save, open, close | git updates

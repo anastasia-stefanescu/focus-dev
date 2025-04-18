@@ -2,7 +2,7 @@ import { TextEditor, window } from "vscode";
 import { post_to_services } from "../API/api_wrapper";
 import { v4 as uuidv4 } from 'uuid';
 import { start } from "repl";
-import { DocumentChangeInfo, ExecutionEventInfo, FullChangeData, ProjectChangeInfo, ProjectExecutionInfo, UserActivityEventInfo } from "./event_models";
+import { DocumentChangeInfo, ExecutionEventInfo, FullChangeData, ProjectChangeInfo, ProjectExecutionInfo, ProjectUserActivityInfo, UserActivityEventInfo } from "./event_models";
 import { DEFAULT_CHANGE_EMISSION_INTERVAL } from "../Constants";
 import { mySnowPlowTracker } from "./SnowPlowTracker";
 import { emitProjectChangeData } from "./event_sending";
@@ -27,7 +27,7 @@ export class CurrentSessionVariables {
 
     private projectChangeInfo: ProjectChangeInfo | undefined = undefined;
     private projectExecutionInfo: ProjectExecutionInfo | undefined = undefined;
-    private projectUserActivityInfo: UserActivityEventInfo | undefined = undefined;
+    private projectUserActivityInfo: ProjectUserActivityInfo | undefined = undefined;
 
     private projectChangeInfoTimer: NodeJS.Timeout | undefined = undefined;
     private lastEmitTime: number = 0;
@@ -57,6 +57,7 @@ export class CurrentSessionVariables {
         return CurrentSessionVariables.instance;
     }
 
+    // ==============================================================================
     public getExecutionCache() {
         if (!this.executionCache) {
             this.executionCache = new EventCache<ExecutionEventInfo>();
@@ -76,12 +77,21 @@ export class CurrentSessionVariables {
         return this.documentCache;
     }
 
+    //===============================================================================
+
     public getProjectChangeInfo() { return this.projectChangeInfo; }
     public setProjectChangeInfo(projectChangeInfo: ProjectChangeInfo | undefined) { this.projectChangeInfo = projectChangeInfo; }
+    public getProjectUserActivityInfo() { return this.projectUserActivityInfo; }
+    public setProjectUserActivityInfo(projectUserActivityInfo: ProjectUserActivityInfo | undefined) { this.projectUserActivityInfo = projectUserActivityInfo; }
+    public getProjectExecutionInfo() { return this.projectExecutionInfo; }
+    public setProjectExecutionInfo(projectExecutionInfo: ProjectExecutionInfo | undefined) { this.projectExecutionInfo = projectExecutionInfo; }
+
     public getTimer() { return this.projectChangeInfoTimer; }
     public setTimer(timer: NodeJS.Timeout | undefined) { this.projectChangeInfoTimer = timer; }
     public getLastEmitTime() { return this.lastEmitTime; }
     public setLastEmitTime(time: number) { this.lastEmitTime = time; }
+
+    //===============================================================================
 
     public getDocumentChangeInfo(fileName:string) {
         if(this.projectChangeInfo && this.projectChangeInfo.docs_changed[fileName])
@@ -103,6 +113,18 @@ export class CurrentSessionVariables {
             this.projectExecutionInfo.execution_sessions[sessionId] = executionEventInfo;
         }
     }
+    public getUserActivityEventInfo() {
+        if (this.projectUserActivityInfo && this.projectUserActivityInfo.userActivity)
+            return this.projectUserActivityInfo.userActivity;
+        return undefined;
+    }
+    public setUserActivityEventInfo(userActivity: UserActivityEventInfo) {
+        if (this.projectUserActivityInfo) {
+            this.projectUserActivityInfo.userActivity = userActivity;
+        }
+    }
+
+    //===============================================================================
 
 
     public getLastTimeofPaste() { return this.last_time_of_paste; }
@@ -116,6 +138,20 @@ export class CurrentSessionVariables {
 
     public getLastCameInFocus() { return this.last_came_in_focus; }
 
+    //===============================================================================
+
+    public startProjectTimer() {
+        // porneste timer pentru project change pentru a emite datele colectate despre proiect la anumite intervale de timp
+        if (!this.projectChangeInfoTimer) {
+            window.showInformationMessage('Timer started');
+            const timer = setTimeout(() => {
+                emitProjectChangeData(); // EMIT!!!!
+            }, DEFAULT_CHANGE_EMISSION_INTERVAL);
+
+            this.projectChangeInfoTimer = timer;
+        }
+    }
+
     public verifyExistingProjectAndFileData(fileName: string) {
         // vezi ca exista project change info, daca nu, creeaza-l
         if (!this.projectChangeInfo) {
@@ -123,15 +159,7 @@ export class CurrentSessionVariables {
           this.projectChangeInfo = new ProjectChangeInfo();
         }
 
-        // porneste timer pentru project change pentru a emite datele colectate despre proiect la anumite intervale de timp
-        if (!this.projectChangeInfoTimer) {
-          window.showInformationMessage('Timer started');
-          const timer = setTimeout(() => {
-            emitProjectChangeData(); // EMIT!!!!
-          }, DEFAULT_CHANGE_EMISSION_INTERVAL);
-
-          this.projectChangeInfoTimer = timer;
-        }
+        this.startProjectTimer();
 
         // creeaza fila noua de schimbare pentru fisierul in care s-a produs schimbarea daca nu exista
         if (!this.projectChangeInfo.docs_changed[fileName]) {

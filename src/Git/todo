@@ -1,0 +1,23 @@
+See:
+src/repo/gitUtil -> why would we need these functions?
+    accumulateNumStatChanges
+
+    getInfoForCommit
+
+    authors
+
+
+TrackerManager
+KpmManager
+
+*Git actions we’re interested in: commits
+ - when committing (user-written code), we have to add to the team centralized pool of data how much he has added/deleted and when
+ - see if commits are deleted (or fetch directly data from pushes??) -
+Also check remote changes?
+- branch create/delete
+- merge branches
+
+
+Why do we track remote changes?
+
+Branches would be actually useful for project stats

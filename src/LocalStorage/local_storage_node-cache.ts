@@ -5,16 +5,18 @@ import { window } from 'vscode';
 type CacheValue = string | number;
 
 export class EventCache<T> {
-    // ARE WE SENDING BY EVENT OR BY
+    // ARE WE SENDING BY EVENT OR BY BATCH??? - BY EVENT
     // keys of type: event:{eventType}:{timestamp}
 
-    // indexKey of type: index:{eventType}; e.g. index:code, index:generate, index:debug, index:run
-
     // the types of objects to store in cache: DocumentChangeInfo, ExecutionEventInfo, InstantaneousEventInfo
-    // the objects (at least DocumentChangeInfo) are aggregated over a minute anyways
+    // the objects are aggregated over a minute!!!!! - so we don't have too many events stored
+
+    // We store the events for about 15 minutes - enough to detect the flow, after which after they 'expire'
+    // they are removed from the cache and sent to the cloud - BUT CAN WE DO THAT AUTOMATICALLY?
+    //  OR DO WE HAVE TO DO IT MANUALLY, SEND ENTIRE BATCHES FROM TIME TO TIME?
 
     // Node-cache is an unordered hashmap, order is not maintained
-    // For fast lookup, we thus maintain an index per event type ( Sort or filter them by timestamp)
+    // For fast lookup, we thus maintain an array of keys ordered by time
 
     // Types of actions we do inside cache:
     // - set/has/get/update/delete/flush
@@ -38,6 +40,7 @@ export class EventCache<T> {
             if (firstElement === key) {
                 this.eventsByTime.shift(); // remove the first element
             }
+            // SEND THE EVENT!!!
         });
     }
 
@@ -127,7 +130,7 @@ export class EventCache<T> {
         // test this!!!
         if (event instanceof UserActivityEventInfo) {
             const lastEventKey = this.eventsByTime[this.eventsByTime.length - 1];
-            const lastEvent = new UserActivityEventInfo(this.cache.get<UserActivityEventInfo>(lastEventKey)); // T or UserActivityEventInfo???????
+            const lastEvent = new UserActivityEventInfo(this.cache.get<UserActivityEventInfo>(lastEventKey) as Partial<UserActivityEventInfo>); // T or UserActivityEventInfo???????
 
             if (lastEvent && Number(event.start) - Number(lastEvent.end) < 3* 60) { // 2-3 mins??
                 try {
@@ -145,7 +148,7 @@ export class EventCache<T> {
             while (index >= 0) {
                 if (this.eventsByTime[index].includes(event.eventType)) {
                     const currEventKey = this.eventsByTime[index];
-                    const currEvent = new ExecutionEventInfo(this.cache.get<DocumentChangeInfo>(currEventKey));
+                    const currEvent = new ExecutionEventInfo(this.cache.get<ExecutionEventInfo>(currEventKey) as Partial<ExecutionEventInfo>);
                     if (currEvent && currEvent.eventType === event.eventType
                         && Number(event.start) - Number(currEvent.end) < 3 * 60) { // 2-3 minutes here??
                         try {
@@ -167,7 +170,7 @@ export class EventCache<T> {
             while (index >= 0) {
                 if (this.eventsByTime[index].includes(event.source)) {
                     const currEventKey = this.eventsByTime[index];
-                    const currEvent = new DocumentChangeInfo(this.cache.get<T>(currEventKey));
+                    const currEvent = new DocumentChangeInfo(this.cache.get<DocumentChangeInfo>(currEventKey) as Partial<DocumentChangeInfo>);
                     if (currEvent && currEvent instanceof DocumentChangeInfo && currEvent.source === event.source
                         && currEvent.fileName === event.fileName
                         && Number(event.start) - Number(currEvent.end) < 3* 60)
