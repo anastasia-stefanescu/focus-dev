@@ -2,12 +2,13 @@ import { TextEditor, window } from "vscode";
 import { post_to_services } from "../API/api_wrapper";
 import { v4 as uuidv4 } from 'uuid';
 import { start } from "repl";
-import { DocumentChangeInfo, ExecutionEventInfo, FullChangeData, ProjectChangeInfo, ProjectExecutionInfo, ProjectUserActivityInfo, UserActivityEventInfo } from "./event_models";
+import { DocumentChangeInfo, ExecutionEventInfo, FullChangeData, ProjectInfo, Source, UserActivityEventInfo } from "./event_models";
 import { DEFAULT_CHANGE_EMISSION_INTERVAL } from "../Constants";
 import { mySnowPlowTracker } from "./SnowPlowTracker";
-import { emitProjectChangeData } from "./event_sending";
+import { emitToCacheProjectData } from "./event_sending";
 import { addChange } from "./event_data_extraction";
 import { EventCache } from "../LocalStorage/local_storage_node-cache";
+import { emit } from "process";
 
 
 // should also add window id here - there might be multiple windows open
@@ -15,19 +16,25 @@ import { EventCache } from "../LocalStorage/local_storage_node-cache";
 // Add content length? -> for spontaneous activities such as typing, pasting, cutting, deleting, etc
 //      To obtain statistics for how much code was generated, from external sources, etc
 
+// manage initialization of the CurrentSessionVariables per window
+// when window closes / loses focus => send all to cache
+// therefore, when each event is created, it should have the project set?
 export class CurrentSessionVariables {
     // By design, the VS Code API only works within a single instance (or window).
+    // Is this the information for only one window?
+    // - yes, because we also have the project info which is basically the window
+    // Theoretically, no, only node-cache is per process and thus per window.
+    // What do we do about this then?
     private static instance : CurrentSessionVariables;
 
     // also add different cache instances here!!!
     private executionCache: EventCache<ExecutionEventInfo> | undefined = undefined;
     private userActivityCache: EventCache<UserActivityEventInfo> | undefined = undefined;
-    private documentCache: EventCache<DocumentChangeInfo> | undefined = undefined;
+    private userDocumentCache: EventCache<DocumentChangeInfo> | undefined = undefined;
+    private aiDocumentCache: EventCache<DocumentChangeInfo> | undefined = undefined;
+    private externalDocumentCache: EventCache<DocumentChangeInfo> | undefined = undefined;
 
-
-    private projectChangeInfo: ProjectChangeInfo | undefined = undefined;
-    private projectExecutionInfo: ProjectExecutionInfo | undefined = undefined;
-    private projectUserActivityInfo: ProjectUserActivityInfo | undefined = undefined;
+    private projectInfo: ProjectInfo | undefined = undefined;
 
     private projectChangeInfoTimer: NodeJS.Timeout | undefined = undefined;
     private lastEmitTime: number = 0;
@@ -70,58 +77,133 @@ export class CurrentSessionVariables {
         }
         return this.userActivityCache;
     }
-    public getDocumentCache() {
-        if (!this.documentCache) {
-            this.documentCache = new EventCache<DocumentChangeInfo>();
+    public getDocumentCache(source: Source) : EventCache<DocumentChangeInfo> | undefined {
+        if (source === 'user') {
+            if (!this.userDocumentCache)
+                this.userDocumentCache = new EventCache<DocumentChangeInfo>();
+            return this.userDocumentCache;
         }
-        return this.documentCache;
+        if (source === 'AI') {
+            if (!this.aiDocumentCache)
+                this.aiDocumentCache = new EventCache<DocumentChangeInfo>();
+            return this.aiDocumentCache;
+        }
+        if (source === 'external') {
+            if (!this.externalDocumentCache)
+                this.externalDocumentCache = new EventCache<DocumentChangeInfo>();
+            return this.externalDocumentCache;
+        }
+        return undefined; // if source is not user/AI/external, return undefined
     }
 
     //===============================================================================
 
-    public getProjectChangeInfo() { return this.projectChangeInfo; }
-    public setProjectChangeInfo(projectChangeInfo: ProjectChangeInfo | undefined) { this.projectChangeInfo = projectChangeInfo; }
-    public getProjectUserActivityInfo() { return this.projectUserActivityInfo; }
-    public setProjectUserActivityInfo(projectUserActivityInfo: ProjectUserActivityInfo | undefined) { this.projectUserActivityInfo = projectUserActivityInfo; }
-    public getProjectExecutionInfo() { return this.projectExecutionInfo; }
-    public setProjectExecutionInfo(projectExecutionInfo: ProjectExecutionInfo | undefined) { this.projectExecutionInfo = projectExecutionInfo; }
+    public getProjectInfo() { return this.projectInfo; }
+    public setProjectInfo(projectInfo: ProjectInfo | undefined) { this.projectInfo = projectInfo; }
+
+    // get doc changes
 
     public getTimer() { return this.projectChangeInfoTimer; }
     public setTimer(timer: NodeJS.Timeout | undefined) { this.projectChangeInfoTimer = timer; }
+
     public getLastEmitTime() { return this.lastEmitTime; }
     public setLastEmitTime(time: number) { this.lastEmitTime = time; }
 
     //===============================================================================
 
-    public getDocumentChangeInfo(fileName:string) {
-        if(this.projectChangeInfo && this.projectChangeInfo.docs_changed[fileName])
-            return this.projectChangeInfo.docs_changed[fileName];
-        return undefined;
-    }
-    public setDocumentChangeInfo(fileName:string, documentChangeInfo: DocumentChangeInfo) {
-        if (this.projectChangeInfo) {
-            this.projectChangeInfo.docs_changed[fileName] = documentChangeInfo;
-        }
-    }
     public getExecutionEventInfo(sessionId: string) {
-        if (this.projectExecutionInfo && this.projectExecutionInfo.execution_sessions[sessionId])
-            return this.projectExecutionInfo.execution_sessions[sessionId];
+        if (this.projectInfo && this.projectInfo.execution_sessions[sessionId])
+            return this.projectInfo.execution_sessions[sessionId];
         return undefined;
     }
-    public setExecutionEventInfo(sessionId: string, executionEventInfo: ExecutionEventInfo) {
-        if (this.projectExecutionInfo) {
-            this.projectExecutionInfo.execution_sessions[sessionId] = executionEventInfo;
+    public setExecutionEventInfo(executionEventInfo: ExecutionEventInfo) {
+        const sessionId = executionEventInfo.sessionId;
+        if (this.projectInfo) {
+            this.projectInfo.execution_sessions[sessionId] = executionEventInfo;
         }
     }
-    public getUserActivityEventInfo() {
-        if (this.projectUserActivityInfo && this.projectUserActivityInfo.userActivity)
-            return this.projectUserActivityInfo.userActivity;
+
+    public getAllExecutionEvents() {
+        if (this.projectInfo && this.projectInfo.execution_sessions)
+            return this.projectInfo.execution_sessions;
         return undefined;
     }
-    public setUserActivityEventInfo(userActivity: UserActivityEventInfo) {
-        if (this.projectUserActivityInfo) {
-            this.projectUserActivityInfo.userActivity = userActivity;
+
+    public setAllExecutionEvents(executionInfo: { [key: string]: ExecutionEventInfo } | undefined) {
+        if (this.projectInfo) {
+            this.projectInfo.execution_sessions = executionInfo;
         }
+    }
+
+    public deleteExecutionEvent(sessionId: string) {
+        if (this.projectInfo && this.projectInfo.execution_sessions[sessionId])
+            delete this.projectInfo.execution_sessions[sessionId];
+        else
+            window.showInformationMessage(`Execution event with sessionId ${sessionId} not found for deletion`);
+    }
+
+    // aici vom concatena mai multe eventuri, dar daca vrem doar unul?
+    public getUserActivityInfo() {
+        if (this.projectInfo && this.projectInfo.userActivity)
+            return this.projectInfo.userActivity;
+        return undefined;
+    }
+    public setUserActivityInfo(userActivity: UserActivityEventInfo | undefined) {
+        if (this.projectInfo) {
+            this.projectInfo.userActivity = userActivity;
+        }
+    }
+
+    // returns undefined if key for dict doesn't exist
+    public getDocChangeForSource(source: Source, fileName:string) : DocumentChangeInfo | undefined {
+        console.log('Inside getDocChangeForSource', source, fileName);
+        if (this.projectInfo) {
+            if (source === 'user' && this.projectInfo.docs_changed_user[fileName]) {
+                return this.projectInfo.docs_changed_user[fileName];
+            } else if (source === 'AI' && this.projectInfo.docs_changed_ai[fileName]) {
+                return this.projectInfo.docs_changed_ai[fileName];
+            } else if (source === 'external' && this.projectInfo.docs_changed_external[fileName]) {
+                return this.projectInfo.docs_changed_external[fileName];
+            }
+        }
+        return undefined;
+    }
+
+    public setDocChangeForSource(source: Source, docChangeInfo: DocumentChangeInfo, fileName: string) {
+        if (this.projectInfo) { // the dictionary has to exist if the project change info exists
+            if (source === 'user') {
+                this.projectInfo.docs_changed_user[fileName] = docChangeInfo;
+            } else if (source === 'AI') {
+                this.projectInfo.docs_changed_ai[fileName] = docChangeInfo;
+            } else if (source === 'external') {
+                this.projectInfo.docs_changed_external[fileName] = docChangeInfo;
+            }
+        }
+    }
+
+    public setAllDocChangesForSource(source: Source, docChangeInfo: DocumentChangeInfo | undefined) {
+        if (this.projectInfo) {
+            if (source === 'user') {
+                this.projectInfo.docs_changed_user = docChangeInfo;
+            } else if (source === 'AI') {
+                this.projectInfo.docs_changed_ai = docChangeInfo;
+            } else if (source === 'external') {
+                this.projectInfo.docs_changed_external = docChangeInfo;
+            }
+        }
+    }
+
+    public getAllDocChangesForSource(source: Source) {
+        if (this.projectInfo) {
+            if (source === 'user') {
+                return this.projectInfo.docs_changed_user;
+            } else if (source === 'AI') {
+                return this.projectInfo.docs_changed_ai;
+            } else if (source === 'external') {
+                return this.projectInfo.docs_changed_external;
+            }
+        }
+        return undefined;
     }
 
     //===============================================================================
@@ -140,52 +222,158 @@ export class CurrentSessionVariables {
 
     //===============================================================================
 
+    // ALSO SET A LISTENER FOR WHEN THE EXTENSION WINDOW CLOSES TO SEND THE COLLECTED DATA!!!!!!
+
     public startProjectTimer() {
         // porneste timer pentru project change pentru a emite datele colectate despre proiect la anumite intervale de timp
         if (!this.projectChangeInfoTimer) {
             window.showInformationMessage('Timer started');
             const timer = setTimeout(() => {
-                emitProjectChangeData(); // EMIT!!!!
+                emitToCacheProjectData(); // send the data to cache
             }, DEFAULT_CHANGE_EMISSION_INTERVAL);
 
             this.projectChangeInfoTimer = timer;
         }
     }
 
-    public verifyExistingProjectAndFileData(fileName: string) {
-        // vezi ca exista project change info, daca nu, creeaza-l
-        if (!this.projectChangeInfo) {
-          window.showInformationMessage('Project change info intialized');
-          this.projectChangeInfo = new ProjectChangeInfo();
+    public verifyExistingProjectData() {
+        console.log('Inside verifyExistingProjectData');
+        if (!this.projectInfo) {
+            window.showInformationMessage('Project info initialized');
+            this.projectInfo = new ProjectInfo();
+            this.projectInfo.project_name = 'Project Name'; // to be set
+            this.projectInfo.project_directory = 'Project Directory'; // to be set
+
+            this.startProjectTimer(); // ar trebui aic
+            console.log('Started project timer');
         }
+    }
 
-        this.startProjectTimer();
+    public verifyExistingDocumentChangeData(fileName: string, source: Source) : DocumentChangeInfo{
+        console.log('Inside verifyExistingDocumentChangeData');
+        console.log('Project info:', this.projectInfo);
+        this.verifyExistingProjectData();
 
-        // creeaza fila noua de schimbare pentru fisierul in care s-a produs schimbarea daca nu exista
-        if (!this.projectChangeInfo.docs_changed[fileName]) {
-          const docChangeInfo: DocumentChangeInfo = new DocumentChangeInfo();
+        return this.createDocumentChangeInfoFile(fileName, source);                // creeaza fila noua dava nu exista deja
+    }
+
+    public verifyExistingUserActivityData() {
+        this.verifyExistingProjectData();
+
+        return this.createUserActivityInfoFile();                // creeaza fila noua daca nu exista deja
+    }
+
+    public verifyExistingExecutionData(sessionId: string) {
+        this.verifyExistingProjectData();
+
+        return this.createExecutionInfoFile(sessionId);
+    }
+
+    //===============================================================================
+
+    // is the dictionary also modified???
+    public createDocumentChangeInfoFile(fileName:string, source: Source) : DocumentChangeInfo {
+        if (this.projectInfo && this.getDocChangeForSource(source, fileName) === undefined) {
+            const docChangeInfo: DocumentChangeInfo = new DocumentChangeInfo();
             docChangeInfo.fileName = fileName;
             //docChangeInfo.file_path = this.getRootPathForFile(fileName);
+            docChangeInfo.projectName = this.projectInfo.project_name;
+            docChangeInfo.projectDirectory = this.projectInfo.project_directory;
 
-            docChangeInfo.start = new Date().toISOString(); // seteaza timpul de start al schimbarii in fisier
+            docChangeInfo.start = new Date().toISOString();                        // seteaza timpul de start al schimbarii in fisier
 
-            this.projectChangeInfo.docs_changed[fileName] = docChangeInfo;
+            this.setDocChangeForSource(source, docChangeInfo, fileName);
+        }
+        return this.getDocChangeForSource(source, fileName) as DocumentChangeInfo; // to exclude the undefined case
+    }
+
+    public createUserActivityInfoFile() : UserActivityEventInfo {
+        if (this.getUserActivityInfo() === undefined) {
+            const userActivity : UserActivityEventInfo = new UserActivityEventInfo();
+            userActivity.start = new Date().toISOString();
+            this.setUserActivityInfo(userActivity);
+        }
+        return this.getUserActivityInfo() as UserActivityEventInfo; // to exclude the undefined case
+    }
+
+    public createExecutionInfoFile(sessionId: string) : ExecutionEventInfo {
+        if (this.getExecutionEventInfo(sessionId) === undefined) {
+            const executionEventInfo : ExecutionEventInfo = new ExecutionEventInfo();
+            executionEventInfo.start = new Date().toISOString();                        // seteaza timpul de start al activitatii in fisier
+            executionEventInfo.sessionId = sessionId;
+            this.setExecutionEventInfo(executionEventInfo);
+        }
+        return this.getExecutionEventInfo(sessionId) as ExecutionEventInfo; // to exclude the undefined case
+    }
+
+    //===============================================================================
+
+    public addDocumentChangeData(fileName:string, changeInfo: DocumentChangeInfo) {
+        console.log('Inside addDocumentChangeData');
+        const docChangeInfo : DocumentChangeInfo = this.verifyExistingDocumentChangeData(fileName, changeInfo.source); // verifica daca exista date despre proiect si fisier, daca nu, creeaza-le
+
+        docChangeInfo.concatenateData(changeInfo); // docChangeInfo is modified, RIGHT?
+
+        this.setDocChangeForSource(changeInfo.source, docChangeInfo, fileName);
+        // I think here we will use concatenate because we're not interested in the type of event
+        //addChange(docChangeInfo, changeInfo); // docChangeInfo is modified, RIGHT?
+    }
+
+    public addUserActivityData(userActivity: UserActivityEventInfo) {
+        const userActivityInfo: UserActivityEventInfo = this.verifyExistingUserActivityData();
+
+        userActivityInfo.concatenateData(userActivity); // this updates the total_actions
+        this.setUserActivityInfo(userActivityInfo);
+    }
+
+    // this is not used because we don't need to concatenate session data, they are independent
+    // public addExecutionData(executionEvent: ExecutionEventInfo) {
+    //     const executionEventInfo: ExecutionEventInfo = this.verifyExistingExecutionData(executionEvent.sessionId);
+
+    //     executionEventInfo.concatenateData(executionEvent); // executionInfo is modified, RIGHT?
+    //     this.setExecutionEventInfo(executionEventInfo);
+    // }
+
+    //=========================================================
+
+    // set the end of changes if it doesn't exist
+    // onlyThisFile - if true, close only this file event, otherwise close all events except for this file
+    public closeAllFileEventsExcept(fileName: string) {
+        if (!this.projectInfo) {
+            window.showErrorMessage('Could not close file event info, no project info available');
+            return;
         }
 
-        return this.projectChangeInfo.docs_changed[fileName];
-      }
+        for (const source of ['user', 'AI', 'external'] as Source[]) {
+            const changes_dict = this.getAllDocChangesForSource(source);
 
-      public addChangeDataToDocumentInfo(fileName:string, changeInfo: DocumentChangeInfo) {
-        if (this.projectChangeInfo) {
-            const docChangeInfo = this.projectChangeInfo?.docs_changed[fileName];
-
-            // add changes to the file change info
-            addChange(docChangeInfo, changeInfo); // docChangeInfo is modified
-
-            this.projectChangeInfo.docs_changed[fileName] = docChangeInfo;
-            //return docChangeInfo;
+            const allFiles = Object.keys(changes_dict);
+            for (const file of allFiles) {
+                if (file !== fileName) {
+                    const fileChange = changes_dict[file];
+                    if (fileChange && !fileChange.end) {
+                        fileChange.end = new Date().toISOString(); // through references, the initial array is updated too
+                        this.setDocChangeForSource(source, fileChange, file); // update the change info
+                    }
+                }
+            }
         }
-      }
+    }
+
+    public closeFileEvent(fileName: string) {
+        for (const source of ['user', 'AI', 'external'] as Source[]) {
+            const doc_change = this.getDocChangeForSource(source, fileName);
+
+            if (doc_change && !doc_change.end) {
+                doc_change.end = new Date().toISOString(); // through references, the initial array is updated too - but let's not risk it
+                this.setDocChangeForSource(source, doc_change, fileName); // update the change info
+            }
+        }
+    }
+}
+
+
+
 
 
 
@@ -310,4 +498,3 @@ export class CurrentSessionVariables {
 
 //     if (event != undefined)
 //         await sendEvent(event);
-}

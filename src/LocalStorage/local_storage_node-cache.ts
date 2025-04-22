@@ -68,6 +68,17 @@ export class EventCache<T> {
         return allValues;
     }
 
+    getAllInOrder<T>(): T[] {
+        let listOfEvents: T[] = [];
+        for (const key of this.eventsByTime) {
+            const value = this.cache.get<T>(key);
+            if (value !== undefined) {
+                listOfEvents.push(value);
+            }
+        }
+        return listOfEvents;
+    }
+
     // has(key: string): boolean {
     //     return this.cache.has(key);
     // }
@@ -168,7 +179,7 @@ export class EventCache<T> {
         if (event instanceof DocumentChangeInfo) {
             let index = this.eventsByTime.length - 1;
             while (index >= 0) {
-                if (this.eventsByTime[index].includes(event.source)) {
+                if (event.source && this.eventsByTime[index].includes(event.source)) {
                     const currEventKey = this.eventsByTime[index];
                     const currEvent = new DocumentChangeInfo(this.cache.get<DocumentChangeInfo>(currEventKey) as Partial<DocumentChangeInfo>);
                     if (currEvent && currEvent instanceof DocumentChangeInfo && currEvent.source === event.source

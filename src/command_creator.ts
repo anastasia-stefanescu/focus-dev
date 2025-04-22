@@ -1,16 +1,18 @@
-import * as vscode from 'vscode'; 
+import * as vscode from 'vscode';
 import path from 'path';
 import { ExtensionContext, Disposable} from "vscode";
-import { commands, window, ViewColumn, workspace, debug,env } from "vscode";
+import { commands, window, workspace, debug,env } from "vscode";
 import { Uri } from 'vscode';
 import { SidebarViewProvider } from './Sidebar/webview_provider';
 import { AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET, REDIRECT_URI} from './Constants';
 import { _tokenEmitter } from './Authentication/auth_provider';
 import { post_to_services } from './API/api_wrapper';
-import { CurrentSessionVariables, handleEvent} from './EventTracking/event_management';
-import { verifyDocumentChange } from './EventTracking/event_processing_by_type';
+import { handleCloseFile, handleOpenFile, startExecutionSession, verifyDocumentChange } from './EventTracking/event_processing_by_type';
+import { tests } from 'vscode';
 
-export function createCommands(  ctx: ExtensionContext /* add: kpm controller, storageManager */ ) 
+import { instance } from './extension';
+
+export function createCommands(  ctx: ExtensionContext /* add: kpm controller, storageManager */ )
     // { dispose: () => { }; }
     {
     let cmds = [];
@@ -18,7 +20,7 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
     //===============================================
     const sidebar: SidebarViewProvider = new SidebarViewProvider(ctx.extensionUri);
     //window.showInformationMessage('sidebar web provider initialized with extensionUri:', String(ctx.extensionUri));
-    
+
     // - registerWebviewViewProvider (initialize sidebar web view provider & )
     cmds.push(
         // 'codetime.webView' = package.json/views/statsDashboard/id
@@ -29,15 +31,15 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
           } as any
         })
     );
-    
+
     // - refresh the webview
     cmds.push(
         commands.registerCommand('code-stats.refreshDashboard', () => {
           sidebar.refresh();
         })
     );
-    
-    // - display the side bar 
+
+    // - display the side bar
     cmds.push(
         commands.registerCommand('code-stats.displaySidebar', () => {
           // opens the sidebar manually from a the above command
@@ -54,7 +56,7 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
                 listener.dispose(); // Ensure the listener is cleaned up after firing
                 resolve(token); // Resolves the promise with the received token
             });
-    
+
             // Opens the Auth0 login URL
             const authUrl = `http://${AUTH0_DOMAIN}/authorize?client_id=${AUTH0_CLIENT_ID}&response_type=code&redirect_uri=${REDIRECT_URI}&scope=openid profile email`;
             env.openExternal(Uri.parse(authUrl));
@@ -63,7 +65,7 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
     cmds.push(loginWithAuth0);
 
     //===============================================
-    // listen to built-in copy/paste commands 
+    // listen to built-in copy/paste commands
     const copyDisposable = vscode.commands.registerCommand('custom.trackCopy', async () => {
 
       window.showInformationMessage('Before executing copy');
@@ -74,11 +76,11 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
         await vscode.env.clipboard.writeText(copiedText); // Copy to system clipboard
         window.showInformationMessage('Copied content:', copiedText);
 
-        CurrentSessionVariables.getInstance().setLastCopiedText(copiedText);
-        
+        instance.setLastCopiedText(copiedText);
+
         await vscode.commands.executeCommand('editor.action.clipboardCopyAction');
       }
-      
+
     });
 
     const cutDisposable = vscode.commands.registerCommand('custom.trackCut', async () => {
@@ -87,7 +89,7 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
       if (editor) {
         const copiedText = editor.document.getText(editor.selection);
         window.showInformationMessage('Cut content:', copiedText);
-        CurrentSessionVariables.getInstance().setLastCopiedText(copiedText);
+        instance.setLastCopiedText(copiedText);
       }
       await vscode.commands.executeCommand('editor.action.clipboardCutAction');
     });
@@ -97,8 +99,8 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
     const pasteDisposable = vscode.commands.registerCommand('custom.pasteWithMessage', async () => {
         const now = new Date();
         window.showInformationMessage(`Before execution of paste: ${now}`);
-        CurrentSessionVariables.getInstance().setLastTimeofPaste(now);
-        
+        instance.setLastTimeofPaste(now);
+
         // here don't put await??? -> no, it's a infinite loop
         await vscode.commands.executeCommand('editor.action.clipboardPasteAction');
 
@@ -113,7 +115,7 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
 
       window.showInformationMessage(`Undo at ${now}`);
 
-      CurrentSessionVariables.getInstance().setLastTimeofUndoRedo(now);
+      instance.setLastTimeofUndoRedo(now);
 
       if (window.activeTextEditor) {
           try {
@@ -135,7 +137,7 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
 
       window.showInformationMessage(`Redo at ${now}`);
 
-      CurrentSessionVariables.getInstance().setLastTimeofUndoRedo(now);
+      instance.setLastTimeofUndoRedo(now);
 
       if (vscode.window.activeTextEditor) {
           try {
@@ -154,42 +156,67 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
 
     // inside each of these we should do a snowplow.trackSelfDescribingEvent
 
-    // export async function handleEvent(message:string, activityName:string, activityType: string, activityTime:Date) {
-    
+    //==========================================FILE EVENTS=========================================
     const saveEvent = workspace.onDidSaveTextDocument(async (document) => {
-        await handleEvent(`!Saved file: ${document.fileName}`, '', 'textDocument', 'start', new Date());
-        // trebuie trimise modificarile la document
-        // trimite la backend
-        // verifica modificari??????? Cum facem modificarile???
+      window.showInformationMessage(`!Saved file: ${document.fileName}`);
+      handleCloseFile(document.fileName); // handle as if closing the file
       });
 
     const openEvent = workspace.onDidOpenTextDocument(async (document) => {
       // trebuie inchise celelalte file
-        await handleEvent(`Opened file: ${document.fileName}`, '', 'textDocument', 'start', new Date());
+      window.showInformationMessage(`Opened file: ${document.fileName}`);
+      handleOpenFile(document.fileName); // handle as if opening the file
       });
 
     const closeEvent = workspace.onDidCloseTextDocument(async (document) => {
-      // trebuie trimise modificarile la document
-        await handleEvent(`Closed file: ${document.fileName}`, '', 'textDocument', 'start', new Date());
+      window.showInformationMessage(`Closed file: ${document.fileName}`);
+      handleCloseFile(document.fileName); // handle as if closing the file
       });
 
+    // we intercept it before it's deleted
+    const willDeleteFileEvent = workspace.onWillDeleteFiles(async (event) => {
+      const fileName = event.files[0].fsPath;
+      window.showInformationMessage(`Will delete file: ${fileName}`);
+      handleCloseFile(fileName); // handle as if closing the file
+    });
+
+    const createFileEvent = workspace.onDidCreateFiles(async (event) => {
+      const fileName = event.files[0].fsPath;
+      window.showInformationMessage(`Created file: ${fileName}`);
+      handleOpenFile(fileName); // handle as if opening the file
+    });
+
+  //============================EXECUTION EVENTS=========================================
+
     const startDebug = debug.onDidStartDebugSession(async (session) => {
-        await handleEvent(`Started debug session ${session.name} with ID: ${session.id}`, session.id, 'debug', 'start', new Date());
+        window.showInformationMessage(`Started debug session: name: ${session.name}, id: ${session.id}`);
+        startExecutionSession(session, 'debug');
       });
 
     const stopDebug = debug.onDidTerminateDebugSession(async (session) => {
-        await handleEvent(`Finished debug session: ${session.name} with ID: ${session.id}`, session.id, 'debug', 'stop', new Date());
+        window.showInformationMessage(`Stopped debug session: name: ${session.name}, id: ${session.id}`);
+
       });
+
+
+
+    // also check test runs from terminal
+
+    //============================WINDOW EVENTS=========================================
 
     const changedWindowState = window.onDidChangeWindowState(async (state) => {
         // if it's focused / unfocused, because we're handling it as continuous action??
         const window_session_id = env.sessionId;
-        // if (state.focused)
-        //   await handleEvent(`Window ${window_session_id} gained focus: ${state}`, '', 'window', 'start', new Date());
-        // else 
-        //   await handleEvent(`Window ${window_session_id} lost focus: ${state}`, '', 'window', 'start', new Date());
+        if (state.focused)
+          window.showInformationMessage(`Window ${window_session_id} gained focus`);
+        else
+          window.showInformationMessage(`Window ${window_session_id} lost focus`);
       });
-      
+
+    // close/ open window?
+
+  //============================DOCUMENT CHANGE EVENTS=========================================
+
     const code_change = workspace.onDidChangeTextDocument(async (event) => {
 
       const now = new Date();
@@ -198,17 +225,19 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
       await verifyDocumentChange(event, lastCopiedText, now); // TextDocumentChangeEvent
     })
 
-    
 
-    
+
+
     cmds.push(copyDisposable);
     cmds.push(cutDisposable);
     cmds.push(pasteDisposable);
     cmds.push(undoDisposable);
     cmds.push(redoDisposable);
-    // cmds.push(saveEvent);
-    // cmds.push(closeEvent);
-    // cmds.push(openEvent);
+    cmds.push(saveEvent);
+    cmds.push(closeEvent);
+    cmds.push(openEvent);
+    cmds.push(willDeleteFileEvent);
+    cmds.push(createFileEvent);
     cmds.push(startDebug);
     cmds.push(stopDebug);
     cmds.push(changedWindowState);
@@ -231,10 +260,10 @@ function getWebviewContent() {
   <body>
       <img src="https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif" width="300" />
       <h1 id="lines-of-code-counter">0</h1>
-  
+
       <script>
           const counter = document.getElementById('lines-of-code-counter');
-  
+
           let count = 0;
           setInterval(() => {
               counter.textContent = count++;

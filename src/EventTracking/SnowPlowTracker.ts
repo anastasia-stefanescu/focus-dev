@@ -5,7 +5,7 @@ import { workspace, window, debug, commands } from "vscode";
 // https://docs.snowplow.io/docs/sources/trackers/javascript-trackers/node-js-tracker/node-js-tracker-v4/initialization/
 
 import { newTracker, buildSelfDescribingEvent } from '@snowplow/node-tracker';
-import { FullChangeData, ProjectChangeInfo } from "./event_models";
+import { FullChangeData } from "./event_models";
 
 
 export class mySnowPlowTracker {

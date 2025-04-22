@@ -22,6 +22,7 @@ export class GitTracking {
 
             this.gitFolder = workspace.workspaceFolders[0]
 
+            // for each branch there is a separate file in heads/remotes with the latest commit
             this.localGitWatcher = workspace.createFileSystemWatcher(
                 new RelativePattern(this.gitFolder, '{**/.git/refs/heads/**}')
             );
@@ -47,6 +48,12 @@ export class GitTracking {
         return GitTracking.instance;
     }
 
+    // verify cause for latest commit changing - git pull / fetch / merge / rebase / commit / revert commit
+    // git push : remote commit becomes local commit
+    // git pull : local commit becomes remote commit
+    // git commit : local commit changes, remote doesn't
+    // git revert commit -> goes back to some previous local commit
+    // git merge: ?
     public commitHandler(event: Uri) {
         if (event.path.includes('/.git/refs/heads/')) { //locals!
             // /.git/refs/heads/<branch_name>

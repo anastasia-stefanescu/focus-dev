@@ -1,104 +1,150 @@
 import { DEFAULT_CHANGE_EMISSION_INTERVAL } from "../Constants";
 import { CurrentSessionVariables } from "./event_management";
 import { window } from "vscode";
-import { FullChangeData, ProjectChangeInfo, ProjectExecutionInfo, ProjectUserActivityInfo, UserActivityEventInfo } from "./event_models";
+import { FullChangeData, ProjectInfo, Source, UserActivityEventInfo } from "./event_models";
 import { mySnowPlowTracker } from "./SnowPlowTracker";
 import { all } from "axios";
+
+import { instance } from "../extension";
 
 export async function emitFromCacheProjectChangeData() {
 }
 
-export async function emitToCacheProjectChangeData() {
+// emitting Execution events which might be quite long
+// send only those already finished every 1 minute (check whether any have finished)
+// send all of them only if the application is closed
+
+
+// USE OBJECTS.KEYS EVERYTIME TO VERIFY DICTIONARY IS NOT EMPTY!!!!!
+
+export async function emitToCacheProjectData(deactivation: boolean = false) {
     // Checks if we have events of any of the 3 types to send
 
     const one_minute_ago: number = new Date().getTime() - DEFAULT_CHANGE_EMISSION_INTERVAL;
 
-    const instance: CurrentSessionVariables = CurrentSessionVariables.getInstance();
+    const projectInfo = instance.getProjectInfo();
 
-    const projectChangeInfo = instance.getProjectChangeInfo();
-    const projectUserActivityInfo = instance.getProjectUserActivityInfo();
-    const projectExecutionInfo = instance.getProjectExecutionInfo();
+    if (!projectInfo) {
+        window.showErrorMessage('No project info available');
+        return;
+    }
 
-    const documentChangesExist = !!(projectChangeInfo && projectChangeInfo?.docs_changed);
-    const userActivityExists = !!(projectUserActivityInfo && projectUserActivityInfo?.userActivity);
-    const executionSessionsExist = !!(projectExecutionInfo && projectExecutionInfo?.execution_sessions);
+    const userDocChangesExist = !!(Object.keys(projectInfo.docs_changed_user).length);
+    const aiDocChangesExist = !!(Object.keys(projectInfo.docs_changed_ai).length);
+    const externalDocChangesExist = !!(Object.keys(projectInfo.docs_changed_external).length);
+    const userActivityExists = !!(projectInfo.userActivity && projectInfo.userActivity.total_actions > 0);
 
-    if (documentChangesExist || userActivityExists || executionSessionsExist) {
+    let sessionsToSendKeys;
+    if(deactivation)
+        sessionsToSendKeys = Object.keys(projectInfo.execution_sessions)
+    else
+        sessionsToSendKeys = filterFinishedExecutionSessions(instance);
+    const executionSessionsExist = !!(sessionsToSendKeys); // covers undefined / [] cases
+
+    if (userDocChangesExist || aiDocChangesExist || externalDocChangesExist || userActivityExists || executionSessionsExist) {
         clearTimeout(instance.getTimer());
         instance.setTimer(undefined);
 
-        if (documentChangesExist) {
-            saveToCacheDocumentChanges(projectChangeInfo);
-            instance.setProjectChangeInfo(undefined);
-        }
-        if (userActivityExists && projectUserActivityInfo.userActivity) {
-            saveToCacheUserActivity(projectUserActivityInfo.userActivity);
-            instance.setProjectUserActivityInfo(undefined);
-        }
-        if (executionSessionsExist) {
-            saveToCacheExecutionSessions(projectExecutionInfo);
-            instance.setProjectExecutionInfo(undefined);
-        }
+        saveToCacheDocumentChanges(instance, 'user');
+        saveToCacheDocumentChanges(instance, 'AI');
+        saveToCacheDocumentChanges(instance, 'external');
+
+        saveToCacheUserActivity(instance);
+
+        saveToCacheExecutionSessions(instance, sessionsToSendKeys, deactivation);
     }
 
     // for each of them separate??? Separate timers for each of them?
     instance.setLastEmitTime(new Date().getTime());
 }
 
-export function saveToCacheDocumentChanges(projectChangeInfo: ProjectChangeInfo) {
-    const payload = projectChangeInfo; // payload && payload.docs_changed && - already verified
-    if (Object.keys(payload.docs_changed).length) { // make sure project doc_changes have keystrokes
-        window.showInformationMessage('Sending docs change to cache');
+//=====================================================
+export function saveToCacheDocumentChanges(instance: CurrentSessionVariables, source: Source) {
+    const changes_dict = instance.getAllDocChangesForSource(source); // returns dict or undefined
 
-        // here we might not really need full project data!!!
-        getAllProjectDataAndSend(payload); // emitData("user_event", full_project_data);
-        // see other checks from editor flow!!!!
+    if (!changes_dict || Object.keys(changes_dict).length === 0) {
+        window.showInformationMessage(`No ${source} changes to send to cache`);
+        return;
     }
+
+    window.showInformationMessage(`Sending docs change for ${source} to cache`);   // just send the event which has project name and directory, filename and path set; // here we might not really need full project data!!!
+
+    const allChangedFiles = Object.keys(changes_dict);
+    const documentCache = instance.getDocumentCache(source);
+    for (const file of allChangedFiles) {                         // check duplicate events from another window - i don't think we will need this
+        const event = changes_dict[file];
+        if (!event.end)
+            event.end = new Date().toISOString(); // through references, the initial array is updated too
+        documentCache?.saveEvent(event);
+    }                                                             // see other checks from editor flow!!!!
+    instance.setAllDocChangesForSource(source, undefined);       // reset it
 }
 
-export function saveToCacheUserActivity(userActivity: UserActivityEventInfo) {
-    if (userActivity.total_actions > 0) {
-        window.showInformationMessage('Sending user activity to cache');
-        // emitData("user_event", payload);
+export function saveToCacheUserActivity(instance: CurrentSessionVariables) {
+    const userActivity = instance.getUserActivityInfo();
+
+    if (!userActivity || userActivity.total_actions === 0) {
+        window.showInformationMessage('No user activity to send to cache');
+        return;
     }
+
+    window.showInformationMessage('Sending user activity to cache');
+    const userActivityCache = instance.getUserActivityCache();
+    if (!userActivity.end)
+        userActivity.end = new Date().toISOString(); // through references, the initial array is updated too
+    userActivityCache.saveEvent(userActivity);
+    instance.setUserActivityInfo(undefined); // reset it
 }
 
-export function saveToCacheExecutionSessions(executionSessionsInfo: ProjectExecutionInfo) {
-    if (executionSessionsInfo.execution_sessions > 0) {
-        window.showInformationMessage('Sending execution sessions to cache');
-        // emitData("user_event", payload);
+export function saveToCacheExecutionSessions(instance: CurrentSessionVariables, sessionsToSendKeys: string[] | undefined, deactivation: boolean = false) {
+    if (!sessionsToSendKeys)
+        return;
+
+    window.showInformationMessage('Sending execution sessions to cache');
+    const executionCache = instance.getExecutionCache();
+    for (const key of sessionsToSendKeys) {
+        const event = instance.getExecutionEventInfo(key);
+        executionCache?.saveEvent(event);
+        if (!deactivation)
+            instance.deleteExecutionEvent(key); // delete it from the cache
     }
+    if (deactivation)
+        instance.setAllExecutionEvents(undefined); // reset it
 }
 
-export function getAllProjectDataAndSend(projectChangeInfo: ProjectChangeInfo) {
+//=====================================================
 
-    const allChangedFiles = Object.keys(projectChangeInfo.docs_changed);
+function filterFinishedExecutionSessions(instance: CurrentSessionVariables) {
+    const allSessions = instance.getAllExecutionEvents();
+    const finishedSessions = Object.keys(allSessions).filter((key) => allSessions[key].end);
+
+    if (finishedSessions.length) {
+        window.showInformationMessage('Sending finished execution sessions to cache');
+        return finishedSessions;
+    }
+    return undefined;
+}
+
+//=====================================================
+
+export function getAllProjectDataAndSendToCache(changes_dict: any, instance: CurrentSessionVariables) {
+
+    const allChangedFiles = Object.keys(changes_dict);
     for (const file of allChangedFiles) { // WITHOUT AWAIT????
         // check duplicate events from another window
 
-        const allFileData : FullChangeData = {
-            projectName: projectChangeInfo.project_name,
-            projectDirectory: projectChangeInfo.project_directory,
-            fileChangeInfo: projectChangeInfo.docs_changed[file],
-            // plugin and repo info
-        }
+        // just send the event which has project name and directory, filename and path set
+        const event = changes_dict[file];
 
-        mySnowPlowTracker.getInstance().trackDocumentChange(allFileData);
-    }
-}
 
-// set the end of changes if it doesn't exist
-// check references??
-export function closeOtherFilesInfo(fileName:string) {
-    if (CurrentSessionVariables.getInstance().getProjectChangeInfo() && CurrentSessionVariables.getInstance().getProjectChangeInfo()?.docs_changed) {
-        const allFiles = Object.keys(CurrentSessionVariables.getInstance().getProjectChangeInfo()?.docs_changed);
-        allFiles.forEach((file) => {
-            const fileChange = CurrentSessionVariables.getInstance().getProjectChangeInfo()?.docs_changed[file];
+        // const allFileData : FullChangeData = {
+        //     projectName: projectInfo.project_name,
+        //     projectDirectory: projectInfo.project_directory,
+        //     fileChangeInfo: projectInfo.docs_changed[file],
+        //     // plugin and repo info
+        // }
 
-            if (file !== fileName && fileChange && !fileChange.end) {
-                fileChange.end = new Date().toISOString(); // through references, the initial array is updated too
-            }
-        });
+        // mySnowPlowTracker.getInstance().trackDocumentChange(allFileData);
     }
 }
 

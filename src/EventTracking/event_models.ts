@@ -4,17 +4,13 @@ export class ProjectInfo {
     identifier: string = ''; // ?
     resource: any = {}; // ?
     // branch?
-}
-export class ProjectChangeInfo extends ProjectInfo{
-    docs_changed: any = {}; // dictionary
-}
+    docs_changed_user: any = {}; // dictionary
+    docs_changed_ai: any = {}; // dictionary
+    docs_changed_external: any = {}; // dictionary
 
-export class ProjectExecutionInfo {
     execution_sessions: any = {}; // dictionary
-}
 
-export class ProjectUserActivityInfo {
-    userActivity : UserActivityEventInfo | undefined;
+    userActivity: UserActivityEventInfo | undefined= undefined; // dictionary
 }
 
 export class DocumentInfo {
@@ -53,7 +49,9 @@ export class Event {
 
 
 export class ExecutionEventInfo extends Event {
-    eventType: string = '';
+    eventType: string = ''; // run, debug (also from shell), testing, deployment
+    sessionId: string = '';
+    sessionName: string = '';
 
     // Overload signatures
     constructor();
@@ -103,8 +101,9 @@ export class UserActivityEventInfo extends Event{
         this.file_actions += cacheEvent.file_actions;
         this.git_actions += cacheEvent.git_actions;
         this.window_focus_changes += cacheEvent.window_focus_changes;
-        this.total_actions += cacheEvent.total_actions;
         this.others += cacheEvent.others;
+
+        this.total_actions = cacheEvent.file_actions + cacheEvent.git_actions + cacheEvent.window_focus_changes + cacheEvent.others;
     }
 }
 
@@ -121,6 +120,8 @@ export class GitEvent {
 // and then sent to cloud, and then further aggregated over a longer period of time when returned from cloud
 // The reason we keep the same class for aggregation is because we are interested to see the actual stats of the written code
 // to add also multi cursor ?
+
+export type Source = "user" | "AI" | "external" | undefined;
 export class DocumentChangeInfo extends Event {
     // add source??? user / AI / other
     fileName: string = "";
@@ -138,8 +139,9 @@ export class DocumentChangeInfo extends Event {
     autoIndents: number = 0;
     replacements: number = 0;
     keystrokes: number = 0; // aici cate tastari efective s-au facut - poate fi util pt detectie
+
     changeType: string = ''; // this becomes obsolete when we start aggregating, because multiple changes are aggregated
-    source: string = ''; // user, AI, external, other
+    source: Source = undefined; // user, AI, external, other
 
     // writtenWithAI: AIinFile[] = []; // here we store the lines that were written with AI - this is a list of objects with start and end line numbers
 
@@ -163,7 +165,8 @@ export class DocumentChangeInfo extends Event {
         this.replacements = arg?.replacements ?? 0;
         this.keystrokes = arg?.keystrokes ?? 0;
         this.changeType = arg?.changeType ?? '';
-        this.source = arg?.source ?? '';
+
+        this.source = arg?.source;
     }
 
     concatenateData(cacheEvent: DocumentChangeInfo) { // has to have the same source!!

@@ -3,8 +3,7 @@ import * as vscode from 'vscode';
 import { createCommands } from './command_creator';
 import { window, Uri, ExtensionContext, commands, workspace, } from 'vscode';
 import {authentication, Disposable, TextDocument, Position, } from 'vscode';
-import { InlineCompletionContext, CancellationToken, DocumentSelector, InlineCompletionItemProvider} from 'vscode';
-import { InlineCompletionList, InlineCompletionItem, languages } from 'vscode';
+
 import { getServerRunning } from './server';
 import { post_to_services, get_from_services } from './API/api_wrapper';
 import { MyAuth0AuthProvider } from './Authentication/auth_provider';
@@ -13,9 +12,16 @@ import { SidebarViewProvider } from './Sidebar/webview_provider';
 import { testing_cluster_and_services } from './test_cloud';
 import { CurrentSessionVariables } from './EventTracking/event_management';
 import { mySnowPlowTracker } from './EventTracking/SnowPlowTracker';
+import { emitFromCacheProjectChangeData, emitToCacheProjectData } from './EventTracking/event_sending';
 
-// The `activate` function does not return anything, so its return type is `void`.
-export async function activate (context: vscode.ExtensionContext) {
+export let instance: CurrentSessionVariables;
+
+// activate runs for every workspace / project / window
+export async function activate (context: ExtensionContext) {
+
+  // will see these only if we run in debug mode
+  console.log('CodeStats: Activating extension...');
+
   const authProvider = new MyAuth0AuthProvider(context);
 
   context.subscriptions.push(createCommands(context));
@@ -23,78 +29,25 @@ export async function activate (context: vscode.ExtensionContext) {
   getServerRunning();
 
   const startAuthenticationCommand = vscode.commands.registerCommand('code-stats.startAuthentication', async () => {
-    // Start the authentication process after the login button is clicked
-    try {
-        const session = await authentication.getSession(MyAuth0AuthProvider.id, [], { createIfNone: true });
-        window.showInformationMessage(`Session creation. Logged in as: ${session.account.label}`);
-
-        if (session) {
-          window.showInformationMessage(`Session creation succeeded. Logged in as: ${session.account.label}`);
-          // Handle the authenticated user, e.g., create/save a user.
-          const user = await fetchUserData(session.accessToken); // Fetch user info.
-          window.showInformationMessage(`Welcome, ${user.name}!`);
-          if (user) {
-            await authProvider.updateSessionWithUserInfo(session.accessToken, user, session);
-            window.showInformationMessage(`Globalcontext: ${context.globalState.get('currentSession')}`)
-          } else { window.showErrorMessage('User is null !!'); }
-      }
-    }catch (error) {
-      window.showErrorMessage(`Authentication failed: ${error}`);
-    }
+    await startAuthentication(context, authProvider); // Start authentication process after login button is clicked
   });
   context.subscriptions.push(startAuthenticationCommand);
+  // if user doesn't log in, create an anonymous session??
+
+  instance = CurrentSessionVariables.getInstance();
 
   // activate snowplow tracker
   const snowplowTrackerInstance = mySnowPlowTracker.getInstance();
-
-
-  // Hook into the Inline Completion API ----------------------------------------------
-  // https://github.com/microsoft/vscode-extension-samples/tree/main/inline-completions
-
-  //   Store the Original API Function
-  const originalRegister = languages.registerInlineCompletionItemProvider;
-  window.showInformationMessage("Original Register: ", originalRegister.toString());
-
-  //   Override the API
-
-  (languages as any).registerInlineCompletionItemProvider = function (selector: DocumentSelector,
-                                                                      provider: InlineCompletionItemProvider) : Disposable
-    { //  replace with a custom function
-      window.showInformationMessage("Intercepting inline completions!");
-
-      const newProvider : InlineCompletionItemProvider = { // Wrap inside a custom provider so we can modify its behavior
-        // Calls the original provider function to get AI-generated suggestions
-        provideInlineCompletionItems: async function ( document: TextDocument, position: Position, context: InlineCompletionContext, token: CancellationToken)
-         : Promise<InlineCompletionList | InlineCompletionItem[]> {
-            vscode.window.showInformationMessage("AI Suggestion Triggered!");
-            const result = await provider.provideInlineCompletionItems(document, position, context, token); // here okay provider??
-
-            // If the AI provides suggestions, we capture them before they appear in the editor
-            if (result) {
-              const items = Array.isArray(result) ? result : result.items;
-              if (items.length > 0) {
-                window.showInformationMessage("AI Suggestion Received:", items.map(item => item.insertText.toString()).join(" + "));
-              }
-              return result;
-            }
-            else
-              return [];
-        }
-      };
-
-      //return originalRegister.apply(this, [args[0], newProvider, args[2]]);
-      return originalRegister.call(languages, selector, newProvider); // here we use the new provider
-  };
-
-  // send a comment to inference service
-
-  // test cloud
-
   // see if the server works
   //await testing_cluster_and_services();
 }
 
-export function deactivate() {};
+// hook onto this so we can send all data from cache to cloud
+export function deactivate() {
+  window.showInformationMessage('CodeStats: Deactivating extension...');
+  // emitToCacheProjectData(true); // send all data to cache
+  // emitFromCacheProjectChangeData(); // send all data to cloud
+};
 
 export async function reload() {
   // updateFlowModeStatus();
@@ -124,4 +77,26 @@ export async function reload() {
   // }
 
   //commands.executeCommand('codetime.refreshCodeTimeView');
+}
+
+// move to authentication section
+// make Auth0AuthProvider a singleton
+async function startAuthentication(context: ExtensionContext, authProvider: MyAuth0AuthProvider) {
+  try {
+    const session = await authentication.getSession(MyAuth0AuthProvider.id, [], { createIfNone: true });
+    window.showInformationMessage(`Session creation. Logged in as: ${session.account.label}`);
+
+    if (session) {
+      window.showInformationMessage(`Session creation succeeded. Logged in as: ${session.account.label}`);
+      // Handle the authenticated user, e.g., create/save a user.
+      const user = await fetchUserData(session.accessToken); // Fetch user info.
+      window.showInformationMessage(`Welcome, ${user.name}!`);
+      if (user) {
+        await authProvider.updateSessionWithUserInfo(session.accessToken, user, session);
+        window.showInformationMessage(`Globalcontext: ${context.globalState.get('currentSession')}`)
+      } else { window.showErrorMessage('User is null !!'); }
+    }
+  } catch (error) {
+    window.showErrorMessage(`Authentication failed: ${error}`);
+  }
 }

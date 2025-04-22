@@ -1,12 +1,13 @@
 
-import { hasUncaughtExceptionCaptureCallback } from "process";
-import { TextDocumentChangeEvent, TextDocumentContentChangeEvent, TextDocumentChangeReason } from "vscode";
+import { emit, hasUncaughtExceptionCaptureCallback } from "process";
+import { TextDocumentChangeEvent, TextDocumentChangeReason } from "vscode";
 import { window } from "vscode";
 import { CurrentSessionVariables} from "./event_management";
-import { DocumentChangeInfo, ProjectChangeInfo } from "./event_models";
-import { DEFAULT_CHANGE_EMISSION_INTERVAL } from "../Constants";
-import { closeOtherFilesInfo, emitProjectChangeData } from "./event_sending";
+import { DocumentChangeInfo, ExecutionEventInfo, ProjectInfo, UserActivityEventInfo } from "./event_models";
 import { extractChangeData } from "./event_data_extraction";
+import { Source } from "./event_models";
+
+import { instance } from "../extension"; // !!
 
 // DOCUMENT CHANGE
 export function verifyDocumentChange(event: TextDocumentChangeEvent, lastCopiedText:string, eventTime:Date ) {
@@ -14,76 +15,137 @@ export function verifyDocumentChange(event: TextDocumentChangeEvent, lastCopiedT
 
     if (contentChanges.length === 0) {
       return "nothing"
-    } //window.showInformationMessage(` Nr changes: ${contentChanges.length}, First change: ${contentChanges[0].text}, range ${contentChanges[0].range.start.line} - ${contentChanges[0].range.end.line}`);
+    }
 
     let undo_redo: boolean = (reason === TextDocumentChangeReason.Redo || reason === TextDocumentChangeReason.Undo) ? true : false;
 
-    let multiCursorInserts : boolean = (contentChanges.length > 1) ? true : false; // git additions, refactorizations, etc. Code generation (usually?) happens in one place at a time
+    let multiCursorInserts : boolean = (contentChanges.length > 1) ? true : false; // git additions, refactorizations, etc.
 
-    const fileName = document.fileName; // aici de verificat daca este fila de care ne intereseaza
-    CurrentSessionVariables.getInstance().verifyExistingProjectAndFileData(fileName); // verifica daca exista date despre proiect si fisier, daca nu, creeaza-le
+    const fileName = document.fileName;                                       // aici de verificat daca este fila e de un tip care ne intereseaza
 
+    let source: Source = undefined; // I suppose source is the same between the changes?
     contentChanges.forEach(async change => {
         const { text, range } = change;
 
         const changeInfo: DocumentChangeInfo = extractChangeData(change); // extracts data and 'analyse' the change
-        CurrentSessionVariables.getInstance().addChangeDataToDocumentInfo(fileName, changeInfo); // add changes to the file change info
+        console.log('verifyDocumentChange: extracted change data!');
 
-        // here we are looking to send 'unusual' events such as generating code, pasting from external sources, etc.
-        // normal actions such as typing, deleting, copying, pasting, undo, redo, autocomplete, etc, are not sent immediately, what matters from them is just how much code was written and such.
-        // we are especially looking at multiAdd changes => paste, undo/redo, generated code, autocompletion, multi-line code refactorization, git pulls/fetches
-
+        // here we are separating between user/AI/external code - to set the 'source' field in the corresponding DocumentChangeInfo object
         if (undo_redo === false) {
-            if (changeInfo.changeType == 'multiAdd' && multiCursorInserts === false) { // not normal typing, one block of text was added; possible causes: paste, generated code, autocompletion
-                if (lastCopiedText != text) { // last globally copied text different than text that appeared => not paste
-                    window.showInformationMessage('Not paste!!'); // generated code, autocompletion
-                } else {
-                  verifyPaste(lastCopiedText);
+            if (changeInfo.changeType == 'multiAdd') {                         // not normal typing, one or more blocks of text were added
+                if (multiCursorInserts === false) {                            // only one block of text; possible: paste, generated code, autocompletion
+                    if (lastCopiedText != text) {                              // last globally copied text different than text that appeared => not paste
+                        window.showInformationMessage('Not paste, generated code/autocompletion!!');          // generated code, autocompletion
+                        if (changeInfo.linesAdded > 4) {
+                            window.showInformationMessage('Generated code!');
+                            source = 'AI';
+                        } else {
+                            window.showInformationMessage('Autocompletion!');
+                            source = 'user';
+                        }
+                    } else {
+                        source = verifyPaste(lastCopiedText);
+                    }
+                } else {  // mark the activity as 'other' user activity; take into account DocumentChangeInfo or discard it?                                                     // code refactoring, git pulls/fetches
+                    window.showInformationMessage('Multi cursor insert, git pull / code refactoring!');
+                    // if is git pull
+                    const userActivity: UserActivityEventInfo = handleMultipleInserts();
+                    instance.addUserActivityData(userActivity);
                 }
-            } // else, multi-line code refactorization, git pulls/fetches
+            } else {                                                           // one single character was added => NORMAL TYPING
+                console.log('Normal typing!');
+                source = 'user';                                             // normal typing
+            }
         } else {
-            // we have to see whether code was added / deleted
-            // no it just undoes the last event -> we have to delete the last event
-            // save in cache actually the last events so we can undo them? we save it until extension is stopped as normally
-            // implement sort of a git blame to know for sure?
-            // in any case, we count it as user activity
-
+            // Undo/ Redo - it just undoes the last event -> we have to delete the last event; undo from cache? we save it until extension is stopped normally - no because we concatenate events implement sort of a git blame to know for sure?
             // we track what code was written at some point, whether it is deleted later, that doesn't really mean much, an effort was made
 
-            
+            // deletion => handle it as documentChangeInfo delete; addition => userActivity
+            if (changeInfo.changeType == 'singleDelete' || changeInfo.changeType == 'multiDelete') {
+                source = 'user';
+            } else if (changeInfo.changeType == 'singleAdd' || changeInfo.changeType == 'multiAdd') {
+                const userActivity: UserActivityEventInfo = new UserActivityEventInfo();
+                userActivity.others += 1;
+                instance.addUserActivityData(userActivity);
+            }
         }
 
-        // daca e schimbare generata de ceva extern, trebuie trimisa imediat??
-        // de adaugat author la schimbare !!! (in viitor asta se va integra si cu git)
-        // se emit datele!!
+        if (source !== undefined) { // exclude the case when we have a multi cursor insert => not user written
+            changeInfo.source = source;
+            instance.addDocumentChangeData(fileName, changeInfo);               // verifica daca exista date despre proiect si fisier, daca nu, creeaza-le; add changes to the file change info
+        }
     });
 
-    const documentChangeInfo = CurrentSessionVariables.getInstance().getDocumentChangeInfo(fileName);
-    window.showInformationMessage(`Document change info: ${documentChangeInfo.keystrokes} keystrokes, ${documentChangeInfo.multiAdds} multiadds, ${documentChangeInfo.singleAdds} singleadds, ${documentChangeInfo.autoIndents} autoindents, ${documentChangeInfo.replacements} replacements`);
+    const documentChangeInfo = instance.getDocChangeForSource(source, fileName); // get the document change info for the file and source
+    if (documentChangeInfo)
+        window.showInformationMessage(`Document change info: ${documentChangeInfo.keystrokes} keystrokes, ${documentChangeInfo.multiAdds} multiadds, ${documentChangeInfo.singleAdds} singleadds, ${documentChangeInfo.autoIndents} autoindents, ${documentChangeInfo.replacements} replacements`);
+    else
+        window.showInformationMessage(`Document change info: ${fileName} not found!`);
 }
 
-// CLOSE / SAVE FILE
+// WHEN ARE USER ACTIVITY EVENTS ENDING??? - ending every minute when they are sent to cache
+
+// ======================================================
+
+// CLOSE / SAVE / DELETE FILE
 export function handleCloseFile(fileName:string) {
-    // also save event
-    emitProjectChangeData();
+    addFileAction();
+    instance.closeFileEvent(fileName);
 }
 
-// OPEN FILE
+// OPEN / CREATE FILE
 export function handleOpenFile(fileName:string) {
-    closeOtherFilesInfo(fileName);
-    emitProjectChangeData(); // ??
+    addFileAction();
+    instance.closeAllFileEventsExcept(fileName);
+    //emitToCacheProjectChangeData(); // why we do this is to set the 'end' of the event
 }
 
-export async function verifyPaste(clipboardText:string) {
-    const lastCopiedText = CurrentSessionVariables.getInstance().getLastCopiedText();
+export function addFileAction() {
+    const userActivity: UserActivityEventInfo = new UserActivityEventInfo();
+    userActivity.file_actions += 1;
+    instance.addUserActivityData(userActivity);
+}
+
+// ======================================================
+
+export function verifyPaste(clipboardText:string) : Source {
+    const lastCopiedText = instance.getLastCopiedText();
     window.showInformationMessage('Last copied text inside VSCode:', lastCopiedText);
 
     if (clipboardText != lastCopiedText) {
         window.showInformationMessage('Pasted code from external source');
-
-        //await handleEvent(`Pasted external code`, '', 'coding-external', 'start', new Date());
-    } else {
-        window.showInformationMessage('Pasted code from internal source');
-        //await handleEvent(`Pasted internal code`, '', 'coding-external', 'start', new Date());
+        return 'external';
     }
+
+    window.showInformationMessage('Pasted code from internal source');
+    return 'user';
+}
+
+export function handleMultipleInserts() : UserActivityEventInfo {
+
+    // check git pull / fetch / merge / rebase
+
+    let userActivity: UserActivityEventInfo = new UserActivityEventInfo();
+    if (verifyMultipleInserts() === 'git pull')
+        userActivity.git_actions += 1;
+    else
+        userActivity.others += 1;
+
+    return userActivity;
+}
+
+function verifyMultipleInserts() {
+    return 'git pull';
+}
+
+// ======================================================
+export function startExecutionSession(session: any, type:string){
+    const execSession: ExecutionEventInfo = new ExecutionEventInfo();
+    // execSession.sessionId = id;
+    // execSession.sessionName = name;
+    // execSession.eventType = type;
+
+
+    instance.verifyExistingProjectData();
+    instance.setExecutionEventInfo(execSession); // add the session to the cache
 }
