@@ -126,21 +126,27 @@ export class DocumentChangeInfo extends Event {
     // add source??? user / AI / other
     fileName: string = "";
     filePath: string = "";
+
     lineCount: number = 0;
     characterCount: number = 0;
+
     linesAdded: number = 0;
     linesDeleted: number = 0;
     charactersAdded: number = 0;
     charactersDeleted: number = 0;
+
     singleDeletes: number = 0;
     multiDeletes: number = 0; // !!
     singleAdds: number = 0;
     multiAdds: number = 0; // !!
+
     autoIndents: number = 0;
     replacements: number = 0;
+
     keystrokes: number = 0; // aici cate tastari efective s-au facut - poate fi util pt detectie
 
-    changeType: string = ''; // this becomes obsolete when we start aggregating, because multiple changes are aggregated
+    changeType: string = ''; // only the new doc changeType matters
+
     source: Source = undefined; // user, AI, external, other
 
     // writtenWithAI: AIinFile[] = []; // here we store the lines that were written with AI - this is a list of objects with start and end line numbers
@@ -167,6 +173,12 @@ export class DocumentChangeInfo extends Event {
         this.changeType = arg?.changeType ?? '';
 
         this.source = arg?.source;
+    }
+
+    displayData(message: string) : string {
+        return message + `${this.charactersAdded} characters added,  ${this.linesAdded} lines added, ${this.singleAdds} singleadds, ${this.multiAdds} multiadds,
+                ${this.charactersDeleted} characters deleted, ${this.linesDeleted} lines deleted, ${this.singleDeletes} single deletes, ${this.multiDeletes} multi deletes,
+                ${this.keystrokes} keystrokes, ${this.autoIndents} autoindents, ${this.replacements} replacements`
     }
 
     concatenateData(cacheEvent: DocumentChangeInfo) { // has to have the same source!!

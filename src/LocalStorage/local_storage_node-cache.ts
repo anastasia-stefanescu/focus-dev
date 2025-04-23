@@ -101,11 +101,11 @@ export class EventCache<T> {
     getCorrectKey(event: T): string {
         let key;
         if (event instanceof DocumentChangeInfo) {
-            key = `event:${event.source}:${event.fileName}:${event.start}:${event.end}`;
+            key = `${event.source}:${event.fileName}:${event.start}:${event.end}`;
         } else if (event instanceof ExecutionEventInfo) {
-            key = `event:${event.eventType}:${event.start}:${event.end}`;
+            key = `${event.eventType}:${event.start}:${event.end}`;
         } else if (event instanceof UserActivityEventInfo) {
-            key = `event:${event.start}:${event.end}`;
+            key = `${event.start}:${event.end}`;
         } else {
             throw new Error('Unsupported event type');
         }
@@ -122,10 +122,15 @@ export class EventCache<T> {
             return;
         }
 
+        window.showInformationMessage(`Putting in cache key: ${key}`);
         this.cache.set(key, event);
+
+        window.showInformationMessage(` We have in cache for key: ${this.cache.get(key)}`);
 
         // Update array of events keys ordered by time
         this.eventsByTime.push(key);
+
+        window.showInformationMessage( `Events ordered by time: ${this.eventsByTime}`);
 
         // Concatenate events if they are close enough and of the same type / source
         this.groupEvents(event);

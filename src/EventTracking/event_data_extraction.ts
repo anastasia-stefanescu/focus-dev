@@ -40,7 +40,7 @@ export function addChange(docChangeInfo: DocumentChangeInfo, changeInfo: Documen
   docChangeInfo.linesDeleted += changeInfo.linesDeleted;
   docChangeInfo.charactersAdded += changeInfo.charactersAdded;
   docChangeInfo.charactersDeleted += changeInfo.charactersDeleted;
-  docChangeInfo.changeType = changeInfo.changeType; // should remain the same! - UPDATE:: WELL ACTUALLY DOES
+  //docChangeInfo.changeType = changeInfo.changeType; // should remain the same! - UPDATE:: WELL ACTUALLY DOES
   // But it doesn't matter because we're not looking at it anymore
 
   switch (changeInfo.changeType) {

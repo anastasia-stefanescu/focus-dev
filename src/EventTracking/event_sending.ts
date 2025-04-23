@@ -42,6 +42,8 @@ export async function emitToCacheProjectData(deactivation: boolean = false) {
     const executionSessionsExist = !!(sessionsToSendKeys); // covers undefined / [] cases
 
     if (userDocChangesExist || aiDocChangesExist || externalDocChangesExist || userActivityExists || executionSessionsExist) {
+        window.showInformationMessage('Something exists to be sent to be cache!');
+
         clearTimeout(instance.getTimer());
         instance.setTimer(undefined);
 
@@ -52,6 +54,8 @@ export async function emitToCacheProjectData(deactivation: boolean = false) {
         saveToCacheUserActivity(instance);
 
         saveToCacheExecutionSessions(instance, sessionsToSendKeys, deactivation);
+
+        instance.setProjectInfo(undefined)
     }
 
     // for each of them separate??? Separate timers for each of them?
@@ -67,7 +71,7 @@ export function saveToCacheDocumentChanges(instance: CurrentSessionVariables, so
         return;
     }
 
-    window.showInformationMessage(`Sending docs change for ${source} to cache`);   // just send the event which has project name and directory, filename and path set; // here we might not really need full project data!!!
+    window.showInformationMessage(`Begin send docs change for ${source} to cache`);   // just send the event which has project name and directory, filename and path set; // here we might not really need full project data!!!
 
     const allChangedFiles = Object.keys(changes_dict);
     const documentCache = instance.getDocumentCache(source);
@@ -75,9 +79,10 @@ export function saveToCacheDocumentChanges(instance: CurrentSessionVariables, so
         const event = changes_dict[file];
         if (!event.end)
             event.end = new Date().toISOString(); // through references, the initial array is updated too
+        //window.showInformationMessage(`Will call saveEvent for ${file}: ${event.charactersAdded}`);
         documentCache?.saveEvent(event);
     }                                                             // see other checks from editor flow!!!!
-    instance.setAllDocChangesForSource(source, undefined);       // reset it
+    //instance.setAllDocChangesForSource(source, {});       // reset it
 }
 
 export function saveToCacheUserActivity(instance: CurrentSessionVariables) {
@@ -93,12 +98,14 @@ export function saveToCacheUserActivity(instance: CurrentSessionVariables) {
     if (!userActivity.end)
         userActivity.end = new Date().toISOString(); // through references, the initial array is updated too
     userActivityCache.saveEvent(userActivity);
-    instance.setUserActivityInfo(undefined); // reset it
+    //instance.setUserActivityInfo(undefined); // reset it
 }
 
 export function saveToCacheExecutionSessions(instance: CurrentSessionVariables, sessionsToSendKeys: string[] | undefined, deactivation: boolean = false) {
-    if (!sessionsToSendKeys)
+    if (!sessionsToSendKeys) {
+        window.showInformationMessage(`No execution sessions to send to cache`);
         return;
+    }
 
     window.showInformationMessage('Sending execution sessions to cache');
     const executionCache = instance.getExecutionCache();
@@ -108,8 +115,8 @@ export function saveToCacheExecutionSessions(instance: CurrentSessionVariables, 
         if (!deactivation)
             instance.deleteExecutionEvent(key); // delete it from the cache
     }
-    if (deactivation)
-        instance.setAllExecutionEvents(undefined); // reset it
+    // if (deactivation)
+    //     instance.setAllExecutionEvents({}); // reset it
 }
 
 //=====================================================

@@ -28,7 +28,7 @@ export function verifyDocumentChange(event: TextDocumentChangeEvent, lastCopiedT
         const { text, range } = change;
 
         const changeInfo: DocumentChangeInfo = extractChangeData(change); // extracts data and 'analyse' the change
-        console.log('verifyDocumentChange: extracted change data!');
+        //window.showInformationMessage(`Extracted: ${changeInfo.charactersAdded} characters, ${changeInfo.singleAdds} singleAdds,  ${changeInfo.lineCount} line count, ${changeInfo.linesAdded} lines added, ${changeInfo.multiAdds} multiAdds `);
 
         // here we are separating between user/AI/external code - to set the 'source' field in the corresponding DocumentChangeInfo object
         if (undo_redo === false) {
@@ -52,8 +52,8 @@ export function verifyDocumentChange(event: TextDocumentChangeEvent, lastCopiedT
                     const userActivity: UserActivityEventInfo = handleMultipleInserts();
                     instance.addUserActivityData(userActivity);
                 }
-            } else {                                                           // one single character was added => NORMAL TYPING
-                console.log('Normal typing!');
+            } else {
+                window.showInformationMessage('Normal typing!');                                                     // one single character was added => NORMAL TYPING
                 source = 'user';                                             // normal typing
             }
         } else {
@@ -76,11 +76,12 @@ export function verifyDocumentChange(event: TextDocumentChangeEvent, lastCopiedT
         }
     });
 
-    const documentChangeInfo = instance.getDocChangeForSource(source, fileName); // get the document change info for the file and source
-    if (documentChangeInfo)
-        window.showInformationMessage(`Document change info: ${documentChangeInfo.keystrokes} keystrokes, ${documentChangeInfo.multiAdds} multiadds, ${documentChangeInfo.singleAdds} singleadds, ${documentChangeInfo.autoIndents} autoindents, ${documentChangeInfo.replacements} replacements`);
-    else
-        window.showInformationMessage(`Document change info: ${fileName} not found!`);
+    // for verifying the data
+    // const documentChangeInfo = instance.getDocChangeForSource(source, fileName); // get the document change info for the file and source
+    // if (documentChangeInfo)
+    //     window.showInformationMessage(documentChangeInfo.displayData('After processing_by_type: '));
+    // else
+    //     window.showInformationMessage(`After processing_by_type: Document change: ${fileName} not found!`);
 }
 
 // WHEN ARE USER ACTIVITY EVENTS ENDING??? - ending every minute when they are sent to cache

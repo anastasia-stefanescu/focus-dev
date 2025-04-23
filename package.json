@@ -14,6 +14,7 @@
   ],
   "activationEvents": [],
   "devDependencies": {
+    "@playwright/test": "^1.52.0",
     "@types/cassandra-driver": "^4.1.1",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
@@ -24,7 +25,9 @@
     "@typescript-eslint/parser": "^8.7.0",
     "@vscode/test-cli": "^0.0.10",
     "@vscode/test-electron": "^2.5.2",
+    "electron": "^35.2.0",
     "eslint": "^9.13.0",
+    "playwright": "^1.52.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3"
   },
@@ -79,14 +82,6 @@
         "title": "Paste with Message"
       },
       {
-        "command": "custom.trackUndo",
-        "title": "Track Undo"
-      },
-      {
-        "command": "custom.trackRedo",
-        "title": "Track Redo"
-      },
-      {
         "command": "custom.trackCopy",
         "title": "Track Copy"
       },
@@ -99,16 +94,6 @@
       {
         "command": "custom.pasteWithMessage",
         "key": "cmd+v",
-        "when": "editorTextFocus"
-      },
-      {
-        "command": "custom.trackUndo",
-        "key": "cmd+z",
-        "when": "editorTextFocus"
-      },
-      {
-        "command": "custom.trackRedo",
-        "key": "cmd+shift+z",
         "when": "editorTextFocus"
       },
       {

@@ -110,47 +110,6 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
     });
 
     // check if these work normally!!!!!
-    const undoDisposable = vscode.commands.registerCommand('custom.trackUndo', async () => {
-      const now = new Date();
-
-      window.showInformationMessage(`Undo at ${now}`);
-
-      instance.setLastTimeofUndoRedo(now);
-
-      if (window.activeTextEditor) {
-          try {
-              await commands.executeCommand('workbench.action.files.undo');
-          } catch (error) {
-              if (error instanceof Error) {
-                  window.showErrorMessage('Undo command failed ' + error.message); // error message?
-              } else {
-                  vscode.window.showErrorMessage('Undo command failed with an unknown error');
-              }
-          }
-      } else {
-          vscode.window.showErrorMessage('No active editor. Undo command cannot be executed.');
-      }
-    });
-
-    const redoDisposable = vscode.commands.registerCommand('custom.trackRedo', async () => {
-      const now = new Date();
-
-      window.showInformationMessage(`Redo at ${now}`);
-
-      instance.setLastTimeofUndoRedo(now);
-
-      if (vscode.window.activeTextEditor) {
-          try {
-              await vscode.commands.executeCommand('editor.action.redo');
-          } catch (error) {
-              vscode.window.showErrorMessage('Redo command failed'); // error message?
-          }
-      } else {
-          vscode.window.showErrorMessage('No active editor. Redo command cannot be executed.');
-      }
-    });
-
-
 
     // register VCode API user events
 
@@ -231,8 +190,6 @@ export function createCommands(  ctx: ExtensionContext /* add: kpm controller, s
     cmds.push(copyDisposable);
     cmds.push(cutDisposable);
     cmds.push(pasteDisposable);
-    cmds.push(undoDisposable);
-    cmds.push(redoDisposable);
     cmds.push(saveEvent);
     cmds.push(closeEvent);
     cmds.push(openEvent);

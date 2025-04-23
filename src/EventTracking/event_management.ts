@@ -112,7 +112,7 @@ export class CurrentSessionVariables {
     //===============================================================================
 
     public getExecutionEventInfo(sessionId: string) {
-        if (this.projectInfo && this.projectInfo.execution_sessions[sessionId])
+        if (this.projectInfo && this.projectInfo.execution_sessions && this.projectInfo.execution_sessions[sessionId])
             return this.projectInfo.execution_sessions[sessionId];
         return undefined;
     }
@@ -129,14 +129,14 @@ export class CurrentSessionVariables {
         return undefined;
     }
 
-    public setAllExecutionEvents(executionInfo: { [key: string]: ExecutionEventInfo } | undefined) {
+    public setAllExecutionEvents(executionInfo: { [key: string]: ExecutionEventInfo }) {
         if (this.projectInfo) {
             this.projectInfo.execution_sessions = executionInfo;
         }
     }
 
     public deleteExecutionEvent(sessionId: string) {
-        if (this.projectInfo && this.projectInfo.execution_sessions[sessionId])
+        if (this.projectInfo && this.projectInfo.execution_sessions && this.projectInfo.execution_sessions[sessionId])
             delete this.projectInfo.execution_sessions[sessionId];
         else
             window.showInformationMessage(`Execution event with sessionId ${sessionId} not found for deletion`);
@@ -158,11 +158,11 @@ export class CurrentSessionVariables {
     public getDocChangeForSource(source: Source, fileName:string) : DocumentChangeInfo | undefined {
         console.log('Inside getDocChangeForSource', source, fileName);
         if (this.projectInfo) {
-            if (source === 'user' && this.projectInfo.docs_changed_user[fileName]) {
+            if (source === 'user' && this.projectInfo.docs_changed_user && this.projectInfo.docs_changed_user[fileName]) {
                 return this.projectInfo.docs_changed_user[fileName];
-            } else if (source === 'AI' && this.projectInfo.docs_changed_ai[fileName]) {
+            } else if (source === 'AI' && this.projectInfo.docs_changed_ai && this.projectInfo.docs_changed_ai[fileName]) {
                 return this.projectInfo.docs_changed_ai[fileName];
-            } else if (source === 'external' && this.projectInfo.docs_changed_external[fileName]) {
+            } else if (source === 'external' && this.projectInfo.docs_changed_external && this.projectInfo.docs_changed_external[fileName]) {
                 return this.projectInfo.docs_changed_external[fileName];
             }
         }
@@ -173,22 +173,26 @@ export class CurrentSessionVariables {
         if (this.projectInfo) { // the dictionary has to exist if the project change info exists
             if (source === 'user') {
                 this.projectInfo.docs_changed_user[fileName] = docChangeInfo;
+                //window.showInformationMessage(this.projectInfo.docs_changed_user[fileName].displayData(`Document set for ${source} source`));
             } else if (source === 'AI') {
                 this.projectInfo.docs_changed_ai[fileName] = docChangeInfo;
+                //window.showInformationMessage(this.projectInfo.docs_changed_ai[fileName].displayData(`Document set for ${source} source`));
             } else if (source === 'external') {
                 this.projectInfo.docs_changed_external[fileName] = docChangeInfo;
+                //window.showInformationMessage(this.projectInfo.docs_changed_external[fileName].displayData(`Document set for ${source} source`));
             }
         }
     }
 
-    public setAllDocChangesForSource(source: Source, docChangeInfo: DocumentChangeInfo | undefined) {
+    // this.projectInfo.docs_changed_user -> dict de any,
+    public setAllDocChangesForSource(source: Source, allDocChangeInfo: { [key : string] : DocumentChangeInfo}) {
         if (this.projectInfo) {
             if (source === 'user') {
-                this.projectInfo.docs_changed_user = docChangeInfo;
+                this.projectInfo.docs_changed_user = allDocChangeInfo;
             } else if (source === 'AI') {
-                this.projectInfo.docs_changed_ai = docChangeInfo;
+                this.projectInfo.docs_changed_ai = allDocChangeInfo;
             } else if (source === 'external') {
-                this.projectInfo.docs_changed_external = docChangeInfo;
+                this.projectInfo.docs_changed_external = allDocChangeInfo;
             }
         }
     }
@@ -309,10 +313,9 @@ export class CurrentSessionVariables {
     //===============================================================================
 
     public addDocumentChangeData(fileName:string, changeInfo: DocumentChangeInfo) {
-        console.log('Inside addDocumentChangeData');
         const docChangeInfo : DocumentChangeInfo = this.verifyExistingDocumentChangeData(fileName, changeInfo.source); // verifica daca exista date despre proiect si fisier, daca nu, creeaza-le
 
-        docChangeInfo.concatenateData(changeInfo); // docChangeInfo is modified, RIGHT?
+        addChange(docChangeInfo, changeInfo); // docChangeInfo is modified, RIGHT?
 
         this.setDocChangeForSource(changeInfo.source, docChangeInfo, fileName);
         // I think here we will use concatenate because we're not interested in the type of event
