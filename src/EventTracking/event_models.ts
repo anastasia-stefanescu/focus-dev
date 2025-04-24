@@ -1,5 +1,5 @@
 export class ProjectInfo {
-    project_directory: string = '';
+    project_directory: string = ''; // Negative value: 'None'
     project_name: string = '';
     identifier: string = ''; // ?
     resource: any = {}; // ?
@@ -41,17 +41,18 @@ export class Event {
         }
     }
 
-    concatenateData(cacheEvent: Event) { // always earlier event!!!
+    concatenateData(cacheEvent: Event) { // cacheEvent is later event!!!
         // also check if the project is the same??
-        this.start = cacheEvent.start;
+        this.end = cacheEvent.end;
+
     }
 }
 
-
+export type ExecutionType = 'debug' | 'run' | 'test' | 'deploy' | undefined
 export class ExecutionEventInfo extends Event {
-    eventType: string = ''; // run, debug (also from shell), testing, deployment
+    eventType: ExecutionType = undefined; // debug, run(from shell), testing, deployment
     sessionId: string = '';
-    sessionName: string = '';
+    //sessionName: string = '';
 
     // Overload signatures
     constructor();
@@ -62,7 +63,7 @@ export class ExecutionEventInfo extends Event {
         super(cacheEvent as Partial<Event>); // this works fine even if cacheEvent is undefined
 
         if (cacheEvent) {
-            this.eventType = cacheEvent.eventType ?? '';
+            this.eventType = cacheEvent.eventType ?? undefined; // why is this and do we have to update it???
         }
     }
 
@@ -74,6 +75,9 @@ export class ExecutionEventInfo extends Event {
 // a class where we store the aggregated DocumentChangeInfo - which should have the number of events in an interval
 // if this class exists for a timeframe, that means enough events were done in this timeframe, and they were also
 // well distributed, because we only aggregated events that were quite close to each other
+
+// just informative
+export type UserActivityType = 'file' | 'git' | 'window' | 'document' | 'terminal' | undefined;
 
 // per project, and per timeframe
 export class UserActivityEventInfo extends Event{
@@ -98,6 +102,7 @@ export class UserActivityEventInfo extends Event{
 
     concatenateData(cacheEvent: UserActivityEventInfo) {
         super.concatenateData(cacheEvent);
+
         this.file_actions += cacheEvent.file_actions;
         this.git_actions += cacheEvent.git_actions;
         this.window_focus_changes += cacheEvent.window_focus_changes;
@@ -107,7 +112,10 @@ export class UserActivityEventInfo extends Event{
     }
 }
 
+export type SuccessType = 'commit' | 'push' | 'run' | 'test' | 'tag' | undefined
+
 export class SuccessIndicator { // can be about git commits / other actions or comments or some kind of execution
+    type: SuccessType = undefined
     status: string = ''; // optional - execution/deployment : success, failure
     message: string = ''; // optional - commit message: positive / negative / neutral
 }

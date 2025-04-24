@@ -13,6 +13,9 @@ export class GitTracking {
     private localGitWatcher : FileSystemWatcher | undefined = undefined;
     private remoteGitWatcher : FileSystemWatcher | undefined = undefined;
 
+    private last_local_commit_for_branch : {[key:string] : string} = {};
+    private last_remote_commit_for_branch: { [key: string]: string } = {};
+
     // if workspace wasn't opened yet / is changed, can we listen for it so we call this constructor?
     private constructor() {
         // !! Only works if the git directory is in the workspace
@@ -33,8 +36,9 @@ export class GitTracking {
             // these subscriptions can be handled only in this file
             subscriptions.push(this.localGitWatcher);
             subscriptions.push(this.remoteGitWatcher);
-            subscriptions.push(this.localGitWatcher.onDidChange(this.commitHandler, this));
-            subscriptions.push(this.remoteGitWatcher.onDidChange(this.commitHandler, this));
+            // here do we have to use the same commit handler for both watchers?
+            subscriptions.push(this.localGitWatcher.onDidChange(this.commitChangeHandler, this));
+            subscriptions.push(this.remoteGitWatcher.onDidChange(this.commitChangeHandler, this));
             subscriptions.push(this.remoteGitWatcher.onDidCreate(this.branchCreateHandler, this)); // in what cases is onDidCreate activated???
             subscriptions.push(this.remoteGitWatcher.onDidDelete(this.branchDeleteHandler, this));
         }
@@ -50,22 +54,24 @@ export class GitTracking {
 
     // verify cause for latest commit changing - git pull / fetch / merge / rebase / commit / revert commit
     // git push : remote commit becomes local commit
-    // git pull : local commit becomes remote commit
-    // git commit : local commit changes, remote doesn't
+    // git pull : local commit becomes remote commit - can we get it?
+    // git local commit : local commit changes, remote doesn't
     // git revert commit -> goes back to some previous local commit
     // git merge: ?
-    public commitHandler(event: Uri) {
-        if (event.path.includes('/.git/refs/heads/')) { //locals!
-            // /.git/refs/heads/<branch_name>
-            const branch = event.path.split('.git/')[1]; // 1 or 2? extract branch name
-            let commit;
-            try {
-                commit = fs.readFileSync(event.path, 'utf8').trimEnd();
-            } catch (err: any) {
-                window.showInformationMessage(`Error reading ${event.path}: ${err.message}`);
+
+    // MAYBE EXECUTE A 'GIT FETCH -ALL' TO HAVE LATEST COMMIT DATA!!
+
+    // ALSO, GIT TAGS ARE A GOOD INDICATOR OF SUCCESS!!!!!
+    public commitChangeHandler(event: Uri) { // uri uses only '/' slashes
+        if (event.path.includes('/.git/refs/heads/')) {                                           // /.git/refs/heads/<branch_name>
+            const branch = event.path.split('/')[3];                                          // extract branch name
+            const commit = this.getCommitFromPath(event.path);
+            if (commit) { // commit was made / brought through pull locally
+
             }
-            //this.tracker.trackGitLocalEvent('local_commit', branch, commit); // records local commit
+            //this.tracker.trackGitLocalEvent('local_commit', branch, commit);                    // records local commit
         } else if (event.path.includes('/.git/refs/remotes/')) {
+            window.showErrorMessage('Local git listener picked up remote commit');
             // /.git/refs/remotes/<branch_name>
             //this.tracker.trackGitRemoteEvent(event);
         }
@@ -77,5 +83,16 @@ export class GitTracking {
 
     public branchDeleteHandler() {
 
+    }
+
+    public getCommitFromPath(path: string) {
+        let commit = undefined;
+        try {
+            commit = fs.readFileSync(path, 'utf8').trimEnd();
+            window.showInformationMessage('Got commit: ', commit);
+        } catch (err: any) {
+            window.showErrorMessage(`Error reading ${path} to get commit: ${err.message}`);
+        }
+        return commit;
     }
 }

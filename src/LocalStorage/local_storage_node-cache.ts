@@ -4,6 +4,7 @@ import { window } from 'vscode';
 
 type CacheValue = string | number;
 
+// WHAT HAPPENS WITH CACHE IS VSCODE IS CLOSED? I KNOW WE SEND DATA TO CLOUD BUT STILL
 export class EventCache<T> {
     // ARE WE SENDING BY EVENT OR BY BATCH??? - BY EVENT
     // keys of type: event:{eventType}:{timestamp}
@@ -101,6 +102,7 @@ export class EventCache<T> {
     getCorrectKey(event: T): string {
         let key;
         if (event instanceof DocumentChangeInfo) {
+            window.showInformationMessage(`Inisde getCorrect Key for docChange: ${event}`)
             key = `${event.source}:${event.fileName}:${event.start}:${event.end}`;
         } else if (event instanceof ExecutionEventInfo) {
             key = `${event.eventType}:${event.start}:${event.end}`;

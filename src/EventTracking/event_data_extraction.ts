@@ -36,6 +36,10 @@ export function extractChangeData(change: TextDocumentContentChangeEvent): Docum
 }
 
 export function addChange(docChangeInfo: DocumentChangeInfo, changeInfo: DocumentChangeInfo ) {
+
+  if (docChangeInfo.source === undefined)
+      docChangeInfo.source = changeInfo.source;
+    
   docChangeInfo.linesAdded += changeInfo.linesAdded;
   docChangeInfo.linesDeleted += changeInfo.linesDeleted;
   docChangeInfo.charactersAdded += changeInfo.charactersAdded;

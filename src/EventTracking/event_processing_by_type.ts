@@ -3,14 +3,15 @@ import { emit, hasUncaughtExceptionCaptureCallback } from "process";
 import { TextDocumentChangeEvent, TextDocumentChangeReason } from "vscode";
 import { window } from "vscode";
 import { CurrentSessionVariables} from "./event_management";
-import { DocumentChangeInfo, ExecutionEventInfo, ProjectInfo, UserActivityEventInfo } from "./event_models";
+import { DocumentChangeInfo, ExecutionEventInfo, ExecutionType, ProjectInfo, UserActivityEventInfo } from "./event_models";
 import { extractChangeData } from "./event_data_extraction";
 import { Source } from "./event_models";
 
 import { instance } from "../extension"; // !!
+import { getCurrentFileRelativePath } from "../Util/util";
 
 // DOCUMENT CHANGE
-export function verifyDocumentChange(event: TextDocumentChangeEvent, lastCopiedText:string, eventTime:Date ) {
+export function verifyDocumentChange(event: TextDocumentChangeEvent) {
     const { contentChanges, document, reason } = event; // de verificat daca documentul exista si fereastra este deschisa si focusata
 
     if (contentChanges.length === 0) {
@@ -21,7 +22,10 @@ export function verifyDocumentChange(event: TextDocumentChangeEvent, lastCopiedT
 
     let multiCursorInserts : boolean = (contentChanges.length > 1) ? true : false; // git additions, refactorizations, etc.
 
-    const fileName = document.fileName;                                       // aici de verificat daca este fila e de un tip care ne intereseaza
+    // relative filePath
+    const fileUri = window.activeTextEditor?.document.uri;
+    const fileName = getCurrentFileRelativePath(fileUri);//document.fileName; // RETURNEAZA PATH (RELATIV); aici de verificat daca este fila e de un tip care ne intereseaza
+    if (!fileName) return;
 
     let source: Source = undefined; // I suppose source is the same between the changes?
     contentChanges.forEach(async change => {
@@ -34,6 +38,7 @@ export function verifyDocumentChange(event: TextDocumentChangeEvent, lastCopiedT
         if (undo_redo === false) {
             if (changeInfo.changeType == 'multiAdd') {                         // not normal typing, one or more blocks of text were added
                 if (multiCursorInserts === false) {                            // only one block of text; possible: paste, generated code, autocompletion
+                    const lastCopiedText = instance.getLastCopiedText();
                     if (lastCopiedText != text) {                              // last globally copied text different than text that appeared => not paste
                         window.showInformationMessage('Not paste, generated code/autocompletion!!');          // generated code, autocompletion
                         if (changeInfo.linesAdded > 4) {
@@ -44,10 +49,10 @@ export function verifyDocumentChange(event: TextDocumentChangeEvent, lastCopiedT
                             source = 'user';
                         }
                     } else {
-                        source = verifyPaste(lastCopiedText);
+                        source = verifyPaste();
                     }
                 } else {  // mark the activity as 'other' user activity; take into account DocumentChangeInfo or discard it?                                                     // code refactoring, git pulls/fetches
-                    window.showInformationMessage('Multi cursor insert, git pull / code refactoring!');
+                    window.showInformationMessage('Multi cursor insert, is git pull / code refactoring!');
                     // if is git pull
                     const userActivity: UserActivityEventInfo = handleMultipleInserts();
                     instance.addUserActivityData(userActivity);
@@ -109,11 +114,13 @@ export function addFileAction() {
 
 // ======================================================
 
-export function verifyPaste(clipboardText:string) : Source {
+export function verifyPaste() : Source {
+    const lastInternalCopiedText = instance.getLastInternalCopiedText();
     const lastCopiedText = instance.getLastCopiedText();
-    window.showInformationMessage('Last copied text inside VSCode:', lastCopiedText);
 
-    if (clipboardText != lastCopiedText) {
+    window.showInformationMessage('Last copied text inside VSCode:', lastInternalCopiedText);
+
+    if (lastCopiedText != lastInternalCopiedText) {
         window.showInformationMessage('Pasted code from external source');
         return 'external';
     }
@@ -140,13 +147,15 @@ function verifyMultipleInserts() {
 }
 
 // ======================================================
-export function startExecutionSession(session: any, type:string){
-    const execSession: ExecutionEventInfo = new ExecutionEventInfo();
-    // execSession.sessionId = id;
-    // execSession.sessionName = name;
-    // execSession.eventType = type;
+export function startExecutionSession(session: any, type:ExecutionType){
+    instance.returnOrCreateExecution(session, type);
+}
 
-
-    instance.verifyExistingProjectData();
-    instance.setExecutionEventInfo(execSession); // add the session to the cache
+export function endExecutionSession(session:any) {
+    const execSession = instance.getExecutionEventInfo(session.id);
+    if (execSession){
+        execSession.end = new Date().toISOString();
+        instance.setExecutionEventInfo(execSession);
+    } else
+        window.showErrorMessage('Try to end execution session that does not exist or type is not the same');
 }

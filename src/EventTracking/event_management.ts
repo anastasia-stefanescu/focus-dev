@@ -2,13 +2,14 @@ import { TextEditor, window } from "vscode";
 import { post_to_services } from "../API/api_wrapper";
 import { v4 as uuidv4 } from 'uuid';
 import { start } from "repl";
-import { DocumentChangeInfo, ExecutionEventInfo, FullChangeData, ProjectInfo, Source, UserActivityEventInfo } from "./event_models";
+import { DocumentChangeInfo, ExecutionEventInfo, ExecutionType, FullChangeData, ProjectInfo, Source, UserActivityEventInfo } from "./event_models";
 import { DEFAULT_CHANGE_EMISSION_INTERVAL } from "../Constants";
 import { mySnowPlowTracker } from "./SnowPlowTracker";
 import { emitToCacheProjectData } from "./event_sending";
 import { addChange } from "./event_data_extraction";
 import { EventCache } from "../LocalStorage/local_storage_node-cache";
 import { emit } from "process";
+import { getCurrentWorkspacePathAndName } from "../Util/util";
 
 
 // should also add window id here - there might be multiple windows open
@@ -25,7 +26,7 @@ export class CurrentSessionVariables {
     // - yes, because we also have the project info which is basically the window
     // Theoretically, no, only node-cache is per process and thus per window.
     // What do we do about this then?
-    private static instance : CurrentSessionVariables;
+    private static instance: CurrentSessionVariables;
 
     // also add different cache instances here!!!
     private executionCache: EventCache<ExecutionEventInfo> | undefined = undefined;
@@ -45,18 +46,16 @@ export class CurrentSessionVariables {
     // !! current primary window !!
 
     // what were we using these for??
-    private crt_is_in_focus : boolean = true;
-    private last_came_in_focus : Date = new Date();
+    private crt_is_in_focus: boolean = true;
+    private last_came_in_focus: Date = new Date();
 
-    private last_time_of_paste : Date = new Date();
+    private last_time_of_paste: Date = new Date();
     private last_time_of_undo_redo: Date = new Date();
 
+    private last_internal_copied_text: string = '';
     private last_copied_text: string = '';
 
-    public CurrentSessionVariables() {
-
-        //this.opened_windows = window.visibleTextEditors;
-    }
+    public CurrentSessionVariables() { }
 
     public static getInstance() {
         if (!CurrentSessionVariables.instance)
@@ -77,7 +76,7 @@ export class CurrentSessionVariables {
         }
         return this.userActivityCache;
     }
-    public getDocumentCache(source: Source) : EventCache<DocumentChangeInfo> | undefined {
+    public getDocumentCache(source: Source): EventCache<DocumentChangeInfo> | undefined {
         if (source === 'user') {
             if (!this.userDocumentCache)
                 this.userDocumentCache = new EventCache<DocumentChangeInfo>();
@@ -155,7 +154,7 @@ export class CurrentSessionVariables {
     }
 
     // returns undefined if key for dict doesn't exist
-    public getDocChangeForSource(source: Source, fileName:string) : DocumentChangeInfo | undefined {
+    public getDocChangeForSource(source: Source, fileName: string): DocumentChangeInfo | undefined {
         console.log('Inside getDocChangeForSource', source, fileName);
         if (this.projectInfo) {
             if (source === 'user' && this.projectInfo.docs_changed_user && this.projectInfo.docs_changed_user[fileName]) {
@@ -185,7 +184,7 @@ export class CurrentSessionVariables {
     }
 
     // this.projectInfo.docs_changed_user -> dict de any,
-    public setAllDocChangesForSource(source: Source, allDocChangeInfo: { [key : string] : DocumentChangeInfo}) {
+    public setAllDocChangesForSource(source: Source, allDocChangeInfo: { [key: string]: DocumentChangeInfo }) {
         if (this.projectInfo) {
             if (source === 'user') {
                 this.projectInfo.docs_changed_user = allDocChangeInfo;
@@ -214,12 +213,15 @@ export class CurrentSessionVariables {
 
 
     public getLastTimeofPaste() { return this.last_time_of_paste; }
-    public setLastTimeofPaste(date:Date) { this.last_time_of_paste = date; }
+    public setLastTimeofPaste(date: Date) { this.last_time_of_paste = date; }
+
+    public getLastInternalCopiedText() { return this.last_internal_copied_text; }
+    public setLastInternalCopiedText(text: string) { this.last_internal_copied_text = text; }
 
     public getLastCopiedText() { return this.last_copied_text;}
     public setLastCopiedText(text:string) { this.last_copied_text = text; }
 
-    public getLastTimeofUndoRedo() { return this.last_time_of_undo_redo;}
+    public getLastTimeofUndoRedo() { return this.last_time_of_undo_redo; }
     public setLastTimeofUndoRedo(date: Date) { this.last_time_of_undo_redo = date; }
 
     public getLastCameInFocus() { return this.last_came_in_focus; }
@@ -243,40 +245,28 @@ export class CurrentSessionVariables {
     public verifyExistingProjectData() {
         console.log('Inside verifyExistingProjectData');
         if (!this.projectInfo) {
-            window.showInformationMessage('Project info initialized');
             this.projectInfo = new ProjectInfo();
-            this.projectInfo.project_name = 'Project Name'; // to be set
-            this.projectInfo.project_directory = 'Project Directory'; // to be set
 
-            this.startProjectTimer(); // ar trebui aic
+            const workspaceData = getCurrentWorkspacePathAndName();
+            if (workspaceData) {
+                this.projectInfo.project_name = workspaceData.name;
+                this.projectInfo.project_directory = workspaceData.path;
+            } else {
+                this.projectInfo.project_name = 'None';
+                this.projectInfo.project_directory = 'None';
+            }
+
+            this.startProjectTimer(); // ar trebui aici
+            window.showInformationMessage(`Project info initialized: ${this.projectInfo.project_name}, ${this.projectInfo.project_directory}`);
             console.log('Started project timer');
         }
     }
-
-    public verifyExistingDocumentChangeData(fileName: string, source: Source) : DocumentChangeInfo{
-        console.log('Inside verifyExistingDocumentChangeData');
-        console.log('Project info:', this.projectInfo);
-        this.verifyExistingProjectData();
-
-        return this.createDocumentChangeInfoFile(fileName, source);                // creeaza fila noua dava nu exista deja
-    }
-
-    public verifyExistingUserActivityData() {
-        this.verifyExistingProjectData();
-
-        return this.createUserActivityInfoFile();                // creeaza fila noua daca nu exista deja
-    }
-
-    public verifyExistingExecutionData(sessionId: string) {
-        this.verifyExistingProjectData();
-
-        return this.createExecutionInfoFile(sessionId);
-    }
-
     //===============================================================================
 
     // is the dictionary also modified???
-    public createDocumentChangeInfoFile(fileName:string, source: Source) : DocumentChangeInfo {
+    public returnOrCreateDocumentChange(fileName: string, source: Source): DocumentChangeInfo {
+        this.verifyExistingProjectData();
+
         if (this.projectInfo && this.getDocChangeForSource(source, fileName) === undefined) {
             const docChangeInfo: DocumentChangeInfo = new DocumentChangeInfo();
             docChangeInfo.fileName = fileName;
@@ -291,20 +281,25 @@ export class CurrentSessionVariables {
         return this.getDocChangeForSource(source, fileName) as DocumentChangeInfo; // to exclude the undefined case
     }
 
-    public createUserActivityInfoFile() : UserActivityEventInfo {
+    public returnOrCreateUserActivity(): UserActivityEventInfo {
+        this.verifyExistingProjectData();
+
         if (this.getUserActivityInfo() === undefined) {
-            const userActivity : UserActivityEventInfo = new UserActivityEventInfo();
+            const userActivity: UserActivityEventInfo = new UserActivityEventInfo();
             userActivity.start = new Date().toISOString();
             this.setUserActivityInfo(userActivity);
         }
         return this.getUserActivityInfo() as UserActivityEventInfo; // to exclude the undefined case
     }
 
-    public createExecutionInfoFile(sessionId: string) : ExecutionEventInfo {
+    public returnOrCreateExecution(sessionId: string, type: ExecutionType): ExecutionEventInfo {
+        this.verifyExistingProjectData();
+
         if (this.getExecutionEventInfo(sessionId) === undefined) {
-            const executionEventInfo : ExecutionEventInfo = new ExecutionEventInfo();
+            const executionEventInfo: ExecutionEventInfo = new ExecutionEventInfo();
             executionEventInfo.start = new Date().toISOString();                        // seteaza timpul de start al activitatii in fisier
             executionEventInfo.sessionId = sessionId;
+            executionEventInfo.eventType = type;
             this.setExecutionEventInfo(executionEventInfo);
         }
         return this.getExecutionEventInfo(sessionId) as ExecutionEventInfo; // to exclude the undefined case
@@ -312,8 +307,8 @@ export class CurrentSessionVariables {
 
     //===============================================================================
 
-    public addDocumentChangeData(fileName:string, changeInfo: DocumentChangeInfo) {
-        const docChangeInfo : DocumentChangeInfo = this.verifyExistingDocumentChangeData(fileName, changeInfo.source); // verifica daca exista date despre proiect si fisier, daca nu, creeaza-le
+    public addDocumentChangeData(fileName: string, changeInfo: DocumentChangeInfo) {
+        const docChangeInfo: DocumentChangeInfo = this.returnOrCreateDocumentChange(fileName, changeInfo.source); // verifica daca exista date, daca nu, creeaza-le
 
         addChange(docChangeInfo, changeInfo); // docChangeInfo is modified, RIGHT?
 
@@ -323,19 +318,13 @@ export class CurrentSessionVariables {
     }
 
     public addUserActivityData(userActivity: UserActivityEventInfo) {
-        const userActivityInfo: UserActivityEventInfo = this.verifyExistingUserActivityData();
+        const userActivityInfo: UserActivityEventInfo = this.returnOrCreateUserActivity();
 
         userActivityInfo.concatenateData(userActivity); // this updates the total_actions
         this.setUserActivityInfo(userActivityInfo);
     }
 
-    // this is not used because we don't need to concatenate session data, they are independent
-    // public addExecutionData(executionEvent: ExecutionEventInfo) {
-    //     const executionEventInfo: ExecutionEventInfo = this.verifyExistingExecutionData(executionEvent.sessionId);
-
-    //     executionEventInfo.concatenateData(executionEvent); // executionInfo is modified, RIGHT?
-    //     this.setExecutionEventInfo(executionEventInfo);
-    // }
+    // For execution it's not used because we don't need to concatenate session data, they are independent - even when grouping we use concatenation!!!
 
     //=========================================================
 

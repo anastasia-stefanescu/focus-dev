@@ -112,8 +112,8 @@ export function saveToCacheExecutionSessions(instance: CurrentSessionVariables, 
     for (const key of sessionsToSendKeys) {
         const event = instance.getExecutionEventInfo(key);
         executionCache?.saveEvent(event);
-        if (!deactivation)
-            instance.deleteExecutionEvent(key); // delete it from the cache
+        // if (!deactivation)
+        //     instance.deleteExecutionEvent(key); // delete it from the cache
     }
     // if (deactivation)
     //     instance.setAllExecutionEvents({}); // reset it
