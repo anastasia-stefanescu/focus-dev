@@ -45,6 +45,7 @@ export class CurrentSessionVariables {
 
     // !! current primary window !!
 
+    private is_in_flow: boolean = true; // whether user is focused in past 10 minutes
     // what were we using these for??
     private crt_is_in_focus: boolean = true;
     private last_came_in_focus: Date = new Date();
@@ -96,6 +97,9 @@ export class CurrentSessionVariables {
     }
 
     //===============================================================================
+
+    public get_flow() { return this.is_in_flow; }
+    public set_flow(val: boolean) { this.is_in_flow = val; }
 
     public getProjectInfo() { return this.projectInfo; }
     public setProjectInfo(projectInfo: ProjectInfo | undefined) { this.projectInfo = projectInfo; }

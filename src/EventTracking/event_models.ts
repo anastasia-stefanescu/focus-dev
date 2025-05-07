@@ -21,6 +21,8 @@ export class DocumentInfo {
     characterCount: number = 0;
 }
 
+
+export type EventType = 'document' | 'userActivity' | 'execution' | 'other';
 export class Event {
     start: string = ''; // in seconds or actual Date in string
     end: string = '';
@@ -44,31 +46,62 @@ export class Event {
     concatenateData(cacheEvent: Event) { // cacheEvent is later event!!!
         // also check if the project is the same??
         this.end = cacheEvent.end;
+    }
 
+    buildEventFromJson(data: any) {
+        this.start = data.start;
+        this.end = data.end;
+        this.projectName = data.projectName;
+        this.projectDirectory = data.projectDirectory;
+    }
+
+    computeRateOfEvent() :number {
+        return 0;
     }
 }
 
-export type ExecutionType = 'debug' | 'run' | 'test' | 'deploy' | undefined
+export function getNewEvent(type: EventType): Event | undefined {
+    if (type == 'document')
+        return new DocumentChangeInfo();
+    if (type == 'execution')
+        return new ExecutionEventInfo();
+    if (type == 'userActivity')
+        return new UserActivityEventInfo();
+    return undefined;
+}
+
+
+export type ExecutionType = 'debug' | 'run' | 'test' | 'deploy' | ''
 export class ExecutionEventInfo extends Event {
-    eventType: ExecutionType = undefined; // debug, run(from shell), testing, deployment
+    eventType: ExecutionType = ''; // debug, run(from shell), testing, deployment
     sessionId: string = '';
     //sessionName: string = '';
 
-    // Overload signatures
     constructor();
     constructor(cacheEvent: Partial<ExecutionEventInfo>);
 
-    // Implementation
     constructor(cacheEvent?: Partial<ExecutionEventInfo>) {
         super(cacheEvent as Partial<Event>); // this works fine even if cacheEvent is undefined
 
         if (cacheEvent) {
-            this.eventType = cacheEvent.eventType ?? undefined; // why is this and do we have to update it???
+            this.eventType = cacheEvent.eventType ?? ''; // why is this and do we have to update it???
         }
     }
 
     concatenateData(cacheEvent: ExecutionEventInfo): void {
         super.concatenateData(cacheEvent);
+    }
+
+    buildEventFromJson(data: any){
+        super.buildEventFromJson(data);
+        this.eventType = data.eventType;
+        this.sessionId = data.sessionId;
+    }
+
+    computeRateOfEvent() : number{
+        //super.computeRateOfEvent();
+        const duration = new Date(this.end).getTime() - new Date(this.start).getTime();
+        return 1 / duration;
     }
 }
 
@@ -76,9 +109,9 @@ export class ExecutionEventInfo extends Event {
 // if this class exists for a timeframe, that means enough events were done in this timeframe, and they were also
 // well distributed, because we only aggregated events that were quite close to each other
 
-// just informative
-export type UserActivityType = 'file' | 'git' | 'window' | 'document' | 'terminal' | undefined;
+// I don't think we need Window focus info
 
+export type UserActivityType = 'file' | 'git' | 'window' | 'document' | 'terminal' | undefined;
 // per project, and per timeframe
 export class UserActivityEventInfo extends Event{
 
@@ -110,11 +143,30 @@ export class UserActivityEventInfo extends Event{
 
         this.total_actions = cacheEvent.file_actions + cacheEvent.git_actions + cacheEvent.window_focus_changes + cacheEvent.others;
     }
+
+    buildEventFromJson(data: any): void {
+        super.buildEventFromJson(data);
+        this.file_actions = data.file_actions;
+        this.git_actions = data.git_actions;
+        this.window_focus_changes = data.window_focus_changes;
+        this.total_actions = data.total_actions;
+        this.others = data.others;
+    }
+
+    computeRateOfEvent() : number {
+        const duration = new Date(this.end).getTime() - new Date(this.start).getTime();
+        if (duration == 0)
+            return this.total_actions;
+        return this.total_actions / duration;
+    }
 }
 
 export type SuccessType = 'commit' | 'push' | 'run' | 'test' | 'tag' | undefined
 
 export class SuccessIndicator { // can be about git commits / other actions or comments or some kind of execution
+    projectName: string = '';
+    projectDirectory: string = '';
+    branchName: string = ''; // optional
     type: SuccessType = undefined
     status: string = ''; // optional - execution/deployment : success, failure
     message: string = ''; // optional - commit message: positive / negative / neutral
@@ -203,6 +255,43 @@ export class DocumentChangeInfo extends Event {
         this.replacements += cacheEvent.replacements;
         this.keystrokes += cacheEvent.keystrokes;
     }
+
+    buildEventFromJson(data: any): void {
+        super.buildEventFromJson(data);
+        this.fileName = data.fileName;
+        this.filePath = data.filePath;
+        this.lineCount = data.lineCount;
+        this.characterCount = data.characterCount;
+        this.linesAdded = data.linesAdded;
+        this.linesDeleted = data.linesDeleted;
+        this.charactersAdded = data.charactersAdded;
+        this.charactersDeleted = data.charactersDeleted;
+        this.singleDeletes = data.singleDeletes;
+        this.multiDeletes = data.multiDeletes;
+        this.singleAdds = data.singleAdds;
+        this.multiAdds = data.multiAdds;
+        this.autoIndents = data.autoIndents;
+        this.replacements = data.replacements;
+        this.keystrokes = data.keystrokes;
+        this.changeType = data.changeType;
+
+        this.source = data.source;
+    }
+
+    computeRateOfEvent() :number {
+        const duration = new Date(this.end).getTime() - new Date(this.start).getTime();
+
+        let noActions = 0;
+        if (this.source === 'user') {
+            noActions = this.keystrokes;
+        } else if (this.source === 'AI' || this.source === 'external') {
+            noActions = this.singleAdds + this.multiAdds;
+        }
+
+        if (duration == 0)
+            return noActions;
+        return noActions / duration;
+    }
 }
 
 export class FullChangeData {
@@ -213,29 +302,10 @@ export class FullChangeData {
     // pluginInfo: any = {};
 }
 
-export class AIinFile {
-    fileName: string = '';
-    filePath: string = '';
-    startLine: number = 0;
-    endLine: number = 0;
-}
-
-// // copy - from another window?, paste, cut, delete | save, open, close | git updates
-// export interface spontaneousEvent {
-//     activityId: string,
-//     time: string,
-//     activityType: string,
-//     contentLength: number | undefined
+// export class AIinFile {
+//     fileName: string = '';
+//     filePath: string = '';
+//     startLine: number = 0;
+//     endLine: number = 0;
 // }
-
-// // debug, run, shell run | window focus (multiple windows?)
-// // document changes (typing, generating code, comments)
-// export interface continuousEvent {
-//     activityId: string,
-//     activityDuration: number | undefined,
-//     startTime: string,
-//     endTime:string | undefined,
-//     activityType: string
-// }
-
 

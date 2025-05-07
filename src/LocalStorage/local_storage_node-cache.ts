@@ -1,6 +1,6 @@
 import NodeCache from 'node-cache';
 import { DocumentChangeInfo, Event, ExecutionEventInfo, UserActivityEventInfo } from '../EventTracking/event_models';
-import { window } from 'vscode';
+//import { window } from 'vscode';
 
 type CacheValue = string | number;
 
@@ -102,7 +102,7 @@ export class EventCache<T> {
     getCorrectKey(event: T): string {
         let key;
         if (event instanceof DocumentChangeInfo) {
-            window.showInformationMessage(`Inisde getCorrect Key for docChange: ${event}`)
+            //window.showInformationMessage(`Inisde getCorrect Key for docChange: ${event}`)
             key = `${event.source}:${event.fileName}:${event.start}:${event.end}`;
         } else if (event instanceof ExecutionEventInfo) {
             key = `${event.eventType}:${event.start}:${event.end}`;
@@ -120,19 +120,19 @@ export class EventCache<T> {
             key = this.getCorrectKey(event);
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
-            window.showInformationMessage('Unsupported event type:', errorMessage);
+            //window.showInformationMessage('Unsupported event type:', errorMessage);
             return;
         }
 
-        window.showInformationMessage(`Putting in cache key: ${key}`);
+        //window.showInformationMessage(`Putting in cache key: ${key}`);
         this.cache.set(key, event);
 
-        window.showInformationMessage(` We have in cache for key: ${this.cache.get(key)}`);
+        //window.showInformationMessage(` We have in cache for key: ${this.cache.get(key)}`);
 
         // Update array of events keys ordered by time
         this.eventsByTime.push(key);
 
-        window.showInformationMessage( `Events ordered by time: ${this.eventsByTime}`);
+        //window.showInformationMessage( `Events ordered by time: ${this.eventsByTime}`);
 
         // Concatenate events if they are close enough and of the same type / source
         this.groupEvents(event);
@@ -155,7 +155,7 @@ export class EventCache<T> {
                     this.mergeTwoEvents(event, lastEvent as T, lastEventKey, this.eventsByTime.length - 1);
                 } catch (error) {
                     const errorMessage = error instanceof Error ? error.message : String(error);
-                    window.showInformationMessage('Error merging events:', errorMessage);
+                    //window.showInformationMessage('Error merging events:', errorMessage);
                 }
             }
             return;
@@ -164,7 +164,7 @@ export class EventCache<T> {
         if (event instanceof ExecutionEventInfo) {
             let index = this.eventsByTime.length - 1;
             while (index >= 0) {
-                if (this.eventsByTime[index].includes(event.eventType)) {
+                if (this.eventsByTime[index].includes(event.eventType?.toString())) {
                     const currEventKey = this.eventsByTime[index];
                     const currEvent = new ExecutionEventInfo(this.cache.get<ExecutionEventInfo>(currEventKey) as Partial<ExecutionEventInfo>);
                     if (currEvent && currEvent.eventType === event.eventType
@@ -173,7 +173,7 @@ export class EventCache<T> {
                             this.mergeTwoEvents(event, currEvent as T, currEventKey, index);
                         } catch (error) {
                             const errorMessage = error instanceof Error ? error.message : String(error);
-                            window.showInformationMessage('Error merging events:', errorMessage);
+                            //window.showInformationMessage('Error merging events:', errorMessage);
                         }
                         return;
                     }
@@ -197,7 +197,7 @@ export class EventCache<T> {
                             this.mergeTwoEvents(event, currEvent as T, currEventKey, index);
                         } catch (error) {
                             const errorMessage = error instanceof Error ? error.message : String(error);
-                            window.showInformationMessage('Error merging events:', errorMessage);
+                            //window.showInformationMessage('Error merging events:', errorMessage);
                         }
                         return;
                     }

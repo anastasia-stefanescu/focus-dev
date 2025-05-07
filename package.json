@@ -113,7 +113,8 @@
     "start": "node dist/server.js",
     "dev": "ts-node src/server.ts",
     "vscode:prepublish": "npm run compile",
-    "compile": "tsc watch -p ./"
+    "compile": "tsc watch -p ./",
+    "debug-shell": "tsc && node dist/debug-shell.js"
   },
   "dependencies": {
     "@snowplow/node-tracker": "^4.3.1",

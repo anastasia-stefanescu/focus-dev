@@ -16,6 +16,17 @@
 				"${workspaceFolder}/out/**/*.js"
 			],
 			"preLaunchTask": "${defaultBuildTask}"
+		},
+		{
+			"name": "Debug Shell",
+			"type": "node",
+			"request": "launch",
+			"program": "${workspaceFolder}/dist/debug-shell.js",
+			"runtimeArgs": [
+				"-r",
+				"ts-node/register"
+			],
+			"internalConsoleOptions": "openOnSessionStart"
 		}
 	]
 }
