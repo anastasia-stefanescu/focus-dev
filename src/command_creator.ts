@@ -117,7 +117,7 @@ export function createCommands(ctx: ExtensionContext /* add: kpm controller, sto
 
   //==========================================FILE EVENTS=========================================
   const saveEvent = workspace.onDidSaveTextDocument(async (document) => {
-    window.showInformationMessage(`!Saved file: ${document.fileName}`);
+    //window.showInformationMessage(`!Saved file: ${document.fileName}`);
     handleCloseFile(document.fileName); // handle as if closing the file
   });
 

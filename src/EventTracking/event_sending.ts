@@ -80,6 +80,8 @@ export function saveToCacheDocumentChanges(instance: CurrentSessionVariables, so
         if (!event.end)
             event.end = new Date().toISOString(); // through references, the initial array is updated too
         //window.showInformationMessage(`Will call saveEvent for ${file}: ${event.charactersAdded}`);
+        window.showInformationMessage(`Sending: ${event.keystrokes} keystrokes, ${event.charactersAdded}
+            chars added, ${event.charactersDeleted} chars deleted, ${event.multiAdds} multiAdds, ${event.singleAdds}`);
         documentCache?.saveEvent(event);
     }                                                             // see other checks from editor flow!!!!
     //instance.setAllDocChangesForSource(source, {});       // reset it

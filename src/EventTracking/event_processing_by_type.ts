@@ -58,7 +58,7 @@ export function verifyDocumentChange(event: TextDocumentChangeEvent) {
                     instance.addUserActivityData(userActivity);
                 }
             } else {
-                window.showInformationMessage('Normal typing!');                                                     // one single character was added => NORMAL TYPING
+                //window.showInformationMessage('Normal typing!');                                                     // one single character was added => NORMAL TYPING
                 source = 'user';                                             // normal typing
             }
         } else {

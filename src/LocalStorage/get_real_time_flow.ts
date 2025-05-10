@@ -30,7 +30,7 @@ export function getRealTimeFlow() {
     const sum_external = get_sum_of_events(externalDocumentEvents);
 
     // ne intereseaza: lineCount, characterCount, keystrokes: number = 0;
-    if (sum_user && sum_user.lineCount > 
+    // if (sum_user && sum_user.lineCount >
 
 }
 
