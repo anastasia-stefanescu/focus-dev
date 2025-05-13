@@ -9,12 +9,9 @@ export async function getData(type: EventType, projectName: string | undefined):
 
     const events: Event[] = [];
     for (const elem of response) {
-        const event = getNewEvent(type);
-        if (event) {
-            event.buildEventFromJson(elem); // put data in it - this could be improved, as in python
-            if ((projectName && event.projectName == projectName) || !projectName)
-                groupEvents(events, event);
-        }
+        const event = Event.buildEventFromJson(elem); // put data in it - this could be improved, as in python
+        if ((projectName && event.projectName == projectName) || !projectName)
+            groupEvents(events, event);
     }
 
     // how is data from multiple event types handled here? Or document changes from different sources?

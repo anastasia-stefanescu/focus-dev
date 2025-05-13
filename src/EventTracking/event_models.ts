@@ -24,11 +24,11 @@ export class DocumentInfo {
 
 export type EventType = 'document' | 'userActivity' | 'execution' | 'other';
 export class Event {
-    start: string = ''; // in seconds or actual Date in string
+    start: string = ''; // in seconds !! or actual Date in string
     end: string = '';
     projectName: string = '';
     projectDirectory: string = '';
-    // branch??
+    branch: string = ''; // optional -> this is important for the efficiency only
 
     constructor();
     constructor(cacheEvent: Partial<Event>);
@@ -40,6 +40,7 @@ export class Event {
             this.end = cacheEvent.end ?? '';
             this.projectName = cacheEvent.projectName ?? '';
             this.projectDirectory = cacheEvent.projectDirectory ?? '';
+            this.branch = cacheEvent.branch ?? '';
         }
     }
 
@@ -48,11 +49,14 @@ export class Event {
         this.end = cacheEvent.end;
     }
 
-    buildEventFromJson(data: any) {
-        this.start = data.start;
-        this.end = data.end;
-        this.projectName = data.projectName;
-        this.projectDirectory = data.projectDirectory;
+    static buildEventFromJson(data: any) : Event {
+        const event = new Event();
+        event.start = data.start;
+        event.end = data.end;
+        event.projectName = data.projectName;
+        event.projectDirectory = data.projectDirectory;
+
+        return event;
     }
 
     computeRateOfEvent() :number {
@@ -93,7 +97,7 @@ export class ExecutionEventInfo extends Event {
     }
 
     buildEventFromJson(data: any){
-        super.buildEventFromJson(data);
+        const event = Event.buildEventFromJson(data);
         this.eventType = data.eventType;
         this.sessionId = data.sessionId;
     }
@@ -145,7 +149,9 @@ export class UserActivityEventInfo extends Event{
     }
 
     buildEventFromJson(data: any): void {
-        super.buildEventFromJson(data);
+        const base_event = Event.buildEventFromJson(data);
+
+        const event = base_event as DocumentChangeInfo;
         this.file_actions = data.file_actions;
         this.git_actions = data.git_actions;
         this.window_focus_changes = data.window_focus_changes;
@@ -256,26 +262,32 @@ export class DocumentChangeInfo extends Event {
         this.keystrokes += cacheEvent.keystrokes;
     }
 
-    buildEventFromJson(data: any): void {
-        super.buildEventFromJson(data);
-        this.fileName = data.fileName;
-        this.filePath = data.filePath;
-        this.lineCount = data.lineCount;
-        this.characterCount = data.characterCount;
-        this.linesAdded = data.linesAdded;
-        this.linesDeleted = data.linesDeleted;
-        this.charactersAdded = data.charactersAdded;
-        this.charactersDeleted = data.charactersDeleted;
-        this.singleDeletes = data.singleDeletes;
-        this.multiDeletes = data.multiDeletes;
-        this.singleAdds = data.singleAdds;
-        this.multiAdds = data.multiAdds;
-        this.autoIndents = data.autoIndents;
-        this.replacements = data.replacements;
-        this.keystrokes = data.keystrokes;
-        this.changeType = data.changeType;
+    static buildEventFromJson(data: any): DocumentChangeInfo {
+        const base_event = super.buildEventFromJson(data);
 
-        this.source = data.source;
+        // Cast the Event instance to DocumentChangeInfo, then extend it with specific properties
+        const event = base_event as DocumentChangeInfo;
+
+        event.fileName = data.fileName;
+        event.filePath = data.filePath;
+        event.lineCount = data.lineCount;
+        event.characterCount = data.characterCount;
+        event.linesAdded = data.linesAdded;
+        event.linesDeleted = data.linesDeleted;
+        event.charactersAdded = data.charactersAdded;
+        event.charactersDeleted = data.charactersDeleted;
+        event.singleDeletes = data.singleDeletes;
+        event.multiDeletes = data.multiDeletes;
+        event.singleAdds = data.singleAdds;
+        event.multiAdds = data.multiAdds;
+        event.autoIndents = data.autoIndents;
+        event.replacements = data.replacements;
+        event.keystrokes = data.keystrokes;
+        event.changeType = data.changeType;
+
+        event.source = data.source;
+
+        return event;
     }
 
     computeRateOfEvent() :number {
