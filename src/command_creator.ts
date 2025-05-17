@@ -1,23 +1,24 @@
 import * as vscode from 'vscode';
 import path from 'path';
+import { startAuthentication } from './Authentication/authenticate_user';
 import { ExtensionContext, Disposable } from "vscode";
 import { commands, window, workspace, debug, env } from "vscode";
 import { Uri } from 'vscode';
 import { SidebarViewProvider } from './Sidebar/webview_provider';
 import { AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET, REDIRECT_URI } from './Constants';
-import { _tokenEmitter } from './Authentication/auth_provider';
+import { _tokenEmitter, MyAuth0AuthProvider } from './Authentication/auth_provider';
 import { post_to_services } from './API/api_wrapper';
 import { endExecutionSession, handleCloseFile, handleOpenFile, startExecutionSession, verifyDocumentChange } from './EventTracking/event_processing_by_type';
 import { tests } from 'vscode';
 
 import { instance } from './extension';
 
-export function createCommands(ctx: ExtensionContext /* add: kpm controller, storageManager */)
+export function createCommands(ctx: ExtensionContext, authProvider: MyAuth0AuthProvider  /* add: kpm controller, storageManager */)
 // { dispose: () => { }; }
 {
   let cmds = [];
 
-  //===============================================
+  //===============================================    SIDEBAR    ==========================================================
   const sidebar: SidebarViewProvider = new SidebarViewProvider(ctx.extensionUri);
   //window.showInformationMessage('sidebar web provider initialized with extensionUri:', String(ctx.extensionUri));
 
@@ -35,6 +36,7 @@ export function createCommands(ctx: ExtensionContext /* add: kpm controller, sto
   // - refresh the webview
   cmds.push(
     commands.registerCommand('code-stats.refreshDashboard', () => {
+      console.log('Refreshing sidebar - refreshDashboard');
       sidebar.refresh();
     })
   );
@@ -44,13 +46,15 @@ export function createCommands(ctx: ExtensionContext /* add: kpm controller, sto
     commands.registerCommand('code-stats.displaySidebar', () => {
       // opens the sidebar manually from a the above command
       // statsDashboard = package.json/views/statsDashboard
+      console.log('Opening sidebar - displaySidebar');
       commands.executeCommand('workbench.view.extension.statsDashboard');
     })
   );
 
-  //===============================================
+  //=============================================== AUTHENTICATION ==========================================================
   const loginWithAuth0 = commands.registerCommand('code-stats.authLogin', async () => {
     return new Promise<string>((resolve, reject) => {
+      console.log('Login with Auth0 command triggered');
       // Subscribes to the token emitter
       const listener = _tokenEmitter.event(token => {
         listener.dispose(); // Ensure the listener is cleaned up after firing
@@ -64,7 +68,13 @@ export function createCommands(ctx: ExtensionContext /* add: kpm controller, sto
   });
   cmds.push(loginWithAuth0);
 
-  //===============================================
+  const startAuthenticationCommand = commands.registerCommand('code-stats.startAuthentication', async () => {
+      console.log('Start authentication command triggered');
+      await startAuthentication(ctx, authProvider); // Start authentication process after login button is clicked
+    });
+  cmds.push(startAuthenticationCommand);
+
+  //=============================================== COPY/PASTE/CUT ==========================================================
   // listen to built-in copy/paste commands
   const copyDisposable = vscode.commands.registerCommand('custom.trackCopy', async () => {
 

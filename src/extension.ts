@@ -1,63 +1,53 @@
 //const vscode from 'vscode');
-import * as vscode from 'vscode';
 import { createCommands } from './command_creator';
-import { window, Uri, ExtensionContext, commands, workspace, } from 'vscode';
-import {authentication, Disposable, TextDocument, Position, } from 'vscode';
+import { window, Uri, ExtensionContext, commands, workspace, authentication} from 'vscode';
 
 import { getServerRunning } from './server';
-import { post_to_services, get_from_services } from './API/api_wrapper';
 import { MyAuth0AuthProvider } from './Authentication/auth_provider';
-import { fetchUserData } from './Authentication/user_handler';
 import { SidebarViewProvider } from './Sidebar/webview_provider';
-import { testing_cluster_and_services } from './test_cloud';
 import { CurrentSessionVariables } from './EventTracking/event_management';
-import { mySnowPlowTracker } from './EventTracking/SnowPlowTracker';
-import { emitFromCacheProjectChangeData, emitToCacheProjectData } from './EventTracking/event_sending';
+import { GitTracking } from './Git/local_git_tracking';
 
 export let instance: CurrentSessionVariables;
+export let gitInstance: GitTracking
+export let authProvider: MyAuth0AuthProvider | undefined = undefined;
 
 // activate runs for every workspace / project / window
-export async function activate (context: ExtensionContext) {
-
-  // will see these only if we run in debug mode
+export async function activate (context: ExtensionContext)
+{
   console.log('CodeStats: Activating extension...');
 
-  const authProvider = new MyAuth0AuthProvider(context);
+  authProvider = new MyAuth0AuthProvider(context);
 
-  context.subscriptions.push(createCommands(context));
+  context.subscriptions.push(createCommands(context, authProvider));
 
   getServerRunning();
 
-  const startAuthenticationCommand = commands.registerCommand('code-stats.startAuthentication', async () => {
-    await startAuthentication(context, authProvider); // Start authentication process after login button is clicked
-  });
-  context.subscriptions.push(startAuthenticationCommand);
   // if user doesn't log in, create an anonymous session??
 
   instance = CurrentSessionVariables.getInstance();
 
-  verifyGitCredentials();
+  gitInstance = await GitTracking.getInstance();
 
-  // activate snowplow tracker
-  const snowplowTrackerInstance = mySnowPlowTracker.getInstance();
-  // see if the server works
-  //await testing_cluster_and_services();
+  // it seems this actually triggers the authentication flow
+  const session = await authentication.getSession('auth0-auth-provider', [], { createIfNone: true });
+  console.log('Auth0 token', session.accessToken);
+  console.log('Auth0 account', session.account.id, session.account.label);
+  console.log('Auth0 id', session.id);
 }
 
-async function verifyGitCredentials() {
-  const session = await authentication.getSession('github', ['repo'], { createIfNone: true });
-  const token = session.accessToken;
-  window.showInformationMessage(`GitHub token: ${token}`);
 
-}
 // hook onto this so we can send all data from cache to cloud
 export function deactivate() {
   window.showInformationMessage('CodeStats: Deactivating extension...');
+
   // emitToCacheProjectData(true); // send all data to cache
   // emitFromCacheProjectChangeData(); // send all data to cloud
 };
 
 export async function reload() {
+// DO WE HAVE TO DO SOMETHING WITH THE AUTH0 SESSION HERE?
+
   // updateFlowModeStatus();
 
   // try {
@@ -87,24 +77,4 @@ export async function reload() {
   //commands.executeCommand('codetime.refreshCodeTimeView');
 }
 
-// move to authentication section
 // make Auth0AuthProvider a singleton
-async function startAuthentication(context: ExtensionContext, authProvider: MyAuth0AuthProvider) {
-  try {
-    const session = await authentication.getSession(MyAuth0AuthProvider.id, [], { createIfNone: true });
-    window.showInformationMessage(`Session creation. Logged in as: ${session.account.label}`);
-
-    if (session) {
-      window.showInformationMessage(`Session creation succeeded. Logged in as: ${session.account.label}`);
-      // Handle the authenticated user, e.g., create/save a user.
-      const user = await fetchUserData(session.accessToken); // Fetch user info.
-      window.showInformationMessage(`Welcome, ${user.name}!`);
-      if (user) {
-        await authProvider.updateSessionWithUserInfo(session.accessToken, user, session);
-        window.showInformationMessage(`Globalcontext: ${context.globalState.get('currentSession')}`)
-      } else { window.showErrorMessage('User is null !!'); }
-    }
-  } catch (error) {
-    window.showErrorMessage(`Authentication failed: ${error}`);
-  }
-}

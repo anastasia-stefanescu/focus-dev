@@ -38,7 +38,7 @@ export function computeFocusStatistics(time_unit: 'hour' | 'day', projectName: s
 // spans over an entire hour / day
 export async function computeOverallFocus(time_unit: 'hour' | 'day', projectName: string | undefined) {
     // determine doc changes focus first
-    const typesOfEvents: EventType[] = [DocumentChange, EventType.UserActivity, EventType.Execution];
+    //const typesOfEvents: EventType[] = [DocumentChange, EventType.UserActivity, EventType.Execution];
     const allbucketEvents: { [key: string]: BucketEvent[] } = await group_events_by_time_unit(time_unit, 'document', projectName);
 
     for (const interval in Object.keys(allbucketEvents)) {

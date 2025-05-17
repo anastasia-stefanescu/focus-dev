@@ -4,7 +4,7 @@ import { FileSystemWatcher, RelativePattern, workspace, WorkspaceFolder, Disposa
 import { getCurrentWorkspacePathAndName } from '../Util/util';
 import { LOCAL_REFS_PATH, REMOTE_REFS_PATH } from '../Constants';
 import { CommitData, getBranch, getBranchLastCommitData } from './git_api';
-import { getRepoCredentials } from './repo_stats';
+import { getGitCredentials, getRepoCredentials } from './repo_stats';
 // Watch .git directory changes
 
 export class GitTracking {
@@ -24,6 +24,7 @@ export class GitTracking {
 
     private projectName: string | undefined = undefined;
     private owner: string | undefined = undefined;
+    private gitToken: string | undefined = undefined;
 
     // if workspace wasn't opened yet / is changed, can we listen for it so we call this constructor?
     private constructor() {
@@ -43,13 +44,19 @@ export class GitTracking {
 
             subscriptions.push(this.localGitWatcher.onDidChange(this.localCommitHandler, this));
             subscriptions.push(this.localGitWatcher.onDidCreate(this.localBranchCreateHandler, this));
+            subscriptions.push(this.localGitWatcher.onDidDelete(this.localBranchDeleteHandler, this));
         }
         this._disposable = Disposable.from(...subscriptions);
     }
 
-    public static getInstance(): GitTracking {
+    public static async getInstance(): Promise<GitTracking> {
         if (!GitTracking.instance) {
             GitTracking.instance = new GitTracking();
+            
+            const {token, owner, repoName} = await getGitCredentials();
+            GitTracking.instance.gitToken = token;
+            GitTracking.instance.owner = owner;
+            GitTracking.instance.projectName = repoName;
         }
         return GitTracking.instance;
     }

@@ -15,21 +15,21 @@ import {env, Event} from 'vscode';
 //const SESSIONS_SECRET_KEY = `${AUTH_TYPE}.sessions`;
 
 let instance : MyAuth0AuthProvider;
-export const _tokenEmitter = new EventEmitter<string>(); 
+export const _tokenEmitter = new EventEmitter<string>();
 
+// MAKE THIS A SINGLETON
 export class MyAuth0AuthProvider extends Disposable implements AuthenticationProvider  {
     public static readonly id = 'auth0-auth-provider';
     private _sessionChangeEmitter = new EventEmitter<AuthenticationProviderAuthenticationSessionsChangeEvent>();
-    private _disposable = Disposable;
     private _sessions: AuthenticationSession[] = [];
     private _context: ExtensionContext;
-    //public 
+    //public
     public _token: string | undefined;
 
     constructor(private readonly context: ExtensionContext) {
         super(() => this.dispose());
         this._context = context;
-       
+
         this._register(context, authentication.registerAuthenticationProvider(MyAuth0AuthProvider.id, 'Auth0', this, {supportsMultipleAccounts : false}));
         this._register(context, window.registerUriHandler({
             handleUri: async (uri: Uri) => {
@@ -68,7 +68,7 @@ export class MyAuth0AuthProvider extends Disposable implements AuthenticationPro
         const token = await commands.executeCommand<Promise<string>>('code-stats.authLogin');
 
         window.showInformationMessage(`Token received in CreateSession ${token}`);
-        
+
             const session: AuthenticationSession = {
                 id: uuid(),
                 account: { id: '', label: '' },
@@ -92,7 +92,7 @@ export class MyAuth0AuthProvider extends Disposable implements AuthenticationPro
                 account: { id: user.id, label: user.name },
                 scopes: session.scopes,
                 accessToken: token,
-            } 
+            }
             this._sessions[sessionIndex] = updatedSession;
             try{
                 await this.context.globalState.update('currentSession', updatedSession);
@@ -110,10 +110,6 @@ export class MyAuth0AuthProvider extends Disposable implements AuthenticationPro
         await this.context.globalState.update('currentSession', null);
     }
 
-
-    
-    
-    
 }
 
 async function handleRedirectUri(uri : Uri) {
@@ -145,7 +141,7 @@ try {
         // const accessToken = (data as { accessToken: string }).accessToken;
         // window.showInformationMessage(`Data:  ${data}`);
         return data;
-    
+
     } else {
     window.showErrorMessage('Token exchange failed');
     return;
