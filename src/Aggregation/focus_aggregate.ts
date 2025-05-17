@@ -14,12 +14,6 @@ import { time } from "console";
 // (passive => only user activities allowed) -> this might be code review so not taking into account for focus
 // active => document changes
 
-// returns focus/active periods and total focus/active time per period
-
-// pre-procesare: concatenarea elementelor care mai pot fi sparte
-// pentru o unitate de timp(1 ora de ex):
-// adunam minutele per activitate, display 'bar' spart in bucati per activitate
-
 // Options: week, day -> TIMEZONES FOR HOURS!!!!???
 
 // For focus/activity, what we first want to see are document changes
@@ -44,6 +38,7 @@ export function computeFocusStatistics(time_unit: 'hour' | 'day', projectName: s
 // spans over an entire hour / day
 export async function computeOverallFocus(time_unit: 'hour' | 'day', projectName: string | undefined) {
     // determine doc changes focus first
+    const typesOfEvents: EventType[] = [DocumentChange, EventType.UserActivity, EventType.Execution];
     const allbucketEvents: { [key: string]: BucketEvent[] } = await group_events_by_time_unit(time_unit, 'document', projectName);
 
     for (const interval in Object.keys(allbucketEvents)) {
@@ -77,8 +72,7 @@ export function iterateThroughEvents(bucketEvents: BucketEvent[], time_unit: 'ho
 
     currentFocusLevel = computeFocusLevelForEvents(currentFocusPeriod, time_unit, projectName);
 
-    for (let i = index; i< length; i++) {
-        const event = bucketEvents[i];
+    for (const event of bucketEvents.slice(index)) {
 
         const newFocusLevel = computeFocusLevelForEvents(currentFocusPeriod.concat([event]), time_unit, projectName);
 
@@ -91,8 +85,6 @@ export function iterateThroughEvents(bucketEvents: BucketEvent[], time_unit: 'ho
                 activePeriods.push([startDate, endDate]);
             else if (currentFocusLevel === 'focus')
                 focusPeriods.push([startDate, endDate]);
-
-            focusPeriods.push([startDate, endDate]);
 
             currentFocusLevel = newFocusLevel;
             currentFocusPeriod = [event];

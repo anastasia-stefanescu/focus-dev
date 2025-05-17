@@ -6,16 +6,13 @@ type CacheValue = string | number;
 
 // WHAT HAPPENS WITH CACHE IS VSCODE IS CLOSED? I KNOW WE SEND DATA TO CLOUD BUT STILL
 export class EventCache<T> {
-    // ARE WE SENDING BY EVENT OR BY BATCH??? - BY EVENT
+    // ARE WE SENDING BY EVENT OR BY BATCH??? - BY BATCH
     // keys of type: event:{eventType}:{timestamp}
 
     // the types of objects to store in cache: DocumentChangeInfo, ExecutionEventInfo, InstantaneousEventInfo
-    // the objects are aggregated over a minute!!!!! - so we don't have too many events stored
 
     // We store the events for about 15 minutes - enough to detect the flow, after which after they 'expire'
-    // they are removed from the cache and sent to the cloud - BUT CAN WE DO THAT AUTOMATICALLY?
-    //  OR DO WE HAVE TO DO IT MANUALLY, SEND ENTIRE BATCHES FROM TIME TO TIME?
-
+    
     // Node-cache is an unordered hashmap, order is not maintained
     // For fast lookup, we thus maintain an array of keys ordered by time
 
