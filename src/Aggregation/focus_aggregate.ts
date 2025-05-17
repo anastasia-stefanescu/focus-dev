@@ -19,7 +19,7 @@ import { time } from "console";
 // For focus/activity, what we first want to see are document changes
 // If these exist in a decent amount, we can add in user activity and execution events
 
-// iterate through events starting with a small group
+// iterate through events starting with a small group -> ROLLING WINDOW Approach
 // Add a new event to the current interval
 // Calculate interval's focus level by Coefficient of Variation/Gini Coefficient
 // If the newly added event changes the focus level (focus falls under or above previous category treshold)

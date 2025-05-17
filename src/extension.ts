@@ -28,7 +28,7 @@ export async function activate (context: ExtensionContext) {
 
   getServerRunning();
 
-  const startAuthenticationCommand = vscode.commands.registerCommand('code-stats.startAuthentication', async () => {
+  const startAuthenticationCommand = commands.registerCommand('code-stats.startAuthentication', async () => {
     await startAuthentication(context, authProvider); // Start authentication process after login button is clicked
   });
   context.subscriptions.push(startAuthenticationCommand);
@@ -36,12 +36,20 @@ export async function activate (context: ExtensionContext) {
 
   instance = CurrentSessionVariables.getInstance();
 
+  verifyGitCredentials();
+
   // activate snowplow tracker
   const snowplowTrackerInstance = mySnowPlowTracker.getInstance();
   // see if the server works
   //await testing_cluster_and_services();
 }
 
+async function verifyGitCredentials() {
+  const session = await authentication.getSession('github', ['repo'], { createIfNone: true });
+  const token = session.accessToken;
+  window.showInformationMessage(`GitHub token: ${token}`);
+
+}
 // hook onto this so we can send all data from cache to cloud
 export function deactivate() {
   window.showInformationMessage('CodeStats: Deactivating extension...');
