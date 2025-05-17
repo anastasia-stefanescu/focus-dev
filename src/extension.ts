@@ -36,7 +36,7 @@ export async function activate (context: ExtensionContext) {
 
   instance = CurrentSessionVariables.getInstance();
 
-  //verifyGitCredentials();
+  verifyGitCredentials();
 
   // activate snowplow tracker
   const snowplowTrackerInstance = mySnowPlowTracker.getInstance();
