@@ -4,7 +4,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { start } from "repl";
 import { DocumentChangeInfo, ExecutionEventInfo, ExecutionType, FullChangeData, ProjectInfo, Source, UserActivityEventInfo } from "./event_models";
 import { DEFAULT_CHANGE_EMISSION_INTERVAL } from "../Constants";
-import { mySnowPlowTracker } from "./SnowPlowTracker";
 import { emitToCacheProjectData } from "./event_sending";
 import { addChange } from "./event_data_extraction";
 import { EventCache } from "../LocalStorage/local_storage_node-cache";

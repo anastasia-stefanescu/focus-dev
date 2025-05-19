@@ -54,7 +54,7 @@ export function createCommands(ctx: ExtensionContext, authProvider: MyAuth0AuthP
   //=============================================== AUTHENTICATION ==========================================================
   const loginWithAuth0 = commands.registerCommand('code-stats.authLogin', async () => {
     return new Promise<string>((resolve, reject) => {
-      console.log('Login with Auth0 command triggered');
+      console.log('Login with Auth0 command triggered'); // this one is called if you do getSession with createIfNone somewhere in code
       // Subscribes to the token emitter
       const listener = _tokenEmitter.event(token => {
         listener.dispose(); // Ensure the listener is cleaned up after firing
