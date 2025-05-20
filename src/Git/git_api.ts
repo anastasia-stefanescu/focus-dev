@@ -47,7 +47,7 @@ async function fetchGitApi(url: string) {
 }
 // Get Releases
 
-async function getReleases(projectName: string, owner: string) {
+export async function getReleases(projectName: string, owner: string) {
     const url = `https://api.github.com/repos/${owner}/${projectName}/releases`;
 
     const allReleases = await fetchGitApi(url);
@@ -55,14 +55,14 @@ async function getReleases(projectName: string, owner: string) {
 }
 
 // Get deployments
-async function getDeployments(projectName: string, owner: string) {
+export async function getDeployments(projectName: string, owner: string) {
     const url = `https://api.github.com/repos/${owner}/${projectName}/deployments`;
 
     const allDeployments = await fetchGitApi(url);
     return allDeployments;
 }
 
-async function getPullRequests(projectName: string, owner: string, state: 'closed' | 'open' | 'all') {
+export async function getPullRequests(projectName: string, owner: string, state: 'closed' | 'open' | 'all') {
     let url = `https://api.github.com/repos/${owner}/${projectName}/pulls?state=${state}`;
     const allPRs = await fetchGitApi(url);
     return allPRs;
@@ -70,7 +70,7 @@ async function getPullRequests(projectName: string, owner: string, state: 'close
 
 // Get branches
 // name, commit.sha, commit.url (also commit date?)
-async function getBranches(projectName: string, owner: string) {
+export async function getBranches(projectName: string, owner: string) {
     const url = `https://api.github.com/repos/${owner}/${projectName}/branches`;
 
     const allBranches = await fetchGitApi(url);
@@ -89,7 +89,7 @@ export async function getBranch(projectName: string, owner: string, branchName: 
     return allBranches;
 }
 
-async function getCommitData(projectName: string, owner: string, commit_id: string, branch: string | undefined = undefined) : Promise<CommitData>{
+export async function getCommitData(projectName: string, owner: string, commit_id: string, branch: string | undefined = undefined) : Promise<CommitData>{
     const url = `https://api.github.com/repos/${owner}/${projectName}/commits/${commit_id}`;
 
     const commitData = await fetchGitApi(url);
@@ -103,7 +103,7 @@ async function getCommitData(projectName: string, owner: string, commit_id: stri
     return commit;
 }
 
-async function getPullRequestCommitData(projectName: string, owner: string, number: number) : Promise<CommitData[]> {
+export async function getPullRequestCommitData(projectName: string, owner: string, number: number) : Promise<CommitData[]> {
     const url = `https://api.github.com/repos/${owner}/${projectName}/pulls/${number}/commits`;
 
     const allCommits = await fetchGitApi(url);
