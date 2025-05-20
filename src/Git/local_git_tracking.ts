@@ -3,7 +3,8 @@ import fs from 'fs'
 import { FileSystemWatcher, RelativePattern, workspace, WorkspaceFolder, Disposable, Uri, window } from 'vscode';
 import { getCurrentWorkspacePathAndName } from '../Util/util';
 import { LOCAL_REFLOG_PATH, LOCAL_REFS_PATH, REMOTE_REFS_PATH } from '../Constants';
-import { CommitData, getBranch, getBranchLastCommitData } from './git_api';
+import { getBranch, getBranchLastCommitData } from './git_api';
+import { CommitData } from './git_models';
 import { getGitBranchReflogs, getGitCredentials, getRepoCredentials } from './local_repo_stats';
 // Watch .git directory changes
 
@@ -114,6 +115,7 @@ export class GitTracking {
 
             const commit : CommitData = {
                 id: localCommitId,
+                title: '',
                 author: '',
                 date: localCommitDate.toISOString(),
                 branch: branchName,

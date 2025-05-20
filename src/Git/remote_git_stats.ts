@@ -1,4 +1,5 @@
-import { getPullRequests, getBranchPullRequestsData, getBranches, PRData } from "./git_api";
+import { getPullRequests, getBranchPullRequestsData, getBranches} from "./git_api";
+import { PRData, CommitData } from "./git_models";
 
 // when we are asked for statistics, we have to do the statistics for the whole time
 

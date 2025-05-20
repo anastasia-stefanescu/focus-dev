@@ -1,4 +1,5 @@
-import { getBranches, getBranch, getBranchLastCommitData, getBranchPullRequestsData, CommitData, PRData } from '../Git/git_api';
+import { getBranches, getBranch, getBranchLastCommitData, getBranchPullRequestsData, } from '../Git/git_api';
+import { CommitData, PRData } from '../Git/git_models';
 import { GitTracking } from '../Git/local_git_tracking';
 
 export async function testGitApi() {
@@ -18,6 +19,6 @@ export async function testGitApi() {
     const commitData : CommitData | null = await getBranchLastCommitData(gitInstance.projectName, gitInstance.gitOwner, 'backup');
     console.log('Commit data:', commitData?.author, commitData?.date, commitData?.id, commitData?.branch);
 
-    const prs : PRData[] = await getBranchPullRequestsData(gitInstance.projectName, gitInstance.gitOwner, 'backup');
+    const prs : PRData[] = await getBranchPullRequestsData(gitInstance.projectName, gitInstance.gitOwner, 'backup', 'all');
     console.log('Pull requests:', prs);
 }
