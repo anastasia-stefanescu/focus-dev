@@ -89,6 +89,7 @@ export class ExecutionEventInfo extends Event {
 
         if (cacheEvent) {
             this.eventType = cacheEvent.eventType ?? ''; // why is this and do we have to update it???
+            this.sessionId = cacheEvent.sessionId ?? '';
         }
     }
 
@@ -96,11 +97,11 @@ export class ExecutionEventInfo extends Event {
         super.concatenateData(cacheEvent);
     }
 
-    buildEventFromJson(data: any){
-        const event = Event.buildEventFromJson(data);
-        this.eventType = data.eventType;
-        this.sessionId = data.sessionId;
-    }
+    // static buildEventFromJson(data: any){
+    //     const event = new ExecutionEventInfo(data as Partial<Event>);
+    //     this.eventType = data.eventType;
+    //     this.sessionId = data.sessionId;
+    // }
 
     computeRateOfEvent() : number{
         //super.computeRateOfEvent();

@@ -8,7 +8,7 @@ type DBData = {
     userActivityEvents: UserActivityEventInfo[];
 }
 
-class EventDatabase {
+export class EventDatabase {
     private static instance: EventDatabase;
     private db: Low<DBData>;
 
