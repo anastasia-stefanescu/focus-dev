@@ -20,7 +20,7 @@
     "@types/express": "^5.0.0",
     "@types/lodash": "^4.17.16",
     "@types/mocha": "^10.0.10",
-    "@types/node": "^20.17.30",
+    "@types/node": "^20.17.48",
     "@types/vscode": "^1.96.0",
     "@typescript-eslint/eslint-plugin": "^8.10.0",
     "@typescript-eslint/parser": "^8.7.0",
@@ -132,6 +132,7 @@
     "express": "^4.21.2",
     "lowdb": "^7.0.1",
     "node-cache": "^5.1.2",
+    "sqlite3": "^5.1.7",
     "swdc-tracker": "^1.5.7",
     "uuid": "^11.1.0"
   },

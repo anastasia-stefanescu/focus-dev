@@ -7,6 +7,7 @@ import { MyAuth0AuthProvider } from './Authentication/auth_provider';
 import { SidebarViewProvider } from './Sidebar/webview_provider';
 import { CurrentSessionVariables } from './EventTracking/event_management';
 import { GitTracking } from './Git/local_git_tracking';
+import { testSqliteDatabase } from './Database/test_db';
 
 export let instance: CurrentSessionVariables;
 export let gitInstance: GitTracking
@@ -29,11 +30,13 @@ export async function activate (context: ExtensionContext)
 
   gitInstance = await GitTracking.getInstance();
 
-  // it seems this actually triggers the authentication flow
-  const session = await authentication.getSession('auth0-auth-provider', [], { createIfNone: true });
-  console.log('Auth0 token', session.accessToken);
-  console.log('Auth0 account', session.account.id, session.account.label);
-  console.log('Auth0 id', session.id);
+  testSqliteDatabase();
+
+  // // it seems this actually triggers the authentication flow
+  // const session = await authentication.getSession('auth0-auth-provider', [], { createIfNone: true });
+  // console.log('Auth0 token', session.accessToken);
+  // console.log('Auth0 account', session.account.id, session.account.label);
+  // console.log('Auth0 id', session.id);
 }
 
 
