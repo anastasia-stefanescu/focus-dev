@@ -16,8 +16,8 @@ async function getAllRepoSuccessIndicators(projectName: string, owner: string) {
 
     for (const branch of allBranches) {
         const branchName = branch.name;
-        const openPullRequests = await getBranchPullRequestsData(projectName, owner, branchName);
-        const closedPullRequests : PRData[] = await getBranchPullRequestsData(projectName, owner, branchName);
+        const openPullRequests = await getBranchPullRequestsData(projectName, owner, branchName, 'open');
+        const closedPullRequests : PRData[] = await getBranchPullRequestsData(projectName, owner, branchName, 'closed');
 
         for (const pr of closedPullRequests) {
             console.log(`Open PR: ${pr.title}, number: ${pr.number}, branch: ${pr.source}, state: ${pr.state}`);

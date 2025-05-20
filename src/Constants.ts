@@ -11,3 +11,4 @@ export const LOCAL_SNOWPLOW_ENDPOINT = "http://localhost:8080/com.snowplowanalyt
 
 export const LOCAL_REFS_PATH = '/.git/refs/heads/';
 export const REMOTE_REFS_PATH = '/.git/refs/remotes/origin/';
+export const LOCAL_REFLOG_PATH = '/.git/logs/refs/heads/';

@@ -39,8 +39,8 @@ async function executeTerminalGitCommand(command: string) : Promise<string> {
 }
 
 export async function getRepoCredentials() {
-    let owner :string | undefined= undefined;
-    let repoName: string | undefined = undefined;
+    let owner = undefined;
+    let repoName = undefined;
 
     const url: string = await executeTerminalGitCommand('git remote get-url origin');  // Get the URL of the repo
     if (url) {

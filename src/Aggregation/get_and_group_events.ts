@@ -6,6 +6,7 @@ export async function getData(type: EventType, projectName: string | undefined):
     const response = await fetch('/api/users/timeInterval').then(res => res.json())
 
     // MAY NEED TO SORT BECAUSE WE'RE INSERTING DATA FROM MULTIPLE CACHES!!!!!
+    // We will get events from one single database, be it JSONL based or SQL based
 
     const events: Event[] = [];
     for (const elem of response) {
@@ -69,7 +70,7 @@ function checkEventDifferences(event: Event, crtEvent: Event): boolean {
     const eventDuration = eventEnd - eventStart;
     const crtEventDuration = crtEventEnd - crtEventStart;
 
-    if ( eventsDif < ALLOWED_DIFFERENCE && eventDuration + crtEventDuration >= ALLOWED_DIFFERENCE) // 3 minutes difference
+    if (eventsDif < ALLOWED_DIFFERENCE && eventDuration + crtEventDuration >= ALLOWED_DIFFERENCE) // 3 minutes difference
         return true;
     return false;
 }

@@ -2,9 +2,9 @@
 import fs from 'fs'
 import { FileSystemWatcher, RelativePattern, workspace, WorkspaceFolder, Disposable, Uri, window } from 'vscode';
 import { getCurrentWorkspacePathAndName } from '../Util/util';
-import { LOCAL_REFS_PATH, REMOTE_REFS_PATH } from '../Constants';
+import { LOCAL_REFLOG_PATH, LOCAL_REFS_PATH, REMOTE_REFS_PATH } from '../Constants';
 import { CommitData, getBranch, getBranchLastCommitData } from './git_api';
-import { getGitCredentials, getRepoCredentials } from './repo_stats';
+import { getGitBranchReflogs, getGitCredentials, getRepoCredentials } from './local_repo_stats';
 // Watch .git directory changes
 
 export class GitTracking {
@@ -14,26 +14,27 @@ export class GitTracking {
 
     private gitFolder: WorkspaceFolder | undefined = undefined;
     private localGitWatcher : FileSystemWatcher | undefined = undefined;
-    private remoteGitWatcher : FileSystemWatcher | undefined = undefined;
+    private localReflogWatcher : FileSystemWatcher | undefined = undefined;
 
-    private lastLocalCommit: {[key:string] : string} = {};
-    private lastRemoteCommit: { [key: string]: string } = {};
+    private localBranches: {[key:string]:string} = {};
+    private currentBranch: string | undefined = undefined;
 
-    private localChanged : {[key:string]:boolean} = {};
-    private remoteChanged: {[key:string]:boolean} = {};
-
-    private projectName: string | undefined = undefined;
-    private owner: string | undefined = undefined;
-    private gitToken: string | undefined = undefined;
+    public readonly username: string;
+    public readonly projectName: string;
+    public readonly gitOwner: string;
+    public readonly gitToken: string;
 
     // if workspace wasn't opened yet / is changed, can we listen for it so we call this constructor?
-    private constructor() {
+    private constructor(accountLabel: string, gitToken: string, gitOwner: string, repoName: string) {
         // !! Only works if the git directory is in the workspace
         let subscriptions: Disposable[] = [];
         if (workspace && workspace.workspaceFolders) {
 
             this.gitFolder = workspace.workspaceFolders[0]
 
+            this.localReflogWatcher = workspace.createFileSystemWatcher(
+                new RelativePattern(this.gitFolder, '{**' + LOCAL_REFLOG_PATH + '**}')
+            );
             // for each branch there is a separate file in heads/remotes with the latest commit
             this.localGitWatcher = workspace.createFileSystemWatcher(
                 new RelativePattern(this.gitFolder, '{**' + LOCAL_REFS_PATH + '**}')
@@ -42,21 +43,36 @@ export class GitTracking {
             // these subscriptions can be handled only in this file
             subscriptions.push(this.localGitWatcher);
 
-            subscriptions.push(this.localGitWatcher.onDidChange(this.localCommitHandler, this));
+            subscriptions.push(this.localReflogWatcher.onDidCreate(this.reflogChangeHandler, this));
             subscriptions.push(this.localGitWatcher.onDidCreate(this.localBranchCreateHandler, this));
             subscriptions.push(this.localGitWatcher.onDidDelete(this.localBranchDeleteHandler, this));
+            console.log('Local git watcher created', this.localGitWatcher);
         }
+
+        this.username = accountLabel;
+        this.gitToken = gitToken;
+        this.gitOwner = gitOwner;
+        this.projectName = repoName;
         this._disposable = Disposable.from(...subscriptions);
+
+        this.getAllLocalBranches();
+
+        console.log('Git token:', this.gitToken);
+        console.log('Git owner:', this.gitOwner);
+        console.log('Git project name:', this.projectName);
+        console.log('Git username:', this.username);
     }
 
-    public static async getInstance(): Promise<GitTracking> {
+    public static async getInstance(): Promise<GitTracking | undefined> {
         if (!GitTracking.instance) {
-            GitTracking.instance = new GitTracking();
-            
-            const {token, owner, repoName} = await getGitCredentials();
-            GitTracking.instance.gitToken = token;
-            GitTracking.instance.owner = owner;
-            GitTracking.instance.projectName = repoName;
+            console.log('Trying to create new GitTracking instance');
+            const { accountLabel, token, owner, repoName } = await getGitCredentials();
+            if (!token || !owner || !repoName) {
+                window.showInformationMessage('Git token or repo not found! Please log in to GitHub for a better experience');
+                return undefined;
+            }
+
+            GitTracking.instance = new GitTracking(accountLabel, token, owner, repoName);
         }
         return GitTracking.instance;
     }
@@ -84,38 +100,89 @@ export class GitTracking {
     // else
     //      local change (can be revert commit as well, can we detect this?)
 
-    public async localCommitHandler(event: Uri) { // uri uses only '/' slashes
-        const localCommitDate = new Date();
-        // sleep here?
-        if (event.path.includes(LOCAL_REFS_PATH)) {
-            const branch = event.path.split('/')[3];
-            const localCommitId = this.getCommitFromPath(event.path);
+    public async reflogChangeHandler(event: Uri) {
+    }
 
-            if (localCommitId) {
-                const commit : CommitData = {
-                    id: localCommitId,
-                    author: '',
-                    date: localCommitDate.toISOString(),
-                    branch: branch,
-                }
-                // these variables have to be set once somewhere
-                const { owner, repoName } = await getRepoCredentials();
-                const lastRemoteBranchCommit : CommitData | null = await getBranchLastCommitData(repoName, owner, branch);
-                if (lastRemoteBranchCommit) {
-                    if (commit.id === lastRemoteBranchCommit.id) {
-                        if (commit.date > lastRemoteBranchCommit.date) {
-                            window.showInformationMessage('GIT PULL!');
-                            // register this somewhere globally
-                        } else {
-                            window.showInformationMessage('GIT PUSH!');
-                            // create a success indicator and send it to cloud
-                        }
-                    } else {
-                        window.showInformationMessage('LOCAL COMMIT/REVERT!');
-                        // create success indicator
-                    }
-                } // else, branch does not exist remotely or there was an error
+    public async localCommitHandler(eventPath: string, branchName: string) { // uri uses only '/' slashes
+        console.log('Local commit handler triggered');
+        const localCommitDate = new Date();
+        const localCommitId = this.getCommitFromPath(eventPath);
+
+        // sleep here?
+        if (localCommitId) {
+            console.log('Event uri is valid');
+
+            const commit : CommitData = {
+                id: localCommitId,
+                author: '',
+                date: localCommitDate.toISOString(),
+                branch: branchName,
             }
+
+            const branchReflogs = await getGitBranchReflogs(branchName);
+            const lastReflog = branchReflogs[0];
+            const reflogParts = lastReflog.split(':');
+            const actionName = reflogParts[1].trim();
+
+            console.log('Last reflog:', actionName.toUpperCase());
+
+            switch (actionName.toUpperCase()) {
+                case 'COMMIT':
+                    commit.author = this.username;
+                    window.showInformationMessage('LOCAL COMMIT!');
+                    // create success indicator
+                    break;
+                case 'PULL':
+                    // get more information about the pull
+                    commit.author = this.username;
+                    window.showInformationMessage('LOCAL PULL COMMIT!');
+                    // create success indicator
+                    break;
+                case 'RESET':
+                    commit.author = this.username;
+                    window.showInformationMessage('LOCAL REVERT COMMIT!');
+                    // create success indicator
+                    break;
+                case 'MERGE':
+                    // get more information about the merge
+                    commit.author = this.username;
+                    window.showInformationMessage('LOCAL MERGE COMMIT!');
+                    // create success indicator
+                    break;
+                case 'BRANCH':
+                    //created new branch?
+                    break;
+                case 'CHECKOUT':
+                    // changed to new branch
+                    this.currentBranch = ''; // extract new branch name
+                    break;
+                case 'UPDATE BY PUSH':
+                    // what does this mean?
+                    break;
+                default:
+                    console.log('Unknown action:', actionName);
+            }
+
+            const lastRemoteBranchCommit : CommitData | null = await getBranchLastCommitData(this.projectName, this.gitOwner, branchName);
+            console.log('Last remote branch commit:', lastRemoteBranchCommit);
+            if (lastRemoteBranchCommit) {
+                if (commit.id === lastRemoteBranchCommit.id) {
+                    if (commit.date > lastRemoteBranchCommit.date) {
+                        console.log('GIT PULL!');
+                        window.showInformationMessage('GIT PULL!');
+                        // register this somewhere globally, but we don't save it in cloud
+                    } else { // there is no way of knowing this
+                        console.log('GIT PUSH!');
+                        window.showInformationMessage('GIT PUSH!');
+                        // create a success indicator and send it to cloud
+                    }
+                } else {
+                    console.log('LOCAL COMMIT/REVERT!'); // how to detect merge?
+                    commit.author = this.username;
+                    window.showInformationMessage('LOCAL COMMIT/REVERT!');
+                    // create success indicator
+                }
+            } // else, branch does not exist remotely or there was an error
         }
     }
 
@@ -127,28 +194,51 @@ export class GitTracking {
     //     this means the branch was created locally
     //      save current date in cloud memory
     public async localBranchCreateHandler(event: Uri) {
-        if (event.path.includes(LOCAL_REFS_PATH)) {
-            const branch = event.path.split('/')[3];
+        console.log('Local branch create handler triggered');
+        console.log('Event path:', event.path);
 
-            const { owner, repoName } = await getRepoCredentials();
-            const remoteBranch = await getBranch(repoName, owner, branch);
-            if (remoteBranch) {
-                window.showInformationMessage('GIT BRANCH IMPORTED!');
-                // fetch start date and save it in cloud memory?
+        const branchName = this.getBranchFromPath(event.path);
+        if (branchName) {
+            if (this.localBranches[branchName]) {
+                this.localCommitHandler(event.path, branchName);
             } else {
-                window.showInformationMessage('GIT BRANCH CREATED LOCALLY!');
-                // create success indicator
-                // save current date in cloud memory
+                this.localBranches[branchName] = branchName;
+
+                const remoteBranch = await getBranch(this.projectName, this.gitOwner, branchName);
+                if (remoteBranch) {
+                    window.showInformationMessage('GIT BRANCH IMPORTED!');
+                    // fetch start date and save it in cloud memory?
+                } else {
+                    window.showInformationMessage('GIT BRANCH CREATED LOCALLY!');
+                    // create success indicator
+                    // save current date in cloud memory
+                }
             }
         }
     } // mark current commit?
 
     public async localBranchDeleteHandler(event: Uri) {
-        if (event.path.includes(LOCAL_REFS_PATH)) {
-            const branch = event.path.split('/')[3];
+        console.log('Local branch delete handler triggered');
+        console.log('Event path:', event.path);
+
+        const branchName = this.getBranchFromPath(event.path);
+        if (branchName && !branchName.includes('.lock')) {
+            console.log('Local branch deleted');
             window.showInformationMessage('GIT BRANCH DELETED LOCALLY!');
+            delete this.localBranches[branchName];
             // create success indicator
             // delete from cloud memory ? -> mark as stale
+        }
+    }
+
+    public getBranchFromPath(path: string) : string | undefined {
+        if (path.includes(LOCAL_REFS_PATH)) {
+            const branchPathParts = path.split('/');
+            const branchName = branchPathParts[branchPathParts.length - 1];
+            return branchName;
+        } else {
+            console.log('Path does not contain local refs');
+            return undefined;
         }
     }
 
@@ -156,10 +246,19 @@ export class GitTracking {
         let commit = undefined;
         try {
             commit = fs.readFileSync(path, 'utf8').trimEnd();
-            window.showInformationMessage('Got commit: ', commit);
         } catch (err: any) {
             window.showErrorMessage(`Error reading ${path} to get commit: ${err.message}`);
         }
         return commit;
+    }
+
+    public getAllLocalBranches() {
+        const localRefsPath = this.gitFolder?.uri.fsPath + LOCAL_REFS_PATH;
+
+        const files = fs.readdirSync(localRefsPath);
+        for (const file of files) {
+            const branchName = file.replace('refs/heads/', '');
+            this.localBranches[branchName] = branchName;
+        }
     }
 }

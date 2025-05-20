@@ -2,7 +2,6 @@ import { DEFAULT_CHANGE_EMISSION_INTERVAL } from "../Constants";
 import { CurrentSessionVariables } from "./event_management";
 import { window } from "vscode";
 import { FullChangeData, ProjectInfo, Source, UserActivityEventInfo } from "./event_models";
-import { mySnowPlowTracker } from "./SnowPlowTracker";
 import { all } from "axios";
 
 import { instance } from "../extension";

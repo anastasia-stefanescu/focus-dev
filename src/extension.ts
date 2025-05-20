@@ -7,9 +7,10 @@ import { MyAuth0AuthProvider } from './Authentication/auth_provider';
 import { SidebarViewProvider } from './Sidebar/webview_provider';
 import { CurrentSessionVariables } from './EventTracking/event_management';
 import { GitTracking } from './Git/local_git_tracking';
+import { testGitApi } from './testScripts/test_git_api';
 
 export let instance: CurrentSessionVariables;
-export let gitInstance: GitTracking
+export let gitInstance: GitTracking | undefined = undefined;
 export let authProvider: MyAuth0AuthProvider | undefined = undefined;
 
 // activate runs for every workspace / project / window
@@ -30,15 +31,16 @@ export async function activate (context: ExtensionContext)
   gitInstance = await GitTracking.getInstance();
 
   // it seems this actually triggers the authentication flow
-  const session = await authentication.getSession('auth0-auth-provider', [], { createIfNone: true });
-  console.log('Auth0 token', session.accessToken);
-  console.log('Auth0 account', session.account.id, session.account.label);
-  console.log('Auth0 id', session.id);
+  // const session = await authentication.getSession('auth0-auth-provider', [], { createIfNone: true });
+  // console.log('Auth0 token', session.accessToken);
+  // console.log('Auth0 account', session.account.id, session.account.label);
+  // console.log('Auth0 id', session.id);
 }
 
 
 // hook onto this so we can send all data from cache to cloud
 export function deactivate() {
+  console.log('CodeStats: Deactivating extension...');
   window.showInformationMessage('CodeStats: Deactivating extension...');
 
   // emitToCacheProjectData(true); // send all data to cache
@@ -46,6 +48,8 @@ export function deactivate() {
 };
 
 export async function reload() {
+  console.log("RELOAD!!!")
+  window.showInformationMessage('CodeStats: Reloading extension...');
 // DO WE HAVE TO DO SOMETHING WITH THE AUTH0 SESSION HERE?
 
   // updateFlowModeStatus();
