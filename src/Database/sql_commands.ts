@@ -1,6 +1,6 @@
 export function constructSelect(table: string, project: string|undefined, branch: string|undefined, a: string, b: string, source: string|undefined): string {
     let query = `SELECT * FROM ${table}
-                   WHERE ((start BETWEEN ${a} AND ${b}) OR (end BETWEEN ${a} AND ${b}))`;
+                   WHERE ((start BETWEEN '${a}' AND '${b}') OR (end BETWEEN '${a}' AND '${b}'))`;
     if (project)
         query += ` AND projectName = ${project}`;
     if (branch)
@@ -17,9 +17,9 @@ export const executionTableCreation = `CREATE TABLE IF NOT EXISTS execution_even
     end TEXT,
     projectName TEXT,
     projectDirectory TEXT,
-    branch TEXT
+    branch TEXT,
     eventType TEXT,
-    sessionId TEXT,
+    sessionId TEXT
 );`
 
 export const userActivityTableCreation = `CREATE TABLE IF NOT EXISTS user_activity_events(
@@ -28,12 +28,12 @@ export const userActivityTableCreation = `CREATE TABLE IF NOT EXISTS user_activi
     end TEXT,
     projectName TEXT,
     projectDirectory TEXT,
-    branch TEXT
+    branch TEXT,
     file_actions INTEGER,
     git_actions INTEGER,
     window_focus_changes INTEGER,
     total_actions INTEGER,
-    others INTEGER,
+    others INTEGER
 );`
 
 export const documentChangeTableCreation = `CREATE TABLE IF NOT EXISTS document_change_events(
@@ -42,7 +42,7 @@ export const documentChangeTableCreation = `CREATE TABLE IF NOT EXISTS document_
     end TEXT,
     projectName TEXT,
     projectDirectory TEXT,
-    branch TEXT
+    branch TEXT,
     event_id INTEGER,
     fileName TEXT,
     filePath TEXT,
@@ -60,8 +60,9 @@ export const documentChangeTableCreation = `CREATE TABLE IF NOT EXISTS document_
     replacements INTEGER,
     keystrokes INTEGER,
     changeType TEXT,
-    source TEXT,
+    source TEXT
 );`
+
 
 export const executionEventInsertion = `INSERT INTO execution_events (
     start,

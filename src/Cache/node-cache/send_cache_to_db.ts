@@ -1,13 +1,11 @@
-import { DEFAULT_CHANGE_EMISSION_INTERVAL } from "../Constants";
-import { CurrentSessionVariables } from "./event_management";
+import { DEFAULT_CHANGE_EMISSION_INTERVAL } from "../../Constants";
+import { CurrentSessionVariables, Event } from "../../EventTracking";
 import { window } from "vscode";
-import { FullChangeData, ProjectInfo, Source, UserActivityEventInfo } from "./event_models";
+import { EventCache } from "./node-cache";
+import { FullChangeData, ProjectInfo, Source, UserActivityEventInfo } from "../../EventTracking";
 import { all } from "axios";
 
-import { instance, cacheInstance } from "../extension";
-
-export async function emitFromCacheProjectChangeData() {
-}
+import { cacheInstance } from "../../extension";
 
 // emitting Execution events which might be quite long
 // send only those already finished every 1 minute (check whether any have finished)
@@ -16,49 +14,63 @@ export async function emitFromCacheProjectChangeData() {
 
 // USE OBJECTS.KEYS EVERYTIME TO VERIFY DICTIONARY IS NOT EMPTY!!!!!
 
-export async function emitToCacheProjectData(deactivation: boolean = false) {
+
+export async function emitToDBCacheData(deactivation: boolean = false) {
     // Checks if we have events of any of the 3 types to send
 
-    const one_minute_ago: number = new Date().getTime() - DEFAULT_CHANGE_EMISSION_INTERVAL;
+    const allCaches : EventCache<Event>[] = [];
 
-    const projectInfo = instance.getProjectInfo();
+    allCaches.push(cacheInstance.getExecutionCache());
+    allCaches.push(cacheInstance?.getUserActivityCache());
+    allCaches.push(cacheInstance?.getDocumentCache('user'));
+    allCaches.push(cacheInstance?.getDocumentCache('AI'));
+    allCaches.push(cacheInstance?.getDocumentCache('external'));
 
-    if (!projectInfo) {
-        window.showErrorMessage('No project info available');
-        return;
+    for (let i = 0; i< allCaches.length; i++) {
+        const cache : EventCache<Event> = allCaches[i];
+        const allEvents = Object.keys(cache.getAll())
+        if (!cache || allEvents.length !== 0) {
+            // gotta check type of events, how they come to cache
+        }
+
     }
 
-    const userDocChangesExist = !!(Object.keys(projectInfo.docs_changed_user).length);
-    const aiDocChangesExist = !!(Object.keys(projectInfo.docs_changed_ai).length);
-    const externalDocChangesExist = !!(Object.keys(projectInfo.docs_changed_external).length);
-    const userActivityExists = !!(projectInfo.userActivity && projectInfo.userActivity.total_actions > 0);
+    // // if (!projectInfo) {
+    // //     window.showErrorMessage('No project info available');
+    // //     return;
+    // // }
 
-    let sessionsToSendKeys;
-    if(deactivation)
-        sessionsToSendKeys = Object.keys(projectInfo.execution_sessions)
-    else
-        sessionsToSendKeys = filterFinishedExecutionSessions(instance);
-    const executionSessionsExist = !!(sessionsToSendKeys); // covers undefined / [] cases
+    // const userDocChangesExist = !!(Object.keys(projectInfo.docs_changed_user).length);
+    // const aiDocChangesExist = !!(Object.keys(projectInfo.docs_changed_ai).length);
+    // const externalDocChangesExist = !!(Object.keys(projectInfo.docs_changed_external).length);
+    // const userActivityExists = !!(projectInfo.userActivity && projectInfo.userActivity.total_actions > 0);
 
-    if (userDocChangesExist || aiDocChangesExist || externalDocChangesExist || userActivityExists || executionSessionsExist) {
-        window.showInformationMessage('Something exists to be sent to be cache!');
+    // let sessionsToSendKeys;
+    // if (deactivation)
+    //     sessionsToSendKeys = Object.keys(projectInfo.execution_sessions)
+    // else
+    //     sessionsToSendKeys = filterFinishedExecutionSessions(instance);
+    // const executionSessionsExist = !!(sessionsToSendKeys); // covers undefined / [] cases
 
-        clearTimeout(instance.getTimer());
-        instance.setTimer(undefined);
+    // if (userDocChangesExist || aiDocChangesExist || externalDocChangesExist || userActivityExists || executionSessionsExist) {
+    //     window.showInformationMessage('Something exists to be sent to be cache!');
 
-        saveToCacheDocumentChanges(instance, 'user');
-        saveToCacheDocumentChanges(instance, 'AI');
-        saveToCacheDocumentChanges(instance, 'external');
+    //     clearTimeout(instance.getTimer());
+    //     instance.setTimer(undefined);
 
-        saveToCacheUserActivity(instance);
+    //     saveToCacheDocumentChanges(instance, 'user');
+    //     saveToCacheDocumentChanges(instance, 'AI');
+    //     saveToCacheDocumentChanges(instance, 'external');
 
-        saveToCacheExecutionSessions(instance, sessionsToSendKeys, deactivation);
+    //     saveToCacheUserActivity(instance);
 
-        instance.setProjectInfo(undefined)
-    }
+    //     saveToCacheExecutionSessions(instance, sessionsToSendKeys, deactivation);
 
-    // for each of them separate??? Separate timers for each of them?
-    instance.setLastEmitTime(new Date().getTime());
+    //     instance.setProjectInfo(undefined)
+    // }
+
+    // // for each of them separate??? Separate timers for each of them?
+    // instance.setLastEmitTime(new Date().getTime());
 }
 
 //=====================================================

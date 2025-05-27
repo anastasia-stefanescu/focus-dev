@@ -1,5 +1,5 @@
 import { UserActivityEventInfo, DocumentChangeInfo } from "../EventTracking/event_models";
-import { EventCache } from "../LocalStorage/local_storage_node-cache";
+import { EventCache } from "../Cache/node-cache/node-cache";
 
 const ev = new UserActivityEventInfo();
 ev.file_actions = 5;

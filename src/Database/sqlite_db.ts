@@ -2,7 +2,7 @@ import sqlite3 from 'sqlite3';
 import path from 'path';
 import { executionTableCreation, userActivityTableCreation, documentChangeTableCreation, constructSelect } from './sql_commands';
 import { executionEventInsertion, userActivityEventInsertion, documentChangeEventInsertion } from './sql_commands';
-import { Event, EventType, DocumentChangeInfo, ExecutionEventInfo, UserActivityEventInfo} from '../EventTracking/event_models';
+import { Event, EventType, DocumentChangeInfo, ExecutionEventInfo, UserActivityEventInfo } from '../EventTracking/event_models';
 
 
 export class SQLiteManager {
@@ -34,7 +34,7 @@ export class SQLiteManager {
         return SQLiteManager.instance;
     }
 
-    public insertEvent(event: Event) {
+    public executeInsert(event: Event) {
         const query = this.chooseQuery(event);
         const params = Object.values(event);
 
@@ -47,15 +47,30 @@ export class SQLiteManager {
                 }
             });
         });
+    }
 
+    public clearDatabase() {
+        const tables = ['execution_events', 'user_activity_events', 'document_change_events'];
+        tables.forEach(table => {
+            const query = `DELETE FROM ${table}`;
+
+            this.db.run(query, (err) => {
+                if (err) {
+                    console.error(`Error clearing table ${table}:`, err);
+                } else {
+                    console.log(`Table ${table} cleared successfully.`);
+                }
+            });
+        });
     }
 
     public async executeSelect(eventType: EventType, start: string, end: string,
-                project: string|undefined=undefined, branch: string|undefined=undefined,
-                source: string|undefined=undefined): Promise<any[]> {
+        project: string | undefined = undefined, branch: string | undefined = undefined,
+        source: string | undefined = undefined): Promise<any[]> {
 
         const table = this.getTableName(eventType);
         const query = constructSelect(table, project, branch, start, end, source);
+        console.log("Query", query);
 
         return new Promise((resolve, reject) => {
             this.db.all(query, [], (err, rows) => {

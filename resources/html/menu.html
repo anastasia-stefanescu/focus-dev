@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Line Chart Example</title>
+    <style>
+        #myLineChart {
+            max-width: 600px;
+            margin: 50px auto;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="myLineChart" width="600" height="400"></canvas>
+
+    <button onclick="updateChart()">Update Chart</button>
+
+    <script type="module">
+        import LineChart from '../src/Charts/line_chart.ts';
+
+        const lineChart = new LineChart('myLineChart', 'myChart', [300, 250, 400], ['Apr', 'May', 'Jun']);
+
+        window.updateChart = () => {
+            lineChart.updateChartData([300, 250, 400], ['Apr', 'May', 'Jun']);
+        };
+
+    </script>
+</body>
+
+</html>

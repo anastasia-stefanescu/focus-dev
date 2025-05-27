@@ -6,7 +6,7 @@ import { DocumentChangeInfo, ExecutionEventInfo, ExecutionType, FullChangeData, 
 import { DEFAULT_CHANGE_EMISSION_INTERVAL } from "../Constants";
 import { emitToCacheProjectData } from "./event_sending";
 import { addChange } from "./event_data_extraction";
-import { EventCache } from "../LocalStorage/local_storage_node-cache";
+import { EventCache } from "../Cache/node-cache/node-cache";
 import { emit } from "process";
 import { getCurrentWorkspacePathAndName } from "../Util/util";
 
@@ -26,13 +26,6 @@ export class CurrentSessionVariables {
     // Theoretically, no, only node-cache is per process and thus per window.
     // What do we do about this then?
     private static instance: CurrentSessionVariables;
-
-    // also add different cache instances here!!!
-    private executionCache: EventCache<ExecutionEventInfo> | undefined = undefined;
-    private userActivityCache: EventCache<UserActivityEventInfo> | undefined = undefined;
-    private userDocumentCache: EventCache<DocumentChangeInfo> | undefined = undefined;
-    private aiDocumentCache: EventCache<DocumentChangeInfo> | undefined = undefined;
-    private externalDocumentCache: EventCache<DocumentChangeInfo> | undefined = undefined;
 
     private projectInfo: ProjectInfo | undefined = undefined;
 
@@ -63,38 +56,7 @@ export class CurrentSessionVariables {
         return CurrentSessionVariables.instance;
     }
 
-    // ==============================================================================
-    public getExecutionCache() {
-        if (!this.executionCache) {
-            this.executionCache = new EventCache<ExecutionEventInfo>();
-        }
-        return this.executionCache;
-    }
-    public getUserActivityCache() {
-        if (!this.userActivityCache) {
-            this.userActivityCache = new EventCache<UserActivityEventInfo>();
-        }
-        return this.userActivityCache;
-    }
-    public getDocumentCache(source: Source): EventCache<DocumentChangeInfo> | undefined {
-        if (source === 'user') {
-            if (!this.userDocumentCache)
-                this.userDocumentCache = new EventCache<DocumentChangeInfo>();
-            return this.userDocumentCache;
-        }
-        if (source === 'AI') {
-            if (!this.aiDocumentCache)
-                this.aiDocumentCache = new EventCache<DocumentChangeInfo>();
-            return this.aiDocumentCache;
-        }
-        if (source === 'external') {
-            if (!this.externalDocumentCache)
-                this.externalDocumentCache = new EventCache<DocumentChangeInfo>();
-            return this.externalDocumentCache;
-        }
-        return undefined; // if source is not user/AI/external, return undefined
-    }
-
+    
     //===============================================================================
 
     public get_flow() { return this.is_in_flow; }
@@ -221,8 +183,8 @@ export class CurrentSessionVariables {
     public getLastInternalCopiedText() { return this.last_internal_copied_text; }
     public setLastInternalCopiedText(text: string) { this.last_internal_copied_text = text; }
 
-    public getLastCopiedText() { return this.last_copied_text;}
-    public setLastCopiedText(text:string) { this.last_copied_text = text; }
+    public getLastCopiedText() { return this.last_copied_text; }
+    public setLastCopiedText(text: string) { this.last_copied_text = text; }
 
     public getLastTimeofUndoRedo() { return this.last_time_of_undo_redo; }
     public setLastTimeofUndoRedo(date: Date) { this.last_time_of_undo_redo = date; }

@@ -19,7 +19,7 @@ export function createCommands(ctx: ExtensionContext, authProvider: MyAuth0AuthP
   let cmds = [];
 
   //===============================================    SIDEBAR    ==========================================================
-  const sidebar: SidebarViewProvider = new SidebarViewProvider(ctx.extensionUri);
+  const sidebar: SidebarViewProvider = new SidebarViewProvider(ctx.extensionUri, ctx);
   //window.showInformationMessage('sidebar web provider initialized with extensionUri:', String(ctx.extensionUri));
 
   // - registerWebviewViewProvider (initialize sidebar web view provider & )
@@ -74,7 +74,116 @@ export function createCommands(ctx: ExtensionContext, authProvider: MyAuth0AuthP
     });
   cmds.push(startAuthenticationCommand);
 
-  //=============================================== COPY/PASTE/CUT ==========================================================
+
+
+
+  // check if these work normally!!!!!
+
+  // register VCode API user events
+
+  // inside each of these we should do a snowplow.trackSelfDescribingEvent
+
+
+
+  const copyPasteCutDisposables: Disposable[] = copyPasteCutCommands();
+
+  const fileEvents : Disposable[] = fileCommands();
+
+  const executionCommandsList : Disposable[] = executionCommands();
+
+
+
+  // also check test runs from terminal
+
+
+
+  const changedWindowState = window.onDidChangeWindowState(async (state) => {
+    // if it's focused / unfocused, because we're handling it as continuous action??
+    const window_session_id = env.sessionId;
+
+    // send changes for closed window?
+    if (state.focused)
+      window.showInformationMessage(`Window ${window_session_id} gained focus`);
+    else
+      window.showInformationMessage(`Window ${window_session_id} lost focus`);
+  });
+
+  // close/ open window?
+
+  //============================DOCUMENT CHANGE EVENTS=========================================
+
+  const codeChange = workspace.onDidChangeTextDocument(async (event) => {
+    const lastCopiedText = (await env.clipboard.readText()).toString()
+    instance.setLastCopiedText(lastCopiedText);
+    await verifyDocumentChange(event);
+  })
+
+
+  // ADD SHELL CODING
+
+
+  cmds.push(...copyPasteCutDisposables);
+  cmds.push(...fileEvents);
+  cmds.push(...executionCommandsList);
+  cmds.push(changedWindowState);
+  cmds.push(codeChange)
+
+  return Disposable.from(...cmds);
+}
+
+
+//============================EXECUTION EVENTS=========================================
+
+function executionCommands() : Disposable[] {
+  const startDebug = debug.onDidStartDebugSession(async (session) => {
+    window.showInformationMessage(`Started debug session: id: ${session.id}`);
+    startExecutionSession(session, 'debug');
+  });
+
+  const stopDebug = debug.onDidTerminateDebugSession(async (session) => {
+    window.showInformationMessage(`Stopped debug session: id: ${session.id}`);
+    endExecutionSession(session);
+  });
+
+  return [startDebug, stopDebug];
+}
+
+//==========================================FILE EVENTS=========================================
+function fileCommands() : Disposable[] {
+  const saveEvent = workspace.onDidSaveTextDocument(async (document) => {
+    //window.showInformationMessage(`!Saved file: ${document.fileName}`);
+    handleCloseFile(document.fileName); // handle as if closing the file
+  });
+
+  const openEvent = workspace.onDidOpenTextDocument(async (document) => {
+    // trebuie inchise celelalte file
+    window.showInformationMessage(`Opened file: ${document.fileName}`);
+    handleOpenFile(document.fileName); // handle as if opening the file
+  });
+
+  const closeEvent = workspace.onDidCloseTextDocument(async (document) => {
+    window.showInformationMessage(`Closed file: ${document.fileName}`);
+    handleCloseFile(document.fileName); // handle as if closing the file
+  });
+
+  // we intercept it before it's deleted
+  const willDeleteFileEvent = workspace.onWillDeleteFiles(async (event) => {
+    const fileName = event.files[0].fsPath;
+    window.showInformationMessage(`Will delete file: ${fileName}`);
+    handleCloseFile(fileName); // handle as if closing the file
+  });
+
+  const createFileEvent = workspace.onDidCreateFiles(async (event) => {
+    const fileName = event.files[0].fsPath;
+    window.showInformationMessage(`Created file: ${fileName}`);
+    handleOpenFile(fileName); // handle as if opening the file
+  });
+
+  return [saveEvent, openEvent, closeEvent, willDeleteFileEvent, createFileEvent];
+}
+
+//=============================================== COPY/PASTE/CUT ==========================================================
+function copyPasteCutCommands() : Disposable[] {
   // listen to built-in copy/paste commands
   const copyDisposable = vscode.commands.registerCommand('custom.trackCopy', async () => {
 
@@ -119,99 +228,8 @@ export function createCommands(ctx: ExtensionContext, authProvider: MyAuth0AuthP
     window.showInformationMessage(`After execution of paste at ${now2}: ${clipboardText}`);
   });
 
-  // check if these work normally!!!!!
-
-  // register VCode API user events
-
-  // inside each of these we should do a snowplow.trackSelfDescribingEvent
-
-  //==========================================FILE EVENTS=========================================
-  const saveEvent = workspace.onDidSaveTextDocument(async (document) => {
-    //window.showInformationMessage(`!Saved file: ${document.fileName}`);
-    handleCloseFile(document.fileName); // handle as if closing the file
-  });
-
-  const openEvent = workspace.onDidOpenTextDocument(async (document) => {
-    // trebuie inchise celelalte file
-    window.showInformationMessage(`Opened file: ${document.fileName}`);
-    handleOpenFile(document.fileName); // handle as if opening the file
-  });
-
-  const closeEvent = workspace.onDidCloseTextDocument(async (document) => {
-    window.showInformationMessage(`Closed file: ${document.fileName}`);
-    handleCloseFile(document.fileName); // handle as if closing the file
-  });
-
-  // we intercept it before it's deleted
-  const willDeleteFileEvent = workspace.onWillDeleteFiles(async (event) => {
-    const fileName = event.files[0].fsPath;
-    window.showInformationMessage(`Will delete file: ${fileName}`);
-    handleCloseFile(fileName); // handle as if closing the file
-  });
-
-  const createFileEvent = workspace.onDidCreateFiles(async (event) => {
-    const fileName = event.files[0].fsPath;
-    window.showInformationMessage(`Created file: ${fileName}`);
-    handleOpenFile(fileName); // handle as if opening the file
-  });
-
-  //============================EXECUTION EVENTS=========================================
-
-  const startDebug = debug.onDidStartDebugSession(async (session) => {
-    window.showInformationMessage(`Started debug session: id: ${session.id}`);
-    startExecutionSession(session, 'debug');
-  });
-
-  const stopDebug = debug.onDidTerminateDebugSession(async (session) => {
-    window.showInformationMessage(`Stopped debug session: id: ${session.id}`);
-    endExecutionSession(session);
-  });
-
-
-
-  // also check test runs from terminal
-
-  //============================WINDOW EVENTS=========================================
-
-  const changedWindowState = window.onDidChangeWindowState(async (state) => {
-    // if it's focused / unfocused, because we're handling it as continuous action??
-    const window_session_id = env.sessionId;
-
-    // send changes for closed window?
-    if (state.focused)
-      window.showInformationMessage(`Window ${window_session_id} gained focus`);
-    else
-      window.showInformationMessage(`Window ${window_session_id} lost focus`);
-  });
-
-  // close/ open window?
-
-  //============================DOCUMENT CHANGE EVENTS=========================================
-
-  const code_change = workspace.onDidChangeTextDocument(async (event) => {
-    const lastCopiedText = (await env.clipboard.readText()).toString()
-    instance.setLastCopiedText(lastCopiedText);
-    await verifyDocumentChange(event);
-  })
-
-
-  // ADD SHELL CODING
-
-
-  cmds.push(copyDisposable);
-  cmds.push(cutDisposable);
-  cmds.push(pasteDisposable);
-  cmds.push(saveEvent);
-  cmds.push(closeEvent);
-  cmds.push(openEvent);
-  cmds.push(willDeleteFileEvent);
-  cmds.push(createFileEvent);
-  cmds.push(startDebug);
-  cmds.push(stopDebug);
-  cmds.push(changedWindowState);
-  cmds.push(code_change)
-
-  return Disposable.from(...cmds);
+  return [copyDisposable, cutDisposable, pasteDisposable];
 }
 
 
+//============================WINDOW EVENTS=========================================

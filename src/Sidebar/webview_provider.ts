@@ -2,19 +2,24 @@ import * as vscode from 'vscode';
 import { WebviewView, WebviewViewProvider, WebviewViewResolveContext, CancellationToken } from 'vscode';
 import { ExtensionContext, Uri } from 'vscode';
 import {commands, window} from 'vscode';
-
+import path from 'path';
+import fs from 'fs';
 
 export class SidebarViewProvider implements WebviewViewProvider {
     //!! a command is saving the provider in the context's subscriptions!!
 
-    private _view?:  WebviewView; 
+    private _view?:  WebviewView;
+    private extensionContext: ExtensionContext;
 
-    constructor(private readonly extensionUri: Uri) {} // or as parameter we can have the extensionUri
+    constructor(extensionUri: Uri, context: ExtensionContext) {
+        this.extensionContext = context;
+        // window.showInformationMessage('SidebarViewProvider initialized with extensionUri: ' + String(extensionUri));
+    }
 
     public async refresh(){
         if (!this._view) // it's not initialized yet
             return;
-        // might want to recheck the jwt token 
+        // might want to recheck the jwt token
         this._view.webview.html = await this.getWebviewContent();
     }
 
@@ -22,10 +27,15 @@ export class SidebarViewProvider implements WebviewViewProvider {
         this._view = webviewView;
 
         window.showInformationMessage('resolveWebviewView called');
-        //webviewView.webview.options = { enableScripts: true };
-    
-        webviewView.webview.html = this.getWebviewContent();
-    
+        webviewView.webview.options = {
+            enableScripts: true,
+            localResourceRoots: [
+                vscode.Uri.file(path.join(this.extensionContext.extensionPath, 'dist'))
+            ],
+        };
+
+        webviewView.webview.html = this.getFileHtmlContent('menu', 'line_chart', webviewView.webview); //this.getWebviewContent();
+
         // Handle messages sent from the webview
         webviewView.webview.onDidReceiveMessage((message) => {
           switch (message.command) {
@@ -41,6 +51,57 @@ export class SidebarViewProvider implements WebviewViewProvider {
 
     private startAuth() {
         vscode.commands.executeCommand('code-stats.startAuthentication');
+    }
+
+    // fileName: menu, scriptName: line_chart
+    private getFileHtmlContent(fileName: string, scriptName: string, webview: vscode.Webview): string {
+        //const htmlPath = path.join(this.extensionContext.extensionPath, 'resources/html', fileName + '.html');
+        //let html = fs.readFileSync(htmlPath, 'utf8');
+        let html = this.getChartContent();
+
+        const scriptPathOnDisk = vscode.Uri.file(
+            path.join(this.extensionContext.extensionPath, 'dist', 'Charts', scriptName + '.js')
+        );
+        const scriptUri = webview.asWebviewUri(scriptPathOnDisk);
+
+        // Replace the import path in your <script type="module"> manually or dynamically:
+        html = html.replace("../dist/Charts/line_chart.js", scriptUri.toString());
+
+        return html;
+    }
+
+    private getChartContent(): string {
+        return `<!DOCTYPE html >
+        <html lang="en" >
+
+            <head>
+            <meta charset="UTF-8" >
+                <title>Line Chart Example </title>
+                    <style>
+        #myLineChart {
+            max - width: 600px;
+            margin: 50px auto;
+        }
+        </style>
+            </head>
+
+            < body >
+            <canvas id="myLineChart" width = "600" height = "400" > </canvas>
+
+                < button onclick = "updateChart()" > Update Chart </button>
+
+                    < script type = "module" >
+        import LineChart from '../dist/Charts/line_chart.js';
+
+        const lineChart = new LineChart('myLineChart', 'myChart', [300, 250, 400], ['Apr', 'May', 'Jun']);
+
+        window.updateChart = () => {
+            lineChart.updateChartData([300, 250, 400], ['Apr', 'May', 'Jun']);
+        };
+
+        </script>
+        </body>
+        </html>`;
     }
 
 
@@ -99,13 +160,13 @@ export class SidebarViewProvider implements WebviewViewProvider {
             </body>
             </html>`;
       }
-    }   
+    }
 
         //called when the view becomes first visible (first loaded or user hides and then shows again the view)
     // public resolveWebviewView(webviewView: WebviewView) { //as parameters we should add WebviewViewResolverContext and CancellationToken
     //     this._view = webviewView;
     //     webviewView.webview.options = { enableScripts: true }; // here add the extensionUri for localResourceRoots; enableCommandUris: true, localResourceRoots: [this._extensionUri],
-        
+
 
     //     //interface WebviewMessage { command: string; //type of command sent - 'getStats', 'command_execute', action?: string; payload?: any;
     //     webviewView.webview.onDidReceiveMessage(async (message: any) => {

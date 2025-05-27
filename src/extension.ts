@@ -4,14 +4,15 @@ import { window, Uri, ExtensionContext, commands, workspace, authentication} fro
 
 import { getServerRunning } from './server';
 import { MyAuth0AuthProvider } from './Authentication/auth_provider';
-import { SidebarViewProvider } from './Sidebar/webview_provider';
 import { CurrentSessionVariables } from './EventTracking/event_management';
 import { GitTracking } from './Git/local_git_tracking';
 import { testGitApi } from './testScripts/test_git_api';
 import { testSqliteDatabase } from './Database/test_db';
+import { NodeCacheManager } from './Cache';
 
 export let instance: CurrentSessionVariables;
 export let gitInstance: GitTracking | undefined = undefined;
+export let cacheInstance: NodeCacheManager;
 export let authProvider: MyAuth0AuthProvider | undefined = undefined;
 
 // activate runs for every workspace / project / window
@@ -28,6 +29,8 @@ export async function activate (context: ExtensionContext)
   // if user doesn't log in, create an anonymous session??
 
   instance = CurrentSessionVariables.getInstance();
+
+  cacheInstance = NodeCacheManager.getInstance();
 
   gitInstance = await GitTracking.getInstance();
 

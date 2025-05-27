@@ -1,5 +1,5 @@
 import NodeCache from 'node-cache';
-import { DocumentChangeInfo, Event, ExecutionEventInfo, UserActivityEventInfo } from '../EventTracking/event_models';
+import { DocumentChangeInfo, Event, ExecutionEventInfo, UserActivityEventInfo } from '../../EventTracking/event_models';
 //import { window } from 'vscode';
 
 type CacheValue = string | number;
@@ -12,7 +12,7 @@ export class EventCache<T> {
     // the types of objects to store in cache: DocumentChangeInfo, ExecutionEventInfo, InstantaneousEventInfo
 
     // We store the events for about 15 minutes - enough to detect the flow, after which after they 'expire'
-    
+
     // Node-cache is an unordered hashmap, order is not maintained
     // For fast lookup, we thus maintain an array of keys ordered by time
 
@@ -24,10 +24,10 @@ export class EventCache<T> {
 
     private cache: NodeCache;
 
-    private ttlSeconds: number = 15*60; // Default TTL is 15 mins
+    private ttlSeconds: number = 15 * 60; // Default TTL is 16 mins, but we take flush all the data anyway and put it in the database
     private checkEvery: number = 60; // Default check every 1 minute
 
-    private eventsByTime : string[] = []; // array of events ordered by time
+    private eventsByTime: string[] = []; // array of events ordered by time
 
 
     constructor() { // Default TTL is 1 hour
@@ -51,7 +51,7 @@ export class EventCache<T> {
         return value === undefined ? null : value;
     }
 
-    getAll<T>() : { [key: string]: T } {
+    getAll<T>(): { [key: string]: T } {
         const keys = this.cache.keys();
         const allValues: { [key: string]: T } = {};
 
@@ -86,7 +86,7 @@ export class EventCache<T> {
     }
 
     flush(): { [key: string]: T } { // called when the extension is deactivated, need to hook this onto extension closing!!!!!!!!
-        const allEventsFromCache : { [key:string] : T}= this.getAll<T>();
+        const allEventsFromCache: { [key: string]: T } = this.getAll<T>();
         this.cache.flushAll();
         this.eventsByTime = [];
         return allEventsFromCache;
@@ -147,7 +147,7 @@ export class EventCache<T> {
             const lastEventKey = this.eventsByTime[this.eventsByTime.length - 1];
             const lastEvent = new UserActivityEventInfo(this.cache.get<UserActivityEventInfo>(lastEventKey) as Partial<UserActivityEventInfo>); // T or UserActivityEventInfo???????
 
-            if (lastEvent && Number(event.start) - Number(lastEvent.end) < 3* 60) { // 2-3 mins??
+            if (lastEvent && Number(event.start) - Number(lastEvent.end) < 3 * 60) { // 2-3 mins??
                 try {
                     this.mergeTwoEvents(event, lastEvent as T, lastEventKey, this.eventsByTime.length - 1);
                 } catch (error) {
@@ -188,8 +188,7 @@ export class EventCache<T> {
                     const currEvent = new DocumentChangeInfo(this.cache.get<DocumentChangeInfo>(currEventKey) as Partial<DocumentChangeInfo>);
                     if (currEvent && currEvent instanceof DocumentChangeInfo && currEvent.source === event.source
                         && currEvent.fileName === event.fileName
-                        && Number(event.start) - Number(currEvent.end) < 3* 60)
-                    { // 2-3 minutes here??
+                        && Number(event.start) - Number(currEvent.end) < 3 * 60) { // 2-3 minutes here??
                         try {
                             this.mergeTwoEvents(event, currEvent as T, currEventKey, index);
                         } catch (error) {
@@ -205,7 +204,7 @@ export class EventCache<T> {
     }
 
     // check if typing worked!!!!!!!
-    mergeTwoEvents(event1: T, event2: T, key:string, index:number) {
+    mergeTwoEvents(event1: T, event2: T, key: string, index: number) {
         if (event1 instanceof Event && event2 instanceof Event) { // here make sure the subclasses still remain
             event1.concatenateData(event2);
 

@@ -1,5 +1,5 @@
 import repl from 'repl';
-import * as cache from './LocalStorage/local_storage_node-cache';
+import * as cache from './Cache/node-cache/node-cache';
 
 const r = repl.start('> ');
 r.context.cache = cache;

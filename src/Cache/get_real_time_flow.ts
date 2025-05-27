@@ -3,17 +3,17 @@
 
 import { CurrentSessionVariables } from "../EventTracking/event_management";
 import { DocumentChangeInfo, ExecutionEventInfo, UserActivityEventInfo } from "../EventTracking/event_models";
-import { instance } from "../extension"; // !!
+import { cacheInstance } from "../extension"; // !!
 
 // automatically mark the period as focus
 // in another cache!!!
 
 export function getRealTimeFlow() {
-    const executionCache = instance.getExecutionCache();
+    const executionCache = cacheInstance.getExecutionCache();
     // might not need this one
-    const userDocumentCache = instance.getDocumentCache('user');
-    const aiDocumentCache = instance.getDocumentCache('AI');
-    const externalDocumentCache = instance.getDocumentCache('external');
+    const userDocumentCache = cacheInstance.getDocumentCache('user');
+    const aiDocumentCache = cacheInstance.getDocumentCache('AI');
+    const externalDocumentCache = cacheInstance.getDocumentCache('external');
 
     // order doesn't matter here?? or does it? getAll or getAllInOrder
     // we need order because we need to see a rate of writing in the last period
