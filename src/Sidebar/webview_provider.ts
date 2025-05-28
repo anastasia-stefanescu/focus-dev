@@ -34,23 +34,56 @@ export class SidebarViewProvider implements WebviewViewProvider {
             ],
         };
 
-        webviewView.webview.html = this.getFileHtmlContent('menu', 'line_chart', webviewView.webview); //this.getWebviewContent();
 
-        // Handle messages sent from the webview
-        webviewView.webview.onDidReceiveMessage((message) => {
-          switch (message.command) {
-            case 'login':
-              this.startAuth();
-              break;
-            default:
-              break;
-          }
-        });
-      }
+        const htmlContent = this.getHtmlForWebview(webviewView.webview);
+
+        webviewView.webview.html = htmlContent;
+
+        //webviewView.webview.html = this.getFileHtmlContent('menu', 'line_chart', webviewView.webview); //this.getWebviewContent();
+
+        // // Handle messages sent from the webview
+        // webviewView.webview.onDidReceiveMessage((message) => {
+        //   switch (message.command) {
+        //     case 'login':
+        //       this.startAuth();
+        //       break;
+        //     default:
+        //       break;
+        //   }
+        // });
+    }
 
 
     private startAuth() {
         vscode.commands.executeCommand('code-stats.startAuthentication');
+    }
+
+    private getHtmlForWebview(webview: vscode.Webview): string {
+        // Local URIs for the HTML and JS files
+        const webviewUri = webview.asWebviewUri(
+            vscode.Uri.file(path.join(this.extensionContext.extensionPath, 'src', 'views', 'webview.html'))
+        );
+        const scriptUri = webview.asWebviewUri(
+            vscode.Uri.file(path.join(this.extensionContext.extensionPath, 'src', 'views', 'webview.js'))
+        );
+
+        // Returning the HTML content with injected script
+        return `
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <title>Simple Webview</title>
+            </head>
+            <body>
+                <h1>Welcome to Webview!</h1>
+                <button id="clickButton">Click Me!</button>
+
+                <!-- Inject the script -->
+                <script src="${scriptUri}"></script>
+            </body>
+            </html>
+        `;
     }
 
     // fileName: menu, scriptName: line_chart
