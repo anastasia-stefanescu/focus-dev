@@ -18,6 +18,9 @@ export let cacheInstance: NodeCacheManager;
 export let sqlInstance: SQLiteManager;
 export let authProvider: MyAuth0AuthProvider | undefined = undefined;
 
+export let debug_event_processing = false;
+export let debug_cache = true;
+
 // activate runs for every workspace / project / window
 export async function activate (context: ExtensionContext)
 {

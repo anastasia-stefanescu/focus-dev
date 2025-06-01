@@ -154,7 +154,7 @@ export class UserActivityEventInfo extends Event{
         this.window_focus_changes += cacheEvent.window_focus_changes;
         this.others += cacheEvent.others;
 
-        this.total_actions = cacheEvent.file_actions + cacheEvent.git_actions + cacheEvent.window_focus_changes + cacheEvent.others;
+        this.total_actions += cacheEvent.file_actions + cacheEvent.git_actions + cacheEvent.window_focus_changes + cacheEvent.others;
     }
 
     static buildEventFromJson(data: any): UserActivityEventInfo {

@@ -98,6 +98,7 @@ export async function saveToDBUserActivity() {
         }
     }
     cacheInstance.getUserActivityCache().flush();
+    console.log("User activity cache flushed: ", cacheInstance.getUserActivityCache().getCount());
     //instance.setUserActivityInfo(undefined); // reset it
 }
 

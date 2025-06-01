@@ -9,6 +9,7 @@ import { addChange } from "./event_data_extraction";
 import { EventCache } from "../Cache/node-cache/node-cache";
 import { emit } from "process";
 import { getCurrentWorkspacePathAndName } from "../Util/util";
+import { debug_event_processing } from "../extension";
 
 
 // should also add window id here - there might be multiple windows open
@@ -19,6 +20,12 @@ import { getCurrentWorkspacePathAndName } from "../Util/util";
 // manage initialization of the CurrentSessionVariables per window
 // when window closes / loses focus => send all to cache
 // therefore, when each event is created, it should have the project set?
+
+function _debug_logs(message: string) {
+    //window.showInformationMessage(message);
+    if (debug_event_processing)
+        console.log(message);
+}
 export class CurrentSessionVariables {
     // By design, the VS Code API only works within a single instance (or window).
     // Is this the information for only one window?
@@ -56,7 +63,7 @@ export class CurrentSessionVariables {
         return CurrentSessionVariables.instance;
     }
 
-    
+
     //===============================================================================
 
     public get_flow() { return this.is_in_flow; }
@@ -120,7 +127,7 @@ export class CurrentSessionVariables {
 
     // returns undefined if key for dict doesn't exist
     public getDocChangeForSource(source: Source, fileName: string): DocumentChangeInfo | undefined {
-        console.log('Inside getDocChangeForSource', source, fileName);
+        _debug_logs(`Inside getDocChangeForSource for ${source} in ${fileName}`);
         if (this.projectInfo) {
             if (source === 'user' && this.projectInfo.docs_changed_user && this.projectInfo.docs_changed_user[fileName]) {
                 return this.projectInfo.docs_changed_user[fileName];
@@ -208,7 +215,7 @@ export class CurrentSessionVariables {
     }
 
     public verifyExistingProjectData() {
-        console.log('Inside verifyExistingProjectData');
+        _debug_logs('Inside verifyExistingProjectData');
         if (!this.projectInfo) {
             this.projectInfo = new ProjectInfo();
 
@@ -239,7 +246,7 @@ export class CurrentSessionVariables {
             docChangeInfo.projectName = this.projectInfo.project_name;
             docChangeInfo.projectDirectory = this.projectInfo.project_directory;
 
-            docChangeInfo.start = new Date().toISOString();                        // seteaza timpul de start al schimbarii in fisier
+            docChangeInfo.start = new Date().getTime().toString();                        // seteaza timpul de start al schimbarii in fisier
 
             this.setDocChangeForSource(source, docChangeInfo, fileName);
         }
@@ -251,7 +258,7 @@ export class CurrentSessionVariables {
 
         if (this.getUserActivityInfo() === undefined) {
             const userActivity: UserActivityEventInfo = new UserActivityEventInfo();
-            userActivity.start = new Date().toISOString();
+            userActivity.start = new Date().getTime().toString();
             this.setUserActivityInfo(userActivity);
         }
         return this.getUserActivityInfo() as UserActivityEventInfo; // to exclude the undefined case
@@ -262,7 +269,7 @@ export class CurrentSessionVariables {
 
         if (this.getExecutionEventInfo(sessionId) === undefined) {
             const executionEventInfo: ExecutionEventInfo = new ExecutionEventInfo();
-            executionEventInfo.start = new Date().toISOString();                        // seteaza timpul de start al activitatii in fisier
+            executionEventInfo.start = new Date().getTime().toString();                         // seteaza timpul de start al activitatii in fisier
             executionEventInfo.sessionId = sessionId;
             executionEventInfo.eventType = type;
             this.setExecutionEventInfo(executionEventInfo);
@@ -309,7 +316,7 @@ export class CurrentSessionVariables {
                 if (file !== fileName) {
                     const fileChange = changes_dict[file];
                     if (fileChange && !fileChange.end) {
-                        fileChange.end = new Date().toISOString(); // through references, the initial array is updated too
+                        fileChange.end = new Date().getTime().toString();     // through references, the initial array is updated too
                         this.setDocChangeForSource(source, fileChange, file); // update the change info
                     }
                 }
@@ -322,7 +329,7 @@ export class CurrentSessionVariables {
             const doc_change = this.getDocChangeForSource(source, fileName);
 
             if (doc_change && !doc_change.end) {
-                doc_change.end = new Date().toISOString(); // through references, the initial array is updated too - but let's not risk it
+                doc_change.end = new Date().getTime().toString();      // through references, the initial array is updated too - but let's not risk it
                 this.setDocChangeForSource(source, doc_change, fileName); // update the change info
             }
         }

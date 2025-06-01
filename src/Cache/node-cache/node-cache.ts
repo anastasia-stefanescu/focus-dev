@@ -1,8 +1,16 @@
 import NodeCache from 'node-cache';
 import { DocumentChangeInfo, Event, ExecutionEventInfo, UserActivityEventInfo } from '../../EventTracking/event_models';
 //import { window } from 'vscode';
+import { debug_cache } from '../../extension';
 
 type CacheValue = string | number;
+
+function _debug_logs(message: string): void {
+    // Uncomment this line to enable debug logs
+    // window.showInformationMessage(message);
+    if (debug_cache)
+        console.log(message);
+}
 
 // WHAT HAPPENS WITH CACHE IS VSCODE IS CLOSED? I KNOW WE SEND DATA TO CLOUD BUT STILL
 export class EventCache<T> {
@@ -131,12 +139,18 @@ export class EventCache<T> {
         //window.showInformationMessage(` We have in cache for key: ${this.cache.get(key)}`);
 
         // Update array of events keys ordered by time
-        this.eventsByTime.push(key);
+        //this.eventsByTime.push(key);
+        _debug_logs(`Events ordered by time: ${this.eventsByTime}`);
 
         //window.showInformationMessage( `Events ordered by time: ${this.eventsByTime}`);
 
         // Concatenate events if they are close enough and of the same type / source
-        this.groupEvents(event);
+        if (this.eventsByTime.length === 0) {
+            this.eventsByTime.push(key);
+            _debug_logs(`First event added: ${key}`);
+        } else {
+            this.groupEvents(event);
+        }
     }
 
     // get
@@ -147,17 +161,22 @@ export class EventCache<T> {
         // perhaps by marking it as 'deleted' in the array
 
         // test this!!!
+        _debug_logs(`Grouping event: ${JSON.stringify(event)}`);
+
         if (event instanceof UserActivityEventInfo) {
             const lastEventKey = this.eventsByTime[this.eventsByTime.length - 1];
-            const lastEvent = new UserActivityEventInfo(this.cache.get<UserActivityEventInfo>(lastEventKey) as Partial<UserActivityEventInfo>); // T or UserActivityEventInfo???????
+            const lastEvent = this.cache.get<UserActivityEventInfo>(lastEventKey)
 
-            if (lastEvent && Number(event.start) - Number(lastEvent.end) < 3 * 60) { // 2-3 mins??
+            if (lastEvent && Number(event.start) - Number(lastEvent.end) < 3 * 60 * 1000) { // 2-3 mins in milliseconds??
+                _debug_logs(`Merging UserActivityEventInfo: ${JSON.stringify(event)} with last event: ${JSON.stringify(lastEvent)}`);
                 try {
-                    this.mergeTwoEvents(event, lastEvent as T, lastEventKey, this.eventsByTime.length - 1);
+                    this.mergeTwoEvents(lastEvent as T, event, lastEventKey, this.eventsByTime.length - 1);
                 } catch (error) {
                     const errorMessage = error instanceof Error ? error.message : String(error);
-                    //window.showInformationMessage('Error merging events:', errorMessage);
+                    console.error('Error merging events:', errorMessage);
                 }
+            } else {
+                this.eventsByTime.push(this.getCorrectKey(event)); // if the last event is not close enough, just add the new event to the end of the array
             }
             return;
         }
@@ -165,17 +184,23 @@ export class EventCache<T> {
         if (event instanceof ExecutionEventInfo) {
             let index = this.eventsByTime.length - 1;
             while (index >= 0) {
+                _debug_logs('New event event Type: ' + event.eventType + ' Last event key: ' + this.eventsByTime[index]);
                 if (this.eventsByTime[index].includes(event.eventType?.toString())) {
+                    _debug_logs(`Last event at ${index} contains new event's eventType`);
                     const currEventKey = this.eventsByTime[index];
-                    const currEvent = new ExecutionEventInfo(this.cache.get<ExecutionEventInfo>(currEventKey) as Partial<ExecutionEventInfo>);
+                    const currEvent = this.cache.get<ExecutionEventInfo>(currEventKey);
                     if (currEvent && currEvent.eventType === event.eventType
-                        && Number(event.start) - Number(currEvent.end) < 3 * 60) { // 2-3 minutes here??
+                        && Number(event.start) - Number(currEvent.end) < 3 * 60 * 1000) { // 2-3 minutes here??
+                        _debug_logs(`Merging ExecutionEvents: ${JSON.stringify(event)} with last event: ${JSON.stringify(currEvent)}`);
                         try {
-                            this.mergeTwoEvents(event, currEvent as T, currEventKey, index);
+                            this.mergeTwoEvents(currEvent as T, event, currEventKey, index);
                         } catch (error) {
                             const errorMessage = error instanceof Error ? error.message : String(error);
-                            //window.showInformationMessage('Error merging events:', errorMessage);
+                            console.error('Error merging events:', errorMessage);
                         }
+                        return;
+                    } else {
+                        this.eventsByTime.push(this.getCorrectKey(event)); // if the last event is not close enough, just add the new event to the end of the array
                         return;
                     }
                 }
@@ -190,16 +215,20 @@ export class EventCache<T> {
                 if (event.source && this.eventsByTime[index].includes(event.source)) {
                     const currEventKey = this.eventsByTime[index];
                     const currEvent = new DocumentChangeInfo(this.cache.get<DocumentChangeInfo>(currEventKey) as Partial<DocumentChangeInfo>);
-                    if (currEvent && currEvent instanceof DocumentChangeInfo && currEvent.source === event.source
-                        && currEvent.fileName === event.fileName
-                        && Number(event.start) - Number(currEvent.end) < 3 * 60) { // 2-3 minutes here??
-                        try {
-                            this.mergeTwoEvents(event, currEvent as T, currEventKey, index);
-                        } catch (error) {
-                            const errorMessage = error instanceof Error ? error.message : String(error);
-                            //window.showInformationMessage('Error merging events:', errorMessage);
+                    if (currEvent && currEvent instanceof DocumentChangeInfo && currEvent.source === event.source && currEvent.fileName === event.fileName) {
+
+                        if (Number(event.start) - Number(currEvent.end) < 3 * 60 * 1000) { // 2-3 minutes here??
+                            try {
+                                this.mergeTwoEvents(currEvent as T, event, currEventKey, index);
+                            } catch (error) {
+                                const errorMessage = error instanceof Error ? error.message : String(error);
+                                //window.showInformationMessage('Error merging events:', errorMessage);
+                            }
+                            return;
+                        } else {
+                            this.eventsByTime.push(this.getCorrectKey(event)); // if the last event is not close enough, just add the new event to the end of the array
+                            return;
                         }
-                        return;
                     }
                 }
                 index--;
@@ -210,17 +239,23 @@ export class EventCache<T> {
     // check if typing worked!!!!!!!
     mergeTwoEvents(event1: T, event2: T, key: string, index: number) {
         if (event1 instanceof Event && event2 instanceof Event) { // here make sure the subclasses still remain
+            _debug_logs(`Event 1 is of type UserActivityEventInfo: ${!!(event1 instanceof UserActivityEventInfo)}`);
+            _debug_logs(`Event 2 is of type UserActivityEventInfo: ${!!(event2 instanceof UserActivityEventInfo)}`);
             event1.concatenateData(event2);
+            _debug_logs(`Merged events: ${JSON.stringify(event1)}`);
 
             const newKey = this.getCorrectKey(event1);
 
             this.cache.del(key);
+            _debug_logs(`After deletion, we have ${this.getCount().toString()} events in cache`);
             this.cache.set(newKey, event1);
+            _debug_logs(`After insertion, we have ${this.getCount().toString()} events in cache`);
 
             this.eventsByTime[index] = newKey; // update the index with the new key
+            _debug_logs(`Updated events ordered by time: ${this.eventsByTime}`);
         }
         else {
-            throw new Error('events passed are not of type Event');
+            console.error('events passed are not of type Event');
         }
     }
 

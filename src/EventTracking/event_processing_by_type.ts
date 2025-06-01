@@ -154,7 +154,7 @@ export function startExecutionSession(session: any, type:ExecutionType){
 export function endExecutionSession(session:any) {
     const execSession = instance.getExecutionEventInfo(session.id);
     if (execSession){
-        execSession.end = new Date().toISOString();
+        execSession.end = new Date().getTime().toString();     
         instance.setExecutionEventInfo(execSession);
     } else
         window.showErrorMessage('Try to end execution session that does not exist or type is not the same');

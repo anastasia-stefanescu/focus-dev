@@ -1,9 +1,14 @@
 import { DocumentChangeInfo, Event, EventType, ExecutionEventInfo, getNewEvent, UserActivityEventInfo } from "../EventTracking/event_models";
+import { sqlInstance } from "../extension";
+
 import { instance } from "../extension";
 import { window } from 'vscode';
 
-export async function getData(type: EventType, projectName: string | undefined): Promise<Event[]> {
-    const response = await fetch('/api/users/timeInterval').then(res => res.json())
+export async function getData(type: EventType, projectName: string | undefined, start: string, end: string): Promise<Event[]> {
+    //const response = await fetch('/api/users/timeInterval').then(res => res.json())
+
+    const response = await sqlInstance.executeSelect(type, start, end, projectName);
+    console.log(' SQL select response: ', response);
 
     // MAY NEED TO SORT BECAUSE WE'RE INSERTING DATA FROM MULTIPLE CACHES!!!!!
     // We will get events from one single database, be it JSONL based or SQL based

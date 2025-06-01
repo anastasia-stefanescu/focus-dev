@@ -77,7 +77,7 @@ export function saveToCacheDocumentChanges(instance: CurrentSessionVariables, so
     for (const file of allChangedFiles) {                         // check duplicate events from another window - i don't think we will need this
         const event = changes_dict[file];
         if (!event.end)
-            event.end = new Date().toISOString(); // through references, the initial array is updated too
+            event.end = new Date().getTime().toString(); // through references, the initial array is updated too
         //window.showInformationMessage(`Will call saveEvent for ${file}: ${event.charactersAdded}`);
         window.showInformationMessage(`Sending: ${event.keystrokes} keystrokes, ${event.charactersAdded}
             chars added, ${event.charactersDeleted} chars deleted, ${event.multiAdds} multiAdds, ${event.singleAdds}`);
@@ -97,7 +97,7 @@ export function saveToCacheUserActivity(instance: CurrentSessionVariables) {
     window.showInformationMessage('Sending user activity to cache');
     const userActivityCache = cacheInstance.getUserActivityCache();
     if (!userActivity.end)
-        userActivity.end = new Date().toISOString(); // through references, the initial array is updated too
+        userActivity.end = new Date().getTime().toString(); // through references, the initial array is updated too
     userActivityCache.saveEvent(userActivity);
     //instance.setUserActivityInfo(undefined); // reset it
 }
