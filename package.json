@@ -58,6 +58,10 @@
     },
     "commands": [
       {
+        "command": "yourExtension.showChart",
+        "title": "Show Chart"
+      },
+      {
         "command": "code-stats.viewDashboard",
         "title": "View Dashboard",
         "category": "Dashboard"

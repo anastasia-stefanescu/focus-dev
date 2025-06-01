@@ -11,7 +11,8 @@ export class SidebarViewProvider implements WebviewViewProvider {
     private _view?:  WebviewView;
     private extensionContext: ExtensionContext;
 
-    constructor(extensionUri: Uri, context: ExtensionContext) {
+    constructor(private readonly extensionUri: Uri, context: ExtensionContext) {
+        // even if not passed into method directly, extensionUri is still available as property of the class
         this.extensionContext = context;
         // window.showInformationMessage('SidebarViewProvider initialized with extensionUri: ' + String(extensionUri));
     }
@@ -27,30 +28,35 @@ export class SidebarViewProvider implements WebviewViewProvider {
         this._view = webviewView;
 
         window.showInformationMessage('resolveWebviewView called');
+
         webviewView.webview.options = {
             enableScripts: true,
-            localResourceRoots: [
-                vscode.Uri.file(path.join(this.extensionContext.extensionPath, 'dist'))
-            ],
+            enableCommandUris: true, // !! allows to use vscode:// commands in the webview
+            localResourceRoots: [this.extensionUri], // has to be private readonly in constructor
+            //[
+            //     vscode.Uri.file(path.join(this.extensionContext.extensionPath, 'dist'))
+            // ],
         };
 
+        webviewView.webview.html = this.getWebviewContentFromFile("login");
 
-        const htmlContent = this.getHtmlForWebview(webviewView.webview);
+        // const htmlContent = this.getHtmlForWebview(webviewView.webview);
 
-        webviewView.webview.html = htmlContent;
+        // webviewView.webview.html = htmlContent;
 
         //webviewView.webview.html = this.getFileHtmlContent('menu', 'line_chart', webviewView.webview); //this.getWebviewContent();
 
         // // Handle messages sent from the webview
-        // webviewView.webview.onDidReceiveMessage((message) => {
-        //   switch (message.command) {
-        //     case 'login':
-        //       this.startAuth();
-        //       break;
-        //     default:
-        //       break;
-        //   }
-        // });
+        webviewView.webview.onDidReceiveMessage((message) => {
+          switch (message.command) {
+            case 'login':
+              //this.startAuth();
+              webviewView.webview.html = this.getLoggedInContent();
+              break;
+            default:
+              break;
+          }
+        });
     }
 
 
@@ -160,6 +166,16 @@ export class SidebarViewProvider implements WebviewViewProvider {
         </script>
         </body>
         </html>`;
+      }
+
+    private getWebviewContentFromFile(htmlFileName: string): string {
+        const relativePath = path.join('resources', 'html', htmlFileName + '.html');
+        const htmlPath = path.join(this.extensionContext.extensionPath, relativePath);
+        window.showInformationMessage('HTML Path: ' + htmlPath);
+
+        const htmlContent: string = fs.readFileSync(htmlPath, 'utf8');
+        window.showInformationMessage('HTML Content: ' + htmlContent.substring(0, 100) + '...'); // Show first 100 characters for debugging
+        return htmlContent;
       }
 
       private getLoggedInContent(): string {

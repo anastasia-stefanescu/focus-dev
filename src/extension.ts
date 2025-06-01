@@ -1,7 +1,8 @@
-//const vscode from 'vscode');
+import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
 import { createCommands } from './command_creator';
 import { window, Uri, ExtensionContext, commands, workspace, authentication} from 'vscode';
-
 import { getServerRunning } from './server';
 import { MyAuth0AuthProvider } from './Authentication/auth_provider';
 import { CurrentSessionVariables } from './EventTracking/event_management';
@@ -9,10 +10,12 @@ import { GitTracking } from './Git/local_git_tracking';
 import { testGitApi } from './testScripts/test_git_api';
 import { testSqliteDatabase } from './Database/test_db';
 import { NodeCacheManager } from './Cache';
+import { SQLiteManager } from './Database/sqlite_db';
 
 export let instance: CurrentSessionVariables;
 export let gitInstance: GitTracking | undefined = undefined;
 export let cacheInstance: NodeCacheManager;
+export let sqlInstance: SQLiteManager;
 export let authProvider: MyAuth0AuthProvider | undefined = undefined;
 
 // activate runs for every workspace / project / window
@@ -32,9 +35,11 @@ export async function activate (context: ExtensionContext)
 
   cacheInstance = NodeCacheManager.getInstance();
 
+  sqlInstance = SQLiteManager.getInstance();
+
   gitInstance = await GitTracking.getInstance();
 
-  testSqliteDatabase();
+  //testSqliteDatabase();
 
   // // it seems this actually triggers the authentication flow
   // const session = await authentication.getSession('auth0-auth-provider', [], { createIfNone: true });

@@ -97,11 +97,19 @@ export class ExecutionEventInfo extends Event {
         super.concatenateData(cacheEvent);
     }
 
-    // static buildEventFromJson(data: any){
-    //     const event = new ExecutionEventInfo(data as Partial<Event>);
-    //     this.eventType = data.eventType;
-    //     this.sessionId = data.sessionId;
-    // }
+    static buildEventFromJson(data: any): ExecutionEventInfo{
+        const event = new ExecutionEventInfo();
+
+        event.start = data.start;
+        event.end = data.end;
+        event.projectName = data.projectName;
+        event.projectDirectory = data.projectDirectory;
+        event.branch = data.branch;
+
+        event.eventType = data.eventType;
+        event.sessionId = data.sessionId;
+        return event;
+    }
 
     computeRateOfEvent() : number{
         //super.computeRateOfEvent();
@@ -149,15 +157,21 @@ export class UserActivityEventInfo extends Event{
         this.total_actions = cacheEvent.file_actions + cacheEvent.git_actions + cacheEvent.window_focus_changes + cacheEvent.others;
     }
 
-    buildEventFromJson(data: any): void {
-        const base_event = Event.buildEventFromJson(data);
+    static buildEventFromJson(data: any): UserActivityEventInfo {
+        const event = new UserActivityEventInfo();
 
-        const event = base_event as DocumentChangeInfo;
-        this.file_actions = data.file_actions;
-        this.git_actions = data.git_actions;
-        this.window_focus_changes = data.window_focus_changes;
-        this.total_actions = data.total_actions;
-        this.others = data.others;
+        event.start = data.start;
+        event.end = data.end;
+        event.projectName = data.projectName;
+        event.projectDirectory = data.projectDirectory;
+        event.branch = data.branch;
+
+        event.file_actions = data.file_actions;
+        event.git_actions = data.git_actions;
+        event.window_focus_changes = data.window_focus_changes;
+        event.total_actions = data.total_actions;
+        event.others = data.others;
+        return event;
     }
 
     computeRateOfEvent() : number {
@@ -264,10 +278,13 @@ export class DocumentChangeInfo extends Event {
     }
 
     static buildEventFromJson(data: any): DocumentChangeInfo {
-        const base_event = super.buildEventFromJson(data);
+        const event = new DocumentChangeInfo();
 
-        // Cast the Event instance to DocumentChangeInfo, then extend it with specific properties
-        const event = base_event as DocumentChangeInfo;
+        event.start = data.start;
+        event.end = data.end;
+        event.projectName = data.projectName;
+        event.projectDirectory = data.projectDirectory;
+        event.branch = data.branch;
 
         event.fileName = data.fileName;
         event.filePath = data.filePath;

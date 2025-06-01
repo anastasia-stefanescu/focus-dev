@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Welcome</h1>
+    <button id="loginButton">Log In</button>
+    <script>
+        const vscode = acquireVsCodeApi();
+        document.getElementById('loginButton').addEventListener('click', () => {
+            vscode.postMessage({ command: 'login' });
+        });
+    </script>
+</body>
+
+</html>

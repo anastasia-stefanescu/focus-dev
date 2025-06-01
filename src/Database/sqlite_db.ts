@@ -1,5 +1,6 @@
 import sqlite3 from 'sqlite3';
 import path from 'path';
+import { window } from 'vscode';
 import { executionTableCreation, userActivityTableCreation, documentChangeTableCreation, constructSelect } from './sql_commands';
 import { executionEventInsertion, userActivityEventInsertion, documentChangeEventInsertion } from './sql_commands';
 import { Event, EventType, DocumentChangeInfo, ExecutionEventInfo, UserActivityEventInfo } from '../EventTracking/event_models';
@@ -95,6 +96,7 @@ export class SQLiteManager {
     }
 
     private chooseQuery(event: Event): string {
+        console.log("Choosing query for event:", event);
         if (event instanceof DocumentChangeInfo) {
             return documentChangeEventInsertion;
         } else if (event instanceof ExecutionEventInfo) {

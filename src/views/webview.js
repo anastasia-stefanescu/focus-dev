@@ -1,3 +1,6 @@
+import { window} from 'vscode';
+
 document.getElementById('clickButton').addEventListener('click', function () {
-    alert('Button was clicked!');
+    window.showInformationMessage('Button was clicked!');
+    console.log('Button was clicked!');
 });

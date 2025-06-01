@@ -1,148 +1,129 @@
 import { DEFAULT_CHANGE_EMISSION_INTERVAL } from "../../Constants";
-import { CurrentSessionVariables, Event } from "../../EventTracking";
+import { CurrentSessionVariables, DocumentChangeInfo, Event } from "../../EventTracking";
 import { window } from "vscode";
 import { EventCache } from "./node-cache";
-import { FullChangeData, ProjectInfo, Source, UserActivityEventInfo } from "../../EventTracking";
+import { FullChangeData, ProjectInfo, Source, UserActivityEventInfo, ExecutionEventInfo } from "../../EventTracking";
 import { all } from "axios";
 
-import { cacheInstance } from "../../extension";
-
-// emitting Execution events which might be quite long
-// send only those already finished every 1 minute (check whether any have finished)
-// send all of them only if the application is closed
+import { cacheInstance, sqlInstance } from "../../extension";
+import { NodeCacheManager } from "./node-cache_management";
 
 
 // USE OBJECTS.KEYS EVERYTIME TO VERIFY DICTIONARY IS NOT EMPTY!!!!!
 
 
 export async function emitToDBCacheData(deactivation: boolean = false) {
-    // Checks if we have events of any of the 3 types to send
+    window.showInformationMessage('Emitting data to cache...');
 
-    const allCaches : EventCache<Event>[] = [];
-
-    allCaches.push(cacheInstance.getExecutionCache());
-    allCaches.push(cacheInstance?.getUserActivityCache());
-    allCaches.push(cacheInstance?.getDocumentCache('user'));
-    allCaches.push(cacheInstance?.getDocumentCache('AI'));
-    allCaches.push(cacheInstance?.getDocumentCache('external'));
-
-    for (let i = 0; i< allCaches.length; i++) {
-        const cache : EventCache<Event> = allCaches[i];
-        const allEvents = Object.keys(cache.getAll())
-        if (!cache || allEvents.length !== 0) {
-            // gotta check type of events, how they come to cache
-        }
-
+    if (!cacheInstance || !cacheInstance.getCachesExist()) {
+        window.showInformationMessage('No cache data to send to DB');
+        return;
     }
 
-    // // if (!projectInfo) {
-    // //     window.showErrorMessage('No project info available');
-    // //     return;
-    // // }
+    const userDocChangesExist = !!(cacheInstance.getDocumentCache('user').getCount() > 0);
+    const aiDocChangesExist = !!(cacheInstance.getDocumentCache('AI').getCount() > 0);
+    const externalDocChangesExist = !!(cacheInstance.getDocumentCache('external').getCount() > 0);
+    const userActivityExists = !!(cacheInstance.getUserActivityCache().getCount() > 0);
+    const executionSessionsExist = !!(cacheInstance.getExecutionCache().getCount() > 0);
 
-    // const userDocChangesExist = !!(Object.keys(projectInfo.docs_changed_user).length);
-    // const aiDocChangesExist = !!(Object.keys(projectInfo.docs_changed_ai).length);
-    // const externalDocChangesExist = !!(Object.keys(projectInfo.docs_changed_external).length);
-    // const userActivityExists = !!(projectInfo.userActivity && projectInfo.userActivity.total_actions > 0);
+    if (userDocChangesExist || aiDocChangesExist || externalDocChangesExist || userActivityExists || executionSessionsExist) {
+        window.showInformationMessage('Something exists IN CACHE to send to DB!');
 
-    // let sessionsToSendKeys;
-    // if (deactivation)
-    //     sessionsToSendKeys = Object.keys(projectInfo.execution_sessions)
-    // else
-    //     sessionsToSendKeys = filterFinishedExecutionSessions(instance);
-    // const executionSessionsExist = !!(sessionsToSendKeys); // covers undefined / [] cases
+        clearTimeout(cacheInstance.getTimer());
+        cacheInstance.setTimer(undefined);
 
-    // if (userDocChangesExist || aiDocChangesExist || externalDocChangesExist || userActivityExists || executionSessionsExist) {
-    //     window.showInformationMessage('Something exists to be sent to be cache!');
+        await saveToDBDocumentChanges('user');
+        await saveToDBDocumentChanges('AI');
+        await saveToDBDocumentChanges('external');
 
-    //     clearTimeout(instance.getTimer());
-    //     instance.setTimer(undefined);
+        await saveToDBUserActivity();
 
-    //     saveToCacheDocumentChanges(instance, 'user');
-    //     saveToCacheDocumentChanges(instance, 'AI');
-    //     saveToCacheDocumentChanges(instance, 'external');
+        await saveToDBExecutionSessions();
 
-    //     saveToCacheUserActivity(instance);
+        cacheInstance.setCachesExist(false); // reset the flag
+    }
 
-    //     saveToCacheExecutionSessions(instance, sessionsToSendKeys, deactivation);
-
-    //     instance.setProjectInfo(undefined)
-    // }
-
-    // // for each of them separate??? Separate timers for each of them?
+    // for each of them separate??? Separate timers for each of them?
     // instance.setLastEmitTime(new Date().getTime());
 }
 
 //=====================================================
-export function saveToCacheDocumentChanges(instance: CurrentSessionVariables, source: Source) {
-    const changes_dict = instance.getAllDocChangesForSource(source); // returns dict or undefined
+export async function saveToDBDocumentChanges(source: Source) {
+    const events: { [key: string]: DocumentChangeInfo } = cacheInstance.getDocumentCache(source).getAll();
 
-    if (!changes_dict || Object.keys(changes_dict).length === 0) {
-        window.showInformationMessage(`No ${source} changes to send to cache`);
+    if (!events || Object.keys(events).length === 0) {
+        window.showInformationMessage(`No ${source} changes to send to DB`);
         return;
     }
 
-    window.showInformationMessage(`Begin send docs change for ${source} to cache`);   // just send the event which has project name and directory, filename and path set; // here we might not really need full project data!!!
+    window.showInformationMessage(`Begin send docs change for ${source} to DB`);   // just send the event which has project name and directory, filename and path set; // here we might not really need full project data!!!
 
-    const allChangedFiles = Object.keys(changes_dict);
-    const documentCache = cacheInstance.getDocumentCache(source);
-    for (const file of allChangedFiles) {                         // check duplicate events from another window - i don't think we will need this
-        const event = changes_dict[file];
-        if (!event.end)
-            event.end = new Date().toISOString(); // through references, the initial array is updated too
-        //window.showInformationMessage(`Will call saveEvent for ${file}: ${event.charactersAdded}`);
-        window.showInformationMessage(`Sending: ${event.keystrokes} keystrokes, ${event.charactersAdded}
-            chars added, ${event.charactersDeleted} chars deleted, ${event.multiAdds} multiAdds, ${event.singleAdds}`);
-        documentCache?.saveEvent(event);
-    }                                                             // see other checks from editor flow!!!!
+    const allEvents = Object.values(events);
+
+    for (const event of allEvents) {                         // check duplicate events from another window - i don't think we will need this
+        const typedEvent : DocumentChangeInfo = DocumentChangeInfo.buildEventFromJson(event) as DocumentChangeInfo; // create a new instance to avoid modifying the original event
+
+
+        window.showInformationMessage(`Sending to DB: ${typedEvent.keystrokes} keystrokes, ${typedEvent.charactersAdded}
+            chars added, ${typedEvent.charactersDeleted} chars deleted, ${typedEvent.multiAdds} multiAdds, ${typedEvent.singleAdds}`);
+
+        if (typedEvent && sqlInstance) {
+            console.log("Will send to DB event of type DocumentChange", !!(typedEvent instanceof DocumentChangeInfo));
+            await sqlInstance.executeInsert(typedEvent);
+        }
+    }
+    cacheInstance.getDocumentCache(source).flush();                                                            // see other checks from editor flow!!!!
     //instance.setAllDocChangesForSource(source, {});       // reset it
 }
 
-export function saveToCacheUserActivity(instance: CurrentSessionVariables) {
-    const userActivity = instance.getUserActivityInfo();
+export async function saveToDBUserActivity() {
+    const events: { [key: string]: UserActivityEventInfo } = cacheInstance.getUserActivityCache().getAll();
 
-    if (!userActivity || userActivity.total_actions === 0) {
-        window.showInformationMessage('No user activity to send to cache');
+    if (!events || Object.keys(events).length === 0) {
+        window.showInformationMessage(`No user activity to send to DB`);
         return;
     }
 
-    window.showInformationMessage('Sending user activity to cache');
-    const userActivityCache = cacheInstance.getUserActivityCache();
-    if (!userActivity.end)
-        userActivity.end = new Date().toISOString(); // through references, the initial array is updated too
-    userActivityCache.saveEvent(userActivity);
+    window.showInformationMessage('Sending user activity to DB');
+    const allEvents = Object.values(events);
+
+    for (const event of allEvents) {                         // check duplicate events from another window - i don't think we will need this
+        const typedEvent: UserActivityEventInfo = UserActivityEventInfo.buildEventFromJson(event); // create a new instance to avoid modifying the original event
+
+        window.showInformationMessage(`Sending to DB: ${typedEvent.file_actions} file actions, ${typedEvent.git_actions} git actions
+            ${typedEvent.window_focus_changes} window focus changes, ${typedEvent.others} others, ${typedEvent.total_actions} total actions`);
+
+        if (typedEvent && sqlInstance) {
+            await sqlInstance.executeInsert(typedEvent);
+        }
+    }
+    cacheInstance.getUserActivityCache().flush();
     //instance.setUserActivityInfo(undefined); // reset it
 }
 
-export function saveToCacheExecutionSessions(instance: CurrentSessionVariables, sessionsToSendKeys: string[] | undefined, deactivation: boolean = false) {
-    if (!sessionsToSendKeys) {
-        window.showInformationMessage(`No execution sessions to send to cache`);
+export async function saveToDBExecutionSessions() {
+    const events: { [key: string]: ExecutionEventInfo } = cacheInstance.getExecutionCache().getAll();
+
+    if (!events || Object.keys(events).length === 0) {
+        window.showInformationMessage(`No execution events to send to DB`);
         return;
     }
 
-    window.showInformationMessage('Sending execution sessions to cache');
-    const executionCache = cacheInstance.getExecutionCache();
-    for (const key of sessionsToSendKeys) {
-        const event = instance.getExecutionEventInfo(key);
-        executionCache?.saveEvent(event);
-        // if (!deactivation)
-        //     instance.deleteExecutionEvent(key); // delete it from the cache
+    window.showInformationMessage('Sending execution events to DB');
+    const allEvents = Object.values(events);
+
+    for (const event of allEvents) {                         // check duplicate events from another window - i don't think we will need this
+        const typedEvent: ExecutionEventInfo = ExecutionEventInfo.buildEventFromJson(event); // create a new instance to avoid modifying the original event
+
+        window.showInformationMessage(`Sending to DB: ${typedEvent.eventType} event type, ${typedEvent.sessionId} session id`);
+
+        if (typedEvent && sqlInstance) {
+            await sqlInstance.executeInsert(typedEvent);
+        }
     }
+    cacheInstance.getExecutionCache().flush();
     // if (deactivation)
     //     instance.setAllExecutionEvents({}); // reset it
-}
-
-//=====================================================
-
-function filterFinishedExecutionSessions(instance: CurrentSessionVariables) {
-    const allSessions = instance.getAllExecutionEvents();
-    const finishedSessions = Object.keys(allSessions).filter((key) => allSessions[key].end);
-
-    if (finishedSessions.length) {
-        window.showInformationMessage('Sending finished execution sessions to cache');
-        return finishedSessions;
-    }
-    return undefined;
 }
 
 //=====================================================

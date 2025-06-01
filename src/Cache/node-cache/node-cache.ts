@@ -77,6 +77,10 @@ export class EventCache<T> {
         return listOfEvents;
     }
 
+    getCount<T>(): number {
+        return this.cache.getStats().keys;
+    }
+
     // has(key: string): boolean {
     //     return this.cache.has(key);
     // }
