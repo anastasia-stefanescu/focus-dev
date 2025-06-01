@@ -4,7 +4,7 @@ import { sqlInstance } from "../extension";
 import { instance } from "../extension";
 import { window } from 'vscode';
 
-export async function getData(type: EventType, projectName: string | undefined, start: string, end: string): Promise<Event[]> {
+export async function getData(type: EventType, start: string, end: string, projectName: string | undefined = undefined): Promise<Event[]> {
     //const response = await fetch('/api/users/timeInterval').then(res => res.json())
 
     const response = await sqlInstance.executeSelect(type, start, end, projectName);
@@ -15,18 +15,29 @@ export async function getData(type: EventType, projectName: string | undefined, 
 
     const events: Event[] = [];
     for (const elem of response) {
-        const event = Event.buildEventFromJson(elem); // put data in it - this could be improved, as in python
-        if ((projectName && event.projectName == projectName) || !projectName)
-            groupEvents(events, event);
+        let event;
+        if (type === 'document')
+            event = DocumentChangeInfo.buildEventFromJson(elem);
+        else if (type === 'execution')
+            event = ExecutionEventInfo.buildEventFromJson(elem);
+        else if (type === 'userActivity')
+            event = UserActivityEventInfo.buildEventFromJson(elem);
+        else
+            event = Event.buildEventFromJson(elem); // this should not happen, but just in case
+        events.push(event); // add the event to the new events array
+         // put data in it - this could be improved, as in python
+        // if ((projectName && event.projectName == projectName) || !projectName) {
+        //     newEvents = groupEvents(events, event);
+        // }
     }
 
     // how is data from multiple event types handled here? Or document changes from different sources?
-    // I think we cannot
     return events;
+    //return newEvents; // return the new events array
 }
 
 
-export function groupEvents(events: Event[], event: Event): void {
+export function groupEvents(events: Event[], event: Event): Event[] {
     let index = events.length - 1;
     while (index >= 0) {
         const crtEvent = events[index];
@@ -45,10 +56,12 @@ export function groupEvents(events: Event[], event: Event): void {
             }
         }
         else {
+            events.push(event); // add the event to the end of the array
             break; // ne oprim daca ajungem la element cu diferenta prea mare
         }
         index--;
     }
+    return events;
 }
 
 function checkEventTypeConditions(event: Event, crtEvent: Event): boolean {

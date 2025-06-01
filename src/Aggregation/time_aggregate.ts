@@ -2,8 +2,7 @@ import { DocumentChangeInfo, Event, EventType, ExecutionEventInfo, getNewEvent, 
 import { instance } from "../extension";
 import { window } from 'vscode';
 import { getData } from "./get_and_group_events";
-import { time } from "console";
-import { start } from "repl";
+import { debug_time_aggregate } from "../extension";
 
 export class BucketEvent {
     event : Event | undefined = undefined; // is the type here kept?
@@ -22,18 +21,25 @@ export class BucketEvent {
 const NO_SECONDS_IN_DAY = 60 * 60 * 24;
 const NO_SECONDS_IN_HOUR = 60 * 60;
 
+function _debug_logs(message: string) {
+    if (debug_time_aggregate) {
+        console.log(message);
+    }
+}
+
 // used for events ordering
 
 // number of minutes doing a certain activity
 // percentage of various activities (document changes, user activity, execution)
-export async function group_events_by_time_unit(time_unit : 'hour' | 'day', type: EventType, projectName: string | undefined) {
+export async function group_events_by_time_unit(time_unit : 'hour' | 'day', type: EventType, projectName: string | undefined = undefined) {
     // get last week dates
     const time_units_events: { [key: string]: BucketEvent[] } = {}; // number of minutes
     //const time_units : string[] = [];
 
-    const crtDate = new Date();
+    const crtDate = new Date().getTime(); // current date
+    const startDate = new Date(crtDate - 24 * 60 * 60 * 1000).getTime(); // 24 hours ago
 
-    const events: Event[] = await getData(type, projectName); // ordered
+    const events: Event[] = await getData(type, startDate.toString(), crtDate.toString(), projectName); // ordered
 
     const time_unit_seconds = time_unit === 'hour' ? NO_SECONDS_IN_HOUR : NO_SECONDS_IN_DAY;
     const no_units = time_unit === 'hour' ? 24 : 7;
@@ -41,15 +47,15 @@ export async function group_events_by_time_unit(time_unit : 'hour' | 'day', type
 
     let index = 0;
     for(let i = no_units; i>= 1; i--) {
-        const begin_interval :Date = new Date(crtDate.getTime() - i * time_unit_seconds);
-        const begin_interval_string :string = begin_interval.toISOString();
-        const next_interval_begin:Date= new Date(crtDate.getTime() - (i-1) * time_unit_seconds);
-        const next_interval_begin_string : string = next_interval_begin.toISOString();
+        const begin_interval :Date = new Date(crtDate - i * time_unit_seconds);
+        const next_interval_begin:Date= new Date(crtDate - (i-1) * time_unit_seconds);
         //time_units.push(begin_string);
+        _debug_logs(`Processing time unit ${i}: ${begin_interval.toISOString()} - ${next_interval_begin.toISOString()}`);
 
-        let startEvent : Date = new Date(events[index].start);
-        let endEvent : Date = new Date(events[index].end);
-        while (begin_interval <= startEvent &&  startEvent < next_interval_begin) // it just has to begin in current day
+        let startEvent : Date = new Date(Number(events[index].start));
+        let endEvent : Date = new Date(Number(events[index].end));
+        _debug_logs(`At event ${index} - Start: ${startEvent.toISOString()}, End: ${endEvent.toISOString()}`);
+        while (begin_interval <= startEvent &&  startEvent < next_interval_begin) // it just has to begin in current time unit
         {
             let percentage = 1;
             if (endEvent > next_interval_begin)  { // we have to cut the event
@@ -57,13 +63,13 @@ export async function group_events_by_time_unit(time_unit : 'hour' | 'day', type
                 const seconds_event = endEvent.getTime() - startEvent.getTime();
                 percentage = seconds_in_unit / seconds_event;
 
-                time_units_events[next_interval_begin_string].push(new BucketEvent(events[index], 1 - percentage));
+                time_units_events[begin_interval.toString()].push(new BucketEvent(events[index], 1 - percentage));
             }
-            time_units_events[begin_interval_string].push(new BucketEvent(events[index], percentage));
-
+            time_units_events[begin_interval.toString()].push(new BucketEvent(events[index], percentage));
+            _debug_logs(`Added event: ${index} with percentage: ${percentage} to time unit: ${begin_interval.toString()}`);
             index++;
-            startEvent = new Date(events[index].start);
-            endEvent = new Date(events[index].end);
+            startEvent = new Date(Number(events[index].start));
+            endEvent = new Date(Number(events[index].end));
         }
     }
 

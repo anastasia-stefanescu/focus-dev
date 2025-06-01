@@ -1,5 +1,5 @@
 import { ExecutionEventInfo } from '../EventTracking/event_models';
-import { SQLiteManager } from './sqlite_db';
+import { SQLiteManager } from '../Database/sqlite_db';
 
 
 const testEvent: ExecutionEventInfo = new ExecutionEventInfo({
@@ -14,7 +14,7 @@ const testEvent: ExecutionEventInfo = new ExecutionEventInfo({
 
 export async function testSqliteDatabase() {
     // write separate try-catches for async functions
-    
+
     console.log('Testing SQLite database...');
     const instance = SQLiteManager.getInstance();
 
@@ -42,14 +42,14 @@ export async function testSqliteDatabase() {
         console.log('Database cleared successfully.');
     }
     catch (err) {
-            console.error('Error clearing database', err);
+        console.error('Error clearing database', err);
     }
 
     try {
         // After clearing the database, check if rows exist
         const rowsAfterClear = await instance.executeSelect('execution', '2023-10-01T00:00:00Z', '2023-10-01T02:00:00Z');
         console.log('Selected rows after clearing database:', rowsAfterClear);
-    }catch (err) {
+    } catch (err) {
         console.error('Error clearing database or selecting rows after clearing:', err);
     }
 }

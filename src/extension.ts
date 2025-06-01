@@ -2,13 +2,12 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { createCommands } from './command_creator';
-import { window, Uri, ExtensionContext, commands, workspace, authentication} from 'vscode';
+import { window, Uri, ExtensionContext, commands, workspace, authentication } from 'vscode';
 import { getServerRunning } from './server';
 import { MyAuth0AuthProvider } from './Authentication/auth_provider';
 import { CurrentSessionVariables } from './EventTracking/event_management';
 import { GitTracking } from './Git/local_git_tracking';
-import { testGitApi } from './testScripts/test_git_api';
-import { testSqliteDatabase } from './Database/test_db';
+import { testTimeAggregate } from './testScripts/test_aggregate';
 import { NodeCacheManager } from './Cache';
 import { SQLiteManager } from './Database/sqlite_db';
 
@@ -20,10 +19,10 @@ export let authProvider: MyAuth0AuthProvider | undefined = undefined;
 
 export let debug_event_processing = false;
 export let debug_cache = true;
+export let debug_time_aggregate = true;
 
 // activate runs for every workspace / project / window
-export async function activate (context: ExtensionContext)
-{
+export async function activate(context: ExtensionContext) {
   console.log('CodeStats: Activating extension...');
 
   authProvider = new MyAuth0AuthProvider(context);
@@ -42,7 +41,7 @@ export async function activate (context: ExtensionContext)
 
   gitInstance = await GitTracking.getInstance();
 
-  //testSqliteDatabase();
+  testTimeAggregate();
 
   // // it seems this actually triggers the authentication flow
   // const session = await authentication.getSession('auth0-auth-provider', [], { createIfNone: true });
@@ -64,7 +63,7 @@ export function deactivate() {
 export async function reload() {
   console.log("RELOAD!!!")
   window.showInformationMessage('CodeStats: Reloading extension...');
-// DO WE HAVE TO DO SOMETHING WITH THE AUTH0 SESSION HERE?
+  // DO WE HAVE TO DO SOMETHING WITH THE AUTH0 SESSION HERE?
 
   // updateFlowModeStatus();
 
