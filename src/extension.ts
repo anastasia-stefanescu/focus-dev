@@ -19,7 +19,7 @@ export let authProvider: MyAuth0AuthProvider | undefined = undefined;
 
 export let debug_event_processing = false;
 export let debug_cache = true;
-export let debug_time_aggregate = true;
+export let debug_time_aggregate = false;
 
 // activate runs for every workspace / project / window
 export async function activate(context: ExtensionContext) {

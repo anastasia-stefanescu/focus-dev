@@ -18,8 +18,8 @@ export class BucketEvent {
     }
 }
 
-const NO_SECONDS_IN_DAY = 60 * 60 * 24;
-const NO_SECONDS_IN_HOUR = 60 * 60;
+const NO_MS_IN_DAY = 60 * 60 * 24 * 1000;
+const NO_MS_IN_HOUR = 60 * 60 * 1000;
 
 function _debug_logs(message: string) {
     if (debug_time_aggregate) {
@@ -37,43 +37,53 @@ export async function group_events_by_time_unit(time_unit : 'hour' | 'day', type
     //const time_units : string[] = [];
 
     const crtDate = new Date().getTime(); // current date
-    const startDate = new Date(crtDate - 24 * 60 * 60 * 1000).getTime(); // 24 hours ago
+    const startDate = '1748787838321'; // new Date(crtDate - 24 * 60 * 60 * 1000).getTime(); // 24 hours ago
 
     const events: Event[] = await getData(type, startDate.toString(), crtDate.toString(), projectName); // ordered
 
-    const time_unit_seconds = time_unit === 'hour' ? NO_SECONDS_IN_HOUR : NO_SECONDS_IN_DAY;
+    const time_unit_ms = time_unit === 'hour' ? NO_MS_IN_HOUR : NO_MS_IN_DAY;
     const no_units = time_unit === 'hour' ? 24 : 7;
 
 
     let index = 0;
-    for(let i = no_units; i>= 1; i--) {
-        const begin_interval :Date = new Date(crtDate - i * time_unit_seconds);
-        const next_interval_begin:Date= new Date(crtDate - (i-1) * time_unit_seconds);
-        //time_units.push(begin_string);
-        _debug_logs(`Processing time unit ${i}: ${begin_interval.toISOString()} - ${next_interval_begin.toISOString()}`);
+    const no_events = events.length;
+    _debug_logs(`No events: ${no_events}, event 22: ${events[22] ? events[22].toString() : 'undefined'}`);
+    for(let i = no_units; i>= 1 && index < no_events; i--) {
+        const begin_interval :Date = new Date(crtDate - i * time_unit_ms);
+        const next_interval_begin:Date= new Date(crtDate - (i-1) * time_unit_ms);
+
+        time_units_events[begin_interval.toISOString()] = []; // initialize the time unit
+        _debug_logs(`Processing time unit ${i}: ${begin_interval.toISOString()} - ${next_interval_begin.toISOString()} `);
 
         let startEvent : Date = new Date(Number(events[index].start));
         let endEvent : Date = new Date(Number(events[index].end));
-        _debug_logs(`At event ${index} - Start: ${startEvent.toISOString()}, End: ${endEvent.toISOString()}`);
-        while (begin_interval <= startEvent &&  startEvent < next_interval_begin) // it just has to begin in current time unit
+        _debug_logs(`At event ${index} - Start: ${startEvent.toISOString()}, End: ${endEvent.toISOString()} \n`);
+        while (begin_interval <= startEvent &&  startEvent < next_interval_begin && index < no_events) // has to begin in current time unit
         {
             let percentage = 1;
             if (endEvent > next_interval_begin)  { // we have to cut the event
                 const seconds_in_unit = next_interval_begin.getTime() - startEvent.getTime();
                 const seconds_event = endEvent.getTime() - startEvent.getTime();
-                percentage = seconds_in_unit / seconds_event;
-
-                time_units_events[begin_interval.toString()].push(new BucketEvent(events[index], 1 - percentage));
+                percentage = 1 - seconds_in_unit / seconds_event;
             }
-            time_units_events[begin_interval.toString()].push(new BucketEvent(events[index], percentage));
+            const bucket_event = new BucketEvent(events[index], percentage);
+
+            // change keys to getTime instead of ISOstring when you finish testing!!
+            time_units_events[begin_interval.toISOString()].push(bucket_event);
             _debug_logs(`Added event: ${index} with percentage: ${percentage} to time unit: ${begin_interval.toString()}`);
             index++;
+
+            if (index >= no_events) {
+                _debug_logs(`No more events to process, breaking the loop at index ${index}`);
+                break;
+            }
+
             startEvent = new Date(Number(events[index].start));
             endEvent = new Date(Number(events[index].end));
         }
     }
 
-    // from the aggregated events, get those that
+    console.log(time_units_events);
     return time_units_events;
 }
 
