@@ -29,6 +29,8 @@ const FOCUS_RATE_TRESHOLD : number = 0.5; // > 0.5 - 0.7 keystrokes per second. 
 const ACTIVE_RATE_TRESHOLD : number = 0.2; // > 0.2 - 0.5 keystrokes per second. If writing continuously, it can even be easily double
 const VARIANCE_TRESHOLD : number = 0.5;
 
+const FIFTEEN_MINUTES_IN_MS = 15 * 60 * 1000; // 15 minutes in milliseconds
+
 export type FocusLevel = 'active' | 'focus' | 'idle'; // focus level of the user
 
 export function computeFocusStatistics(time_unit: 'hour' | 'day', projectName: string | undefined) {}
@@ -39,10 +41,10 @@ export function computeFocusStatistics(time_unit: 'hour' | 'day', projectName: s
 export async function computeOverallFocus(time_unit: 'hour' | 'day', projectName: string | undefined) {
     // determine doc changes focus first
     //const typesOfEvents: EventType[] = [DocumentChange, EventType.UserActivity, EventType.Execution];
-    const allbucketEvents: { [key: string]: BucketEvent[] } = await group_events_by_time_unit(time_unit, 'document', projectName);
+    const allbucketEvents: { [key: string]: BucketEvent[] } = await group_events_by_time_unit(time_unit, 'execution', projectName); // change back to 'documtent' when done testing
 
     for (const interval in Object.keys(allbucketEvents)) {
-        const events = allbucketEvents[interval];
+        const events : BucketEvent[] = allbucketEvents[interval];
 
         const {focusPeriods, activePeriods} = iterateThroughEvents(events, time_unit, projectName);
     }
@@ -54,7 +56,7 @@ export async function computeOverallFocus(time_unit: 'hour' | 'day', projectName
 export function iterateThroughEvents(bucketEvents: BucketEvent[], time_unit: 'hour' | 'day', projectName: string | undefined) {
     // de intrebat chatgpt daca e ok
     let startDate = Number(bucketEvents[0].event?.start);
-    const fifteenMinutes = 15 * 60; // 15 minutes in seconds (use millliseconds?)
+
     const length = bucketEvents.length;
     const focusPeriods : [number, number][] = [];
     const activePeriods : [number, number][] = [];
@@ -63,8 +65,8 @@ export function iterateThroughEvents(bucketEvents: BucketEvent[], time_unit: 'ho
 
     let currentFocusPeriod : BucketEvent[] = [];
     let index = 0
-    // let's keep the date in seconds
-    while (Number(bucketEvents[index].event?.end) < startDate + fifteenMinutes && index < length) {
+    
+    while (Number(bucketEvents[index].event?.end) < startDate + FIFTEEN_MINUTES_IN_MS && index < length) {
         const event = bucketEvents[index];
         currentFocusPeriod.push(event);
         index++;

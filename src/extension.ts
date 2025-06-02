@@ -10,6 +10,8 @@ import { GitTracking } from './Git/local_git_tracking';
 import { testTimeAggregate } from './testScripts/test_aggregate';
 import { NodeCacheManager } from './Cache';
 import { SQLiteManager } from './Database/sqlite_db';
+// import { ChartWebviewPanel } from './Panels/panel_manager';
+import { Chart } from 'chart.js/dist';
 
 export let instance: CurrentSessionVariables;
 export let gitInstance: GitTracking | undefined = undefined;
@@ -30,6 +32,45 @@ export async function activate(context: ExtensionContext) {
   context.subscriptions.push(createCommands(context, authProvider));
 
   getServerRunning();
+
+  //ChartWebviewPanel.show(context);
+
+  const panel = vscode.window.createWebviewPanel(
+      'chartView',
+      'Line Chart',
+      vscode.ViewColumn.One,
+      {
+          enableScripts: true,
+          localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'resources', 'html')]
+      }
+  );
+
+  const htmlDir = vscode.Uri.joinPath(context.extensionUri, 'resources', 'html');
+  console.log(`HTML directory: ${htmlDir.fsPath}`);
+
+  const chartHtmlPath = vscode.Uri.joinPath(htmlDir, 'chart.html');
+  let html = fs.readFileSync(chartHtmlPath.fsPath, 'utf8');
+
+  const replaceUris = {
+      'CHART_JS_URI': panel.webview.asWebviewUri(vscode.Uri.joinPath(htmlDir, 'chart.min.js')).toString(),
+      'CHART_SCRIPT_URI': panel.webview.asWebviewUri(vscode.Uri.joinPath(htmlDir, 'chart-script.js')).toString()
+  };
+
+  for (const [key, value] of Object.entries(replaceUris)) {
+      html = html.replace(key, value);
+  }
+
+  panel.webview.html = html;
+
+  panel.webview.onDidReceiveMessage(message => {
+      if (message.command === 'requestData') {
+          console.log('Received requestData message from webview');
+          const labels = ['Jan', 'Feb', 'Mar', 'Apr'];
+          const data = [100, 250, 180, 300];
+          panel.webview.postMessage({ labels, data });
+      }
+  });
+
 
   // if user doesn't log in, create an anonymous session??
 

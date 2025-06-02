@@ -3,78 +3,78 @@ import { ViewColumn } from "vscode";
 import { window, Uri } from "vscode";
 import * as fs from "fs";
 
-export class ChartWebviewPanel {
-    public static currentPanel: ChartWebviewPanel | undefined;
-    private readonly panel: WebviewPanel;
-    private readonly context: ExtensionContext;
-    private readonly disposables: Disposable[] = [];
+// export class ChartWebviewPanel {
+//     public static currentPanel: ChartWebviewPanel | undefined;
+//     private readonly panel: WebviewPanel;
+//     private readonly context: ExtensionContext;
+//     private readonly disposables: Disposable[] = [];
 
-    private constructor(panel: WebviewPanel, context: ExtensionContext) {
-        this.panel = panel;
-        this.context = context;
+//     private constructor(panel: WebviewPanel, context: ExtensionContext) {
+//         this.panel = panel;
+//         this.context = context;
 
-        this.setupHtml();
-        this.setupMessageListener();
-    }
+//         this.setupHtml();
+//         this.setupMessageListener();
+//     }
 
-    public static show(context: ExtensionContext) {
-        if (ChartWebviewPanel.currentPanel) {
-            ChartWebviewPanel.currentPanel.panel.reveal();
-            return;
-        }
+//     public static show(context: ExtensionContext) {
+//         console.log('ChartWebviewPanel: Showing chart webview panel...');
+//         if (ChartWebviewPanel.currentPanel) {
+//             ChartWebviewPanel.currentPanel.panel.reveal();
+//             return;
+//         }
 
-        const panel = window.createWebviewPanel(
-            'chartView',
-            'Line Chart',
-            ViewColumn.One,
-            {
-                enableScripts: true,
-                localResourceRoots: [Uri.joinPath(context.extensionUri, 'resources', 'html')],
-            }
-        );
+//         const panel = window.createWebviewPanel(
+//             'chartView',
+//             'Line Chart',
+//             ViewColumn.One,
+//             {
+//                 enableScripts: true,
+//                 localResourceRoots: [Uri.joinPath(context.extensionUri, 'resources', 'html')],
+//             }
+//         );
 
-        ChartWebviewPanel.currentPanel = new ChartWebviewPanel(panel, context);
+//         ChartWebviewPanel.currentPanel = new ChartWebviewPanel(panel, context);
 
-        panel.onDidDispose(() => {
-            ChartWebviewPanel.currentPanel?.dispose();
-            ChartWebviewPanel.currentPanel = undefined;
-        });
-    }
+//         panel.onDidDispose(() => {
+//             ChartWebviewPanel.currentPanel?.dispose();
+//             ChartWebviewPanel.currentPanel = undefined;
+//         });
+//     }
 
-    // setting panel.webview.html here
-    private setupHtml() {
-        const htmlDir = Uri.joinPath(this.context.extensionUri, 'resources', 'html');
-        const chartHtmlPath = Uri.joinPath(htmlDir, 'chart.html');
-        let html = fs.readFileSync(chartHtmlPath.fsPath, 'utf8');
+//     // setting panel.webview.html here
+//     private setupHtml() {
+//         const htmlDir = Uri.joinPath(this.context.extensionUri, 'resources', 'html');
+//         const chartHtmlPath = Uri.joinPath(htmlDir, 'chart.html');
+//         let html = fs.readFileSync(chartHtmlPath.fsPath, 'utf8');
 
-        const replaceUris = {
-            'CHART_JS_URI': this.panel.webview.asWebviewUri(Uri.joinPath(htmlDir, 'chart.min.js')).toString(),
-            'CHART_STYLE_URI': this.panel.webview.asWebviewUri(Uri.joinPath(htmlDir, 'chart-style.css')).toString(),
-            'CHART_SCRIPT_URI': this.panel.webview.asWebviewUri(Uri.joinPath(htmlDir, 'chart-script.js')).toString()
-        };
+//         const replaceUris = {
+//             'CHART_JS_URI': this.panel.webview.asWebviewUri(Uri.joinPath(htmlDir, 'chart.min.js')).toString(),
+//             'CHART_SCRIPT_URI': this.panel.webview.asWebviewUri(Uri.joinPath(htmlDir, 'chart-script.js')).toString()
+//         };
 
-        for (const [key, value] of Object.entries(replaceUris)) {
-            html = html.replace(key, value);
-        }
+//         for (const [key, value] of Object.entries(replaceUris)) {
+//             html = html.replace(key, value);
+//         }
 
-        this.panel.webview.html = html;
-    }
+//         this.panel.webview.html = html;
+//     }
 
-    private setupMessageListener() {
-        this.panel.webview.onDidReceiveMessage(message => {
-            if (message.command === 'requestData') {
-                const labels = ['Jan', 'Feb', 'Mar', 'Apr'];
-                const data = [100, 250, 180, 300];
-                this.panel.webview.postMessage({ labels, data });
-            }
-        }, null, this.disposables);
-    }
+//     private setupMessageListener() {
+//         this.panel.webview.onDidReceiveMessage(message => {
+//             if (message.command === 'requestData') {
+//                 const labels = ['Jan', 'Feb', 'Mar', 'Apr'];
+//                 const data = [100, 250, 180, 300];
+//                 this.panel.webview.postMessage({ labels, data });
+//             }
+//         }, null, this.disposables);
+//     }
 
-    public dispose() {
-        this.panel.dispose();
-        this.disposables.forEach(d => d.dispose());
-    }
-}
+//     public dispose() {
+//         this.panel.dispose();
+//         this.disposables.forEach(d => d.dispose());
+//     }
+// }
 
 
 
