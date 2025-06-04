@@ -1,9 +1,9 @@
 import sqlite3 from 'sqlite3';
 import path from 'path';
 import { window } from 'vscode';
-import { executionTableCreation, userActivityTableCreation, documentChangeTableCreation, constructSelect } from './sql_commands';
+import { executionTableCreation, userActivityTableCreation, documentChangeTableCreation, constructSelect, successIndicatorInsertion, successIndicatorTableCreation } from './sql_commands';
 import { executionEventInsertion, userActivityEventInsertion, documentChangeEventInsertion } from './sql_commands';
-import { Event, EventType, DocumentChangeInfo, ExecutionEventInfo, UserActivityEventInfo } from '../EventTracking/event_models';
+import { Event, EventType, DocumentChangeInfo, ExecutionEventInfo, UserActivityEventInfo, SuccessIndicator } from '../EventTracking/event_models';
 
 
 export class SQLiteManager {
@@ -25,6 +25,7 @@ export class SQLiteManager {
             this.db.run(executionTableCreation);
             this.db.run(userActivityTableCreation);
             this.db.run(documentChangeTableCreation);
+            this.db.run(successIndicatorTableCreation);
         });
     }
 
@@ -51,7 +52,7 @@ export class SQLiteManager {
     }
 
     public clearDatabase() {
-        const tables = ['execution_events', 'user_activity_events', 'document_change_events'];
+        const tables = ['execution_events', 'user_activity_events', 'document_change_events', 'success_indicators'];
         tables.forEach(table => {
             const query = `DELETE FROM ${table}`;
 
@@ -91,6 +92,8 @@ export class SQLiteManager {
             return 'execution_events';
         } else if (eventType === 'userActivity') {
             return 'user_activity_events';
+        } else if (eventType === 'successIndicator') {
+            return 'success_indicators';
         }
         throw new Error('Unknown event type');
     }
@@ -103,6 +106,8 @@ export class SQLiteManager {
             return executionEventInsertion;
         } else if (event instanceof UserActivityEventInfo) {
             return userActivityEventInsertion;
+        } else if (event instanceof SuccessIndicator) {
+            return successIndicatorInsertion;
         }
         throw new Error('Unknown event type');
     }

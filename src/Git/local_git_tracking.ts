@@ -6,6 +6,8 @@ import { LOCAL_REFLOG_PATH, LOCAL_REFS_PATH, REMOTE_REFS_PATH } from '../Constan
 import { getBranch, getBranchLastCommitData } from './git_api';
 import { CommitData } from './git_models';
 import { getGitBranchReflogs, getGitCredentials, getRepoCredentials } from './local_repo_stats';
+import { SuccessIndicator } from '../EventTracking';
+import { instance } from '../extension';
 // Watch .git directory changes
 
 export class GitTracking {
@@ -133,23 +135,41 @@ export class GitTracking {
                     commit.author = this.username;
                     window.showInformationMessage('LOCAL COMMIT!');
                     // create success indicator
-                    break;
-                case 'PULL':
-                    // get more information about the pull
-                    commit.author = this.username;
-                    window.showInformationMessage('LOCAL PULL COMMIT!');
-                    // create success indicator
+                    const successIndicator: SuccessIndicator = new SuccessIndicator({
+                        start: new Date().getTime().toString(),
+                        end : new Date().getTime().toString(),
+                        projectDirectory: this.gitFolder?.uri.fsPath || '', // modify this
+                        projectName: this.projectName,
+                        branch: branchName,
+                        type: "commit",
+                        status: 'SUCCESS',
+                        message: 'something' // get message from anywhere?
+                    });
+                    // send to cloud success indicators
                     break;
                 case 'RESET':
                     commit.author = this.username;
                     window.showInformationMessage('LOCAL REVERT COMMIT!');
-                    // create success indicator
+                    const failIndicator: SuccessIndicator = new SuccessIndicator({
+                        start: new Date().getTime().toString(),
+                        end: new Date().getTime().toString(),
+                        projectDirectory: this.gitFolder?.uri.fsPath || '', // modify this
+                        projectName: this.projectName,
+                        branch: branchName,
+                        type: "commit",
+                        status: 'FAIL',
+                        message: 'something' // get message from anywhere?
+                    });
+                    break;
+                case 'PULL':
+                    // get more information about the pull
+                    window.showInformationMessage('LOCAL PULL!');
+                    instance.setLastTimeofPull(new Date());
                     break;
                 case 'MERGE':
                     // get more information about the merge
-                    commit.author = this.username;
                     window.showInformationMessage('LOCAL MERGE COMMIT!');
-                    // create success indicator
+                    instance.setLastTimeofMerge(new Date());
                     break;
                 case 'BRANCH':
                     //created new branch?

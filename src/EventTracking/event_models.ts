@@ -22,7 +22,7 @@ export class DocumentInfo {
 }
 
 
-export type EventType = 'document' | 'userActivity' | 'execution' | 'other';
+export type EventType = 'document' | 'userActivity' | 'execution' | 'successIndicator' | 'other';
 export class Event {
     start: string = ''; // in seconds !! or actual Date in string
     end: string = '';
@@ -184,13 +184,47 @@ export class UserActivityEventInfo extends Event{
 
 export type SuccessType = 'commit' | 'push' | 'run' | 'test' | 'tag' | undefined
 
-export class SuccessIndicator { // can be about git commits / other actions or comments or some kind of execution
-    projectName: string = '';
-    projectDirectory: string = '';
-    branchName: string = ''; // optional
+export class SuccessIndicator extends Event { // can be about git commits / other actions or comments or some kind of execution
     type: SuccessType = undefined
     status: string = ''; // optional - execution/deployment : success, failure
     message: string = ''; // optional - commit message: positive / negative / neutral
+
+    constructor();
+
+    constructor(cacheEvent: Partial<SuccessIndicator>);
+
+    constructor(cacheEvent?: Partial<SuccessIndicator>) {
+        super(cacheEvent as Partial<Event>);
+        this.type = cacheEvent?.type ?? undefined;
+        this.status = cacheEvent?.status ?? '';
+        this.message = cacheEvent?.message ?? '';
+    }
+
+    concatenateData(cacheEvent: SuccessIndicator) {
+        super.concatenateData(cacheEvent);
+        // we don't concatenate anything else, because this is a single event
+    }
+
+    static buildEventFromJson(data: any): SuccessIndicator {
+        const event = new SuccessIndicator();
+
+        event.start = data.start;
+        event.end = data.end;
+        event.projectName = data.projectName;
+        event.projectDirectory = data.projectDirectory;
+        event.branch = data.branch;
+
+        event.type = data.type;
+        event.status = data.status;
+        event.message = data.message;
+
+        return event;
+    }
+
+    computeRateOfEvent() : number {
+        // this is a single event, so we don't compute a rate
+        return 1; // or 0?
+    }
 }
 
 export class GitEvent {

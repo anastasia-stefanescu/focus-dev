@@ -55,6 +55,10 @@ export class CurrentSessionVariables {
     private last_internal_copied_text: string = '';
     private last_copied_text: string = '';
 
+    private last_time_of_pull: Date = new Date();
+    private last_time_of_merge: Date = new Date();
+    private last_time_of_branch_change: Date = new Date();
+
     public CurrentSessionVariables() { }
 
     public static getInstance() {
@@ -189,6 +193,13 @@ export class CurrentSessionVariables {
 
     public getLastInternalCopiedText() { return this.last_internal_copied_text; }
     public setLastInternalCopiedText(text: string) { this.last_internal_copied_text = text; }
+
+    public getLastTimeofPull() { return this.last_time_of_pull; }
+    public setLastTimeofPull(date: Date) { this.last_time_of_pull = date; }
+    public getLastTimeofMerge() { return this.last_time_of_merge; }
+    public setLastTimeofMerge(date: Date) { this.last_time_of_merge = date; }
+    public getLastTimeofBranchChange() { return this.last_time_of_branch_change; }
+    public setLastTimeofBranchChange(date: Date) { this.last_time_of_branch_change = date; }
 
     public getLastCopiedText() { return this.last_copied_text; }
     public setLastCopiedText(text: string) { this.last_copied_text = text; }

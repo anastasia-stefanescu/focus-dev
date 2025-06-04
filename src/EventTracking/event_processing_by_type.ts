@@ -14,6 +14,8 @@ import { getCurrentFileRelativePath } from "../Util/util";
 export function verifyDocumentChange(event: TextDocumentChangeEvent) {
     const { contentChanges, document, reason } = event; // de verificat daca documentul exista si fereastra este deschisa si focusata
 
+    const now = new Date();
+
     if (contentChanges.length === 0) {
       return "nothing"
     }
@@ -51,15 +53,15 @@ export function verifyDocumentChange(event: TextDocumentChangeEvent) {
                     } else {
                         source = verifyPaste();
                     }
-                } else {  // mark the activity as 'other' user activity; take into account DocumentChangeInfo or discard it?                                                     // code refactoring, git pulls/fetches
+                } else {  // code refactoring, git pulls/fetches
                     window.showInformationMessage('Multi cursor insert, is git pull / code refactoring!');
                     // if is git pull
-                    const userActivity: UserActivityEventInfo = handleMultipleInserts();
+                    const userActivity: UserActivityEventInfo = handleMultipleInserts(now);
                     instance.addUserActivityData(userActivity);
                 }
-            } else {
+            } else { // normal typing
                 //window.showInformationMessage('Normal typing!');                                                     // one single character was added => NORMAL TYPING
-                source = 'user';                                             // normal typing
+                source = 'user';
             }
         } else {
             // Undo/ Redo - it just undoes the last event -> we have to delete the last event; undo from cache? we save it until extension is stopped normally - no because we concatenate events implement sort of a git blame to know for sure?
@@ -129,12 +131,12 @@ export function verifyPaste() : Source {
     return 'user';
 }
 
-export function handleMultipleInserts() : UserActivityEventInfo {
+export function handleMultipleInserts(now: Date) : UserActivityEventInfo {
 
     // check git pull / fetch / merge / rebase
 
     let userActivity: UserActivityEventInfo = new UserActivityEventInfo();
-    if (verifyMultipleInserts() === 'git pull')
+    if (verifyMultipleInserts(now) in ['git pull', 'git merge', 'branch change'])
         userActivity.git_actions += 1;
     else
         userActivity.others += 1;
@@ -142,8 +144,26 @@ export function handleMultipleInserts() : UserActivityEventInfo {
     return userActivity;
 }
 
-function verifyMultipleInserts() {
-    return 'git pull';
+function verifyMultipleInserts(now: Date) : string {
+    const pullDate: Date = instance.getLastTimeofPull();
+    const mergeDate: Date = instance.getLastTimeofMerge();
+    const branchChangeDate: Date = instance.getLastTimeofBranchChange();
+
+    const FIVE_SECONDS = 5 * 1000;
+
+    if (Math.abs(now.getTime() - pullDate.getTime()) < FIVE_SECONDS) { // 5 seconds
+        window.showInformationMessage('Multiple inserts detected because of git pull');
+        return 'git pull';
+    }
+    if (Math.abs(now.getTime() - mergeDate.getTime()) < FIVE_SECONDS) { // 5 seconds
+        window.showInformationMessage('Multiple inserts detected because of git merge');
+        return 'git merge';
+    }
+    if (Math.abs(now.getTime() - branchChangeDate.getTime()) < FIVE_SECONDS) { // 5 seconds
+        window.showInformationMessage('Multiple inserts detected because of branch change');
+        return 'branch change';
+    }
+    return 'other';
 }
 
 // ======================================================
@@ -154,7 +174,7 @@ export function startExecutionSession(session: any, type:ExecutionType){
 export function endExecutionSession(session:any) {
     const execSession = instance.getExecutionEventInfo(session.id);
     if (execSession){
-        execSession.end = new Date().getTime().toString();     
+        execSession.end = new Date().getTime().toString();
         instance.setExecutionEventInfo(execSession);
     } else
         window.showErrorMessage('Try to end execution session that does not exist or type is not the same');

@@ -11,6 +11,16 @@ export function constructSelect(table: string, project: string|undefined, branch
     return query;
 }
 
+export const successIndicatorTableCreation = `CREATE TABLE IF NOT EXISTS success_indicators(
+    id INTEGER PRIMARY KEY,
+    projectName TEXT,
+    projectDirectory TEXT,
+    branch TEXT,
+    type TEXT,
+    status TEXT,
+    message REAL,
+);`
+
 export const executionTableCreation = `CREATE TABLE IF NOT EXISTS execution_events(
     id INTEGER PRIMARY KEY,
     start TEXT,
@@ -63,6 +73,18 @@ export const documentChangeTableCreation = `CREATE TABLE IF NOT EXISTS document_
     source TEXT
 );`
 
+export const successIndicatorInsertion = `INSERT INTO success_indicators (
+    start,
+    end,
+    projectName,
+    projectDirectory,
+    branch,
+    type,
+    status,
+    message
+) VALUES(
+    ?, ?, ?, ?, ?, ?, ?, ?
+);`
 
 export const executionEventInsertion = `INSERT INTO execution_events (
     start,
