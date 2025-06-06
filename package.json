@@ -56,7 +56,27 @@
         }
       ]
     },
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "extension.runWithoutDebugging",
+          "when": "editorTextFocus",
+          "group": "navigation"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "extension.runWithoutDebugging",
+          "group": "navigation"
+        }
+      ]
+    },
     "commands": [
+      {
+        "command": "extension.runWithoutDebugging",
+        "title": "Run Code Without Debugging",
+        "category": "My Extension"
+      },
       {
         "command": "yourExtension.showChart",
         "title": "Show Chart"

@@ -82,6 +82,13 @@ export async function activate(context: ExtensionContext) {
 
   gitInstance = await GitTracking.getInstance();
 
+  let disposable = vscode.commands.registerCommand('extension.runWithoutDebugging', () => {
+    vscode.commands.executeCommand('workbench.action.debug.run')
+    window.showInformationMessage('CodeStats: Running without debugging...');
+  });
+
+  context.subscriptions.push(disposable);
+
   testTimeAggregate();
 
   // // it seems this actually triggers the authentication flow
