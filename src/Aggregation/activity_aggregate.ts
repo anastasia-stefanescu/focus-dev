@@ -1,11 +1,24 @@
-import { getData } from "./get_and_group_events";
+import axios from 'axios';
 
 
-async function getEvents(start:string, end:string, projectName: string | undefined = undefined) {
-    // Fetch all events from the database within the specified time range
-    const docChanges = await getData('document', start, end, projectName);
-    const executions = await getData('execution', start, end, projectName);
-    const userActivities = await getData('userActivity', start, end, projectName);
 
-    
+
+
+export async function classifyWithSVM(features: number[]): Promise<void> {
+    console.log('Classifying with SVM...');
+    try {
+        const convertedFeatures = features.map(feature => Number(feature));
+        console.log('Converted features:', convertedFeatures);
+        console.log('Type of converted features:', typeof convertedFeatures[0]);
+
+        const response = await axios.post('http://localhost:5000/predict', {
+            features: convertedFeatures
+        });
+        console.log('Response from SVM server:', response
+        );
+
+        console.log('Predicted class:', response.data.prediction);
+    } catch (error) {
+        console.error('Error classifying:', error);
+    }
 }

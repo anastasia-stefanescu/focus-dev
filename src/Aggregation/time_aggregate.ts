@@ -2,7 +2,9 @@ import { DocumentChangeInfo, Event, EventType, ExecutionEventInfo, getNewEvent, 
 import { instance } from "../extension";
 import { window } from 'vscode';
 import { getData } from "./get_and_group_events";
-import { debug_time_aggregate } from "../extension";
+import { NO_SECONDS_IN_HOUR, NO_SECONDS_IN_DAY } from "../Constants";
+import { time } from "console";
+import { start } from "repl";
 
 export class BucketEvent {
     event : Event | undefined = undefined; // is the type here kept?
@@ -18,14 +20,6 @@ export class BucketEvent {
     }
 }
 
-const NO_MS_IN_DAY = 60 * 60 * 24 * 1000;
-const NO_MS_IN_HOUR = 60 * 60 * 1000;
-
-function _debug_logs(message: string) {
-    if (debug_time_aggregate) {
-        console.log(message);
-    }
-}
 
 // used for events ordering
 

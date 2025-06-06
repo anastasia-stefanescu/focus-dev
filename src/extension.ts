@@ -13,6 +13,8 @@ import { SQLiteManager } from './Database/sqlite_db';
 // import { ChartWebviewPanel } from './Panels/panel_manager';
 import { Chart } from 'chart.js/dist';
 
+import { getHDBSCANResults } from './Aggregation/focus_aggregate';
+
 export let instance: CurrentSessionVariables;
 export let gitInstance: GitTracking | undefined = undefined;
 export let cacheInstance: NodeCacheManager;
@@ -82,14 +84,9 @@ export async function activate(context: ExtensionContext) {
 
   gitInstance = await GitTracking.getInstance();
 
-  let disposable = vscode.commands.registerCommand('extension.runWithoutDebugging', () => {
-    vscode.commands.executeCommand('workbench.action.debug.run')
-    window.showInformationMessage('CodeStats: Running without debugging...');
-  });
+  //testSqliteDatabase();
 
-  context.subscriptions.push(disposable);
-
-  testTimeAggregate();
+  await getHDBSCANResults([]);
 
   // // it seems this actually triggers the authentication flow
   // const session = await authentication.getSession('auth0-auth-provider', [], { createIfNone: true });

@@ -13,7 +13,7 @@ export const post_to_services = async (endpoint: string, content: any) => {
         const response = await axios.post(base_url + endpoint, content);
         console.log('Response:', response.data);
         window.showInformationMessage('got from AWS:', String(response));
-        return response;
+        return response.data;
     } catch (error) {
       console.error('Axios error:', error);
     }
@@ -29,4 +29,3 @@ export const get_from_services = async (endpoint: string, content: any) => {
   }
 };
 
-  

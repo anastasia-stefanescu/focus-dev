@@ -7,6 +7,8 @@ import { DocumentChangeInfo, Event, EventType, ExecutionEventInfo, getNewEvent, 
 import { instance } from "../extension";
 import { window } from 'vscode';
 import { BucketEvent, group_events_by_time_unit } from "./time_aggregate";
+import { post_to_services } from "../API/api_wrapper";
+import { NO_SECONDS_IN_HOUR, NO_SECONDS_IN_DAY } from "../Constants";
 import { time } from "console";
 
 // Looking for:
@@ -35,22 +37,95 @@ export type FocusLevel = 'active' | 'focus' | 'idle'; // focus level of the user
 
 export function computeFocusStatistics(time_unit: 'hour' | 'day', projectName: string | undefined) {}
 
+interface HDBSCANEvent {
+    'start_time': number;
+    'end_time': number;
+    'rate': number;
+}
+
+interface IntervalFocusData {
+    focusPeriods: [number, number][];
+    activePeriods: [number, number][];
+    intervalFocusPercentage: number;
+    intervalTotalFocusTime: number;
+}
 
 // Includes all kinds of events
 // spans over an entire hour / day
-export async function computeOverallFocus(time_unit: 'hour' | 'day', projectName: string | undefined) {
+export async function computeIntervalsFocusData(time_unit: 'hour' | 'day', projectName: string | undefined) {
     // determine doc changes focus first
     //const typesOfEvents: EventType[] = [DocumentChange, EventType.UserActivity, EventType.Execution];
     const allbucketEvents: { [key: string]: BucketEvent[] } = await group_events_by_time_unit(time_unit, 'execution', projectName); // change back to 'documtent' when done testing
 
+    const intervalSeconds = time_unit === 'hour' ? NO_SECONDS_IN_HOUR : NO_SECONDS_IN_DAY;
+
+    const intervalsData: { [key: string]: IntervalFocusData } = {};
+
     for (const interval in Object.keys(allbucketEvents)) {
         const events : BucketEvent[] = allbucketEvents[interval];
 
-        const {focusPeriods, activePeriods} = iterateThroughEvents(events, time_unit, projectName);
+        const focusPeriods = await getHDBSCANResults(events);
+
+        const intervalTotalFocusTime = focusPeriods.reduce((sum: number, cluster: HDBSCANEvent) =>
+                                                            sum + (cluster["end_time"] - cluster["start_time"]), 0);
+        const intervalFocusPercentage = intervalTotalFocusTime / intervalSeconds;
+
+        intervalsData[interval] = {
+            focusPeriods: focusPeriods,
+            activePeriods: [], // we can compute this later
+            intervalFocusPercentage: intervalFocusPercentage,
+            intervalTotalFocusTime: intervalTotalFocusTime
+        }
     }
+
+    return intervalsData;
 
     // if these exist in a decent amount, we can add in user activity and execution events
 
+}
+
+export async function getHDBSCANResults(bucketEvents: BucketEvent[]) {
+    //const hdbscanEvents = getHDBSCANEvents(bucketEvents);
+    const hdbscanEvents: HDBSCANEvent[] = [
+        { 'start_time': 51, 'end_time': 68, 'rate': 1.834347898661638 },
+        { 'start_time': 71, 'end_time': 88, 'rate': 5.96850157946487 },
+        { 'start_time': 82, 'end_time': 93, 'rate': 0.5808361216819946 },
+        { 'start_time': 87, 'end_time': 96, 'rate': 6.011150117432088 },
+        { 'start_time': 23, 'end_time': 30, 'rate': 0.20584494295802447 },
+        { 'start_time': 1, 'end_time': 13, 'rate': 8.324426408004218 },
+        { 'start_time': 37, 'end_time': 43, 'rate': 1.8182496720710062 },
+        { 'start_time': 20, 'end_time': 25, 'rate': 3.0424224295953772 },
+        { 'start_time': 21, 'end_time': 38, 'rate': 4.319450186421157 },
+        { 'start_time': 48, 'end_time': 63, 'rate': 6.118528947223795 }
+    ];
+
+
+    const hdbscanResults = await post_to_services('/cluster', { "events": hdbscanEvents });
+    const clusters = hdbscanResults['clusters'];
+
+    return clusters;
+}
+
+export function getHDBSCANEvents(bucketEvents: BucketEvent[]) {
+    const hdbscanEvents: HDBSCANEvent[] = [];
+
+    // in case of AI document changes / external document changes, the rate is calculated by singleAdds/multiAdds/keystrokes, de vazut
+    for (const bucketEvent of bucketEvents) {
+        const event = bucketEvent.event
+        const percentage = bucketEvent.percentage;
+
+        if (event) {
+            const rate = percentage * event.computeRateOfEvent();
+            const hdbscanEvent = {
+                'start_time': Number(event.start),
+                'end_time': Number(event.end),
+                'rate': rate
+            }
+            hdbscanEvents.push(hdbscanEvent);
+        }
+    }
+
+    return hdbscanEvents;
 }
 
 export function iterateThroughEvents(bucketEvents: BucketEvent[], time_unit: 'hour' | 'day', projectName: string | undefined) {
@@ -65,7 +140,7 @@ export function iterateThroughEvents(bucketEvents: BucketEvent[], time_unit: 'ho
 
     let currentFocusPeriod : BucketEvent[] = [];
     let index = 0
-    
+
     while (Number(bucketEvents[index].event?.end) < startDate + FIFTEEN_MINUTES_IN_MS && index < length) {
         const event = bucketEvents[index];
         currentFocusPeriod.push(event);
