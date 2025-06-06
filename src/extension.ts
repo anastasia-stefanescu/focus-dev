@@ -9,6 +9,9 @@ import { CurrentSessionVariables } from './EventTracking/event_management';
 import { GitTracking } from './Git/local_git_tracking';
 import { testSqliteDatabase } from './Database/test_db';
 
+import { classifyWithSVM } from './Aggregation/activity_aggregate';
+import { getHDBSCANResults } from './Aggregation/focus_aggregate';
+
 export let instance: CurrentSessionVariables;
 export let gitInstance: GitTracking
 export let authProvider: MyAuth0AuthProvider | undefined = undefined;
@@ -30,7 +33,9 @@ export async function activate (context: ExtensionContext)
 
   gitInstance = await GitTracking.getInstance();
 
-  testSqliteDatabase();
+  //testSqliteDatabase();
+
+  await getHDBSCANResults([], 'hour', undefined);
 
   // // it seems this actually triggers the authentication flow
   // const session = await authentication.getSession('auth0-auth-provider', [], { createIfNone: true });

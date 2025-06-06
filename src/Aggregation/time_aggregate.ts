@@ -2,6 +2,7 @@ import { DocumentChangeInfo, Event, EventType, ExecutionEventInfo, getNewEvent, 
 import { instance } from "../extension";
 import { window } from 'vscode';
 import { getData } from "./get_and_group_events";
+import { NO_SECONDS_IN_HOUR, NO_SECONDS_IN_DAY } from "../Constants";
 import { time } from "console";
 import { start } from "repl";
 
@@ -19,8 +20,7 @@ export class BucketEvent {
     }
 }
 
-const NO_SECONDS_IN_DAY = 60 * 60 * 24;
-const NO_SECONDS_IN_HOUR = 60 * 60;
+
 
 // used for events ordering
 

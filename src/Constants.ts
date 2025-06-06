@@ -3,7 +3,10 @@ export const AUTH0_CLIENT_SECRET = "vIcUXAEGwEBD7OA8pfBqzJE8Abp0QC0z1qAJTNmre4Cs
 export const REDIRECT_URI = "vscode://my-extension.code-stats";
 export const AUTH0_DOMAIN = "dev-scav60kgla32afjs.us.auth0.com";
 
-export const service_database_port = 3002;
+export const NO_SECONDS_IN_DAY = 60 * 60 * 24;
+export const NO_SECONDS_IN_HOUR = 60 * 60;
+
+export const service_database_port = 5000; // was 3002 before
 
 export const DEFAULT_CHANGE_EMISSION_INTERVAL = 60000; // 20 seconds - (1 minute)
 
