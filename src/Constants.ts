@@ -6,6 +6,9 @@ export const AUTH0_DOMAIN = "dev-scav60kgla32afjs.us.auth0.com";
 export const NO_SECONDS_IN_DAY = 60 * 60 * 24;
 export const NO_SECONDS_IN_HOUR = 60 * 60;
 
+export const NO_MS_IN_DAY = 60 * 60 * 24 * 1000;
+export const NO_MS_IN_HOUR = 60 * 60 * 1000;
+
 export const service_database_port = 5000; // was 3002 before
 
 export const DEFAULT_CHANGE_EMISSION_INTERVAL = 10000; // 20 seconds - (1 minute)

@@ -1,7 +1,8 @@
 import { BucketEvent, group_events_by_time_unit } from "./time_aggregate";
 import { post_to_services } from "../API/api_wrapper";
-import { NO_SECONDS_IN_HOUR, NO_SECONDS_IN_DAY } from "../Constants";
+import { NO_MS_IN_HOUR, NO_MS_IN_DAY, NO_SECONDS_IN_DAY, NO_SECONDS_IN_HOUR} from "../Constants";
 import { sqlInstance, debug_focus_aggregate} from "../extension";
+import { time } from "console";
 
 
 // Looking for:
@@ -11,17 +12,8 @@ import { sqlInstance, debug_focus_aggregate} from "../extension";
 
 // Options: week, day -> TIMEZONES FOR HOURS!!!!???
 
-// For focus/activity, what we first want to see are document changes
-// If these exist in a decent amount, we can add in user activity and execution events
-
-// iterate through events starting with a small group -> ROLLING WINDOW Approach
-// Add a new event to the current interval
-// Calculate interval's focus level by Coefficient of Variation/Gini Coefficient
-// If the newly added event changes the focus level (focus falls under or above previous category treshold)
-// We start a new interval?
-
-const FOCUS_RATE_TRESHOLD : number = 0.5; // > 0.5 - 0.7 keystrokes per second. If writing continuously, it can even be easily double
-const ACTIVE_RATE_TRESHOLD : number = 0.2; // > 0.2 - 0.5 keystrokes per second. If writing continuously, it can even be easily double
+const FOCUS_RATE_TRESHOLD : number = 0.5; // > 0.5 - 0.7 keystrokes / sec
+const ACTIVE_RATE_TRESHOLD : number = 0.2; // > 0.2 - 0.5 keystrokes / sec
 const VARIANCE_TRESHOLD : number = 0.5;
 
 const FIFTEEN_MINUTES_IN_MS = 15 * 60 * 1000;
@@ -39,6 +31,7 @@ interface HDBSCANEvent {
 }
 
 interface FocusLevelData {
+    id: number;
     periods: [number, number][];
     percentage: number;
     totalTime: number;
@@ -50,12 +43,49 @@ function _debug_logs(message: string) {
     }
 }
 
-export async function computeIntervalsFocusData(time_unit: 'hour' | 'day', projectName: string | undefined) {
-    // change back to 'document' when done testing
-
-    const intervalFocusLevelsData: { [key in FocusLevel]?: FocusLevelData } = {};
-
+export async function markFocusByMinute(time_unit: 'hour' | 'day', projectName: string | undefined = undefined) {
     const now = new Date();
+    const intervalsData: {[key:string]:{[key in FocusLevel]?: FocusLevelData}} = await computeIntervalsFocusData(now, time_unit, projectName);
+
+    const minutesList :number[] = [];
+    const noMinutes = time_unit === 'hour' ? 60 : (24 * 60); // 24 hours in a day
+    const noMS = time_unit === 'hour' ? NO_MS_IN_HOUR * 1000 : NO_MS_IN_DAY * 1000;
+    const minuteStart = new Date(now.getTime() - noMS);
+
+    for (let i = 0; i < noMinutes; i++) {
+        minutesList.push(0);
+    }
+
+    for (const interval in Object.keys(intervalsData)) {
+        const intervalData = intervalsData[interval];
+        for (const key in focusLevels) {
+            const focusPeriods : [number, number][] = intervalData[key as FocusLevel]?.periods || [];
+            const noPeriods = focusPeriods.length;
+            for (let i = 0; i< noPeriods; i++) {
+                const start = focusPeriods[i][0];
+                const end = focusPeriods[i][1];
+                const noMinutesInPeriod = Math.ceil((end - start) / (60 * 1000)); // in minutes
+
+                for (let j = 0; j < noMinutesInPeriod; j++) {
+                    const minuteIndex = Math.floor((start + j * 60 * 1000));
+
+                    if (minuteIndex >= 0 && minuteIndex < noMinutes) {
+                        minutesList[minuteIndex] = intervalData[key as FocusLevel]?.id || 0;
+                    }
+                }
+            }
+        }
+    }
+
+
+
+
+}
+
+export async function computeIntervalsFocusData(crtTime: Date, time_unit: 'hour' | 'day', projectName: string | undefined = undefined)
+    : Promise<{ [key: string]: { [key in FocusLevel]?: FocusLevelData } }>
+{
+    const now = crtTime;
     const docEvents: { [key: string]: BucketEvent[] } = await group_events_by_time_unit(time_unit, 'execution', projectName, now);
     const userActivityEvents: { [key: string]: BucketEvent[] } = await group_events_by_time_unit(time_unit, 'userActivity', projectName, now);
     const executionEvents: { [key: string]: BucketEvent[] } = await group_events_by_time_unit(time_unit, 'execution', projectName, now);
@@ -67,9 +97,12 @@ export async function computeIntervalsFocusData(time_unit: 'hour' | 'day', proje
     // intervals are unix seconds strings
     const intervals = Object.keys(allbucketEvents).sort();
     const noIntervals = intervals.length;
+    const intervalsData: { [key: string]: { [key in FocusLevel]?: FocusLevelData } } = {};
     for (let i = 0; i<noIntervals; i++) {
         const interval = intervals[i];
         const events : BucketEvent[] = allbucketEvents[interval];
+
+        const intervalFocusLevelsData: { [key in FocusLevel]?: FocusLevelData } = {};
 
         for (const focusLevel of focusLevels) {
             let focusPeriods: [number, number][]; // can we create a type for this?
@@ -90,15 +123,17 @@ export async function computeIntervalsFocusData(time_unit: 'hour' | 'day', proje
             const intervalFocusPercentage = intervalTotalFocusTime / intervalSeconds;
 
             const intervalFocusLevelData: FocusLevelData = {
+                id: focusLevel === 'active' ? 2 : focusLevel === 'focus' ? 3 : 1,
                 periods: focusPeriods,
                 percentage: intervalFocusPercentage,
                 totalTime: intervalTotalFocusTime
             };
             intervalFocusLevelsData[focusLevel] = intervalFocusLevelData;
         }
+        intervalsData[interval] = intervalFocusLevelsData;
     }
 
-    return intervalFocusLevelsData;
+    return intervalsData;
 
 }
 
