@@ -11,6 +11,15 @@ export function constructSelect(table: string, project: string|undefined, branch
     return query;
 }
 
+export const windowFocusTableCreation = `CREATE TABLE IF NOT EXISTS window_focus(
+    id INTEGER PRIMARY KEY,
+    start TEXT,
+    end TEXT,
+    projectName TEXT,
+    projectDirectory TEXT,
+    branch TEXT,
+);`
+
 export const successIndicatorTableCreation = `CREATE TABLE IF NOT EXISTS success_indicators(
     id INTEGER PRIMARY KEY,
     projectName TEXT,
@@ -71,6 +80,16 @@ export const documentChangeTableCreation = `CREATE TABLE IF NOT EXISTS document_
     keystrokes INTEGER,
     changeType TEXT,
     source TEXT
+);`
+
+export const windowFocusInsertion = `INSERT INTO window_focus (
+    start,
+    end,
+    projectName,
+    projectDirectory,
+    branch
+) VALUES(
+    ?, ?, ?, ?, ?
 );`
 
 export const successIndicatorInsertion = `INSERT INTO success_indicators (

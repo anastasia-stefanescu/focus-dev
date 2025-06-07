@@ -3,7 +3,7 @@ import { emit, hasUncaughtExceptionCaptureCallback } from "process";
 import { TextDocumentChangeEvent, TextDocumentChangeReason } from "vscode";
 import { window } from "vscode";
 import { CurrentSessionVariables} from "./event_management";
-import { DocumentChangeInfo, ExecutionEventInfo, ExecutionType, ProjectInfo, UserActivityEventInfo } from "./event_models";
+import { DocumentChangeInfo, ExecutionEventInfo, ExecutionType, ProjectInfo, UserActivityEventInfo, UserActivityType } from "./event_models";
 import { extractChangeData } from "./event_data_extraction";
 import { Source } from "./event_models";
 
@@ -53,11 +53,9 @@ export function verifyDocumentChange(event: TextDocumentChangeEvent) {
                     } else {
                         source = verifyPaste();
                     }
-                } else {  // code refactoring, git pulls/fetches
+                } else {  // code refactoring, git pulls/fetches/merges/branch changes, etc.
                     window.showInformationMessage('Multi cursor insert, is git pull / code refactoring!');
-                    // if is git pull
-                    const userActivity: UserActivityEventInfo = handleMultipleInserts(now);
-                    instance.addUserActivityData(userActivity);
+                    handleMultipleInserts(now);
                 }
             } else { // normal typing
                 //window.showInformationMessage('Normal typing!');                                                     // one single character was added => NORMAL TYPING
@@ -71,9 +69,7 @@ export function verifyDocumentChange(event: TextDocumentChangeEvent) {
             if (changeInfo.changeType == 'singleDelete' || changeInfo.changeType == 'multiDelete') {
                 source = 'user';
             } else if (changeInfo.changeType == 'singleAdd' || changeInfo.changeType == 'multiAdd') {
-                const userActivity: UserActivityEventInfo = new UserActivityEventInfo();
-                userActivity.others += 1;
-                instance.addUserActivityData(userActivity);
+                createAndSaveUserActivityEvent('others'); // cursor change, user activity
             }
         }
 
@@ -93,30 +89,7 @@ export function verifyDocumentChange(event: TextDocumentChangeEvent) {
 
 // WHEN ARE USER ACTIVITY EVENTS ENDING??? - ending every minute when they are sent to cache
 
-// ======================================================
-
-// CLOSE / SAVE / DELETE FILE
-export function handleCloseFile(fileName:string) {
-    addFileAction();
-    instance.closeFileEvent(fileName);
-}
-
-// OPEN / CREATE FILE
-export function handleOpenFile(fileName:string) {
-    addFileAction();
-    instance.closeAllFileEventsExcept(fileName);
-    //emitToCacheProjectChangeData(); // why we do this is to set the 'end' of the event
-}
-
-export function addFileAction() {
-    const userActivity: UserActivityEventInfo = new UserActivityEventInfo();
-    userActivity.file_actions += 1;
-    instance.addUserActivityData(userActivity);
-}
-
-// ======================================================
-
-export function verifyPaste() : Source {
+export function verifyPaste(): Source {
     const lastInternalCopiedText = instance.getLastInternalCopiedText();
     const lastCopiedText = instance.getLastCopiedText();
 
@@ -131,17 +104,38 @@ export function verifyPaste() : Source {
     return 'user';
 }
 
-export function handleMultipleInserts(now: Date) : UserActivityEventInfo {
+// ======================================================
 
-    // check git pull / fetch / merge / rebase
+// CLOSE / SAVE / DELETE FILE
+export function handleCloseFile(fileName:string) {
+    createAndSaveUserActivityEvent('file');
+    instance.closeFileEvent(fileName); // close file's document change events
+}
 
-    let userActivity: UserActivityEventInfo = new UserActivityEventInfo();
+// OPEN / CREATE FILE
+// what happens if file reopens in the same minute before sending to cache?
+export function handleOpenFile(fileName:string) {
+    createAndSaveUserActivityEvent('file');
+    instance.closeAllFileEventsExcept(fileName);
+}
+
+// ======================================================
+
+// WE TRACK WINDOW FOCUS BY THE USER ACTIVITY EVENT IN PROJECT INFO
+export function handleWindowFocusChange(window_id: string, focused: boolean) {
+    createAndSaveUserActivityEvent('window');
+    if (!focused) {
+        instance.closeProjectUserActivity();
+    }
+}
+
+
+// check git pull / fetch / merge / rebase
+export function handleMultipleInserts(now: Date) {
     if (verifyMultipleInserts(now) in ['git pull', 'git merge', 'branch change'])
-        userActivity.git_actions += 1;
+        createAndSaveUserActivityEvent('git');
     else
-        userActivity.others += 1;
-
-    return userActivity;
+        createAndSaveUserActivityEvent('others');
 }
 
 function verifyMultipleInserts(now: Date) : string {
@@ -166,6 +160,36 @@ function verifyMultipleInserts(now: Date) : string {
     return 'other';
 }
 
+export function createAndSaveUserActivityEvent(eventType: UserActivityType) {
+    let userActivity: UserActivityEventInfo = new UserActivityEventInfo();
+
+    switch (eventType) {
+        case 'file':
+            userActivity.file_actions += 1;
+            break;
+        case 'git':
+            userActivity.git_actions += 1;
+            break;
+        case 'window':
+            userActivity.window_focus_changes += 1;
+            break;
+        case 'cursor':
+            userActivity.cursor_changes += 1;
+            break;
+        case 'others':
+            userActivity.others += 1;
+            break;
+        default:
+            window.showErrorMessage(`Unknown user activity type: ${eventType}`);
+            throw new Error(`Unknown user activity type: ${eventType}`);
+    }
+
+    userActivity.total_actions += 1;
+
+    instance.addUserActivityData(userActivity);
+}
+
+
 // ======================================================
 export function startExecutionSession(session: any, type:ExecutionType){
     instance.returnOrCreateExecution(session, type);
@@ -173,7 +197,7 @@ export function startExecutionSession(session: any, type:ExecutionType){
 
 export function endExecutionSession(session:any) {
     const execSession = instance.getExecutionEventInfo(session.id);
-    if (execSession){
+    if (execSession) {
         execSession.end = new Date().getTime().toString();
         instance.setExecutionEventInfo(execSession);
     } else

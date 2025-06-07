@@ -46,8 +46,8 @@ export class CurrentSessionVariables {
 
     private is_in_flow: boolean = true; // whether user is focused in past 10 minutes
     // what were we using these for??
-    private crt_is_in_focus: boolean = true;
-    private last_came_in_focus: Date = new Date();
+    // private crt_is_in_focus: boolean = true;
+    // private last_came_in_focus: Date = new Date();
 
     private last_time_of_paste: Date = new Date();
     private last_time_of_undo_redo: Date = new Date();
@@ -207,8 +207,6 @@ export class CurrentSessionVariables {
     public getLastTimeofUndoRedo() { return this.last_time_of_undo_redo; }
     public setLastTimeofUndoRedo(date: Date) { this.last_time_of_undo_redo = date; }
 
-    public getLastCameInFocus() { return this.last_came_in_focus; }
-
     //===============================================================================
 
     // ALSO SET A LISTENER FOR WHEN THE EXTENSION WINDOW CLOSES TO SEND THE COLLECTED DATA!!!!!!
@@ -268,6 +266,7 @@ export class CurrentSessionVariables {
         this.verifyExistingProjectData();
 
         if (this.getUserActivityInfo() === undefined) {
+            _debug_logs('Creating new UserActivityEventInfo!');
             const userActivity: UserActivityEventInfo = new UserActivityEventInfo();
             userActivity.start = new Date().getTime().toString();
             this.setUserActivityInfo(userActivity);

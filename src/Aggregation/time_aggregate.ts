@@ -31,12 +31,18 @@ function _debug_logs(message: string) {
 
 // number of minutes doing a certain activity
 // percentage of various activities (document changes, user activity, execution)
-export async function group_events_by_time_unit(time_unit : 'hour' | 'day', type: EventType, projectName: string | undefined = undefined) {
-    // get last week dates
-    const time_units_events: { [key: string]: BucketEvent[] } = {}; // number of minutes
-    //const time_units : string[] = [];
 
-    const crtDate = new Date().getTime(); // current date
+
+export async function group_events_by_time_unit(time_unit : 'hour' | 'day', type: EventType,
+    projectName: string | undefined = undefined, currentDate: Date | undefined = undefined)
+: Promise<{ [key: string]: BucketEvent[] }>
+{
+    const time_units_events: { [key: string]: BucketEvent[] } = {}; // number of minutes
+
+    if (!currentDate) {
+        currentDate = new Date();
+    }
+    const crtDate = currentDate.getTime();
     const startDate = '1748787838321'; // new Date(crtDate - 24 * 60 * 60 * 1000).getTime(); // 24 hours ago
 
     const events: Event[] = await getData(type, startDate.toString(), crtDate.toString(), projectName); // ordered

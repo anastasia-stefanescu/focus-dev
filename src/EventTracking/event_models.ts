@@ -4,13 +4,13 @@ export class ProjectInfo {
     identifier: string = ''; // ?
     resource: any = {}; // ?
     // branch?
-    docs_changed_user: any = {}; // dictionary
-    docs_changed_ai: any = {}; // dictionary
-    docs_changed_external: any = {}; // dictionary
+    docs_changed_user: any = {};
+    docs_changed_ai: any = {};
+    docs_changed_external: any = {};
 
-    execution_sessions: any = {}; // dictionary
+    execution_sessions: any = {};
 
-    userActivity: UserActivityEventInfo | undefined= undefined; // dictionary
+    userActivity: UserActivityEventInfo | undefined= undefined;
 }
 
 export class DocumentInfo {
@@ -22,7 +22,7 @@ export class DocumentInfo {
 }
 
 
-export type EventType = 'document' | 'userActivity' | 'execution' | 'successIndicator' | 'other';
+export type EventType = 'document' | 'userActivity' | 'execution' | 'successIndicator' | 'windowFocus';
 export class Event {
     start: string = ''; // in seconds !! or actual Date in string
     end: string = '';
@@ -68,16 +68,68 @@ export class Event {
     }
 }
 
-export function getNewEvent(type: EventType): Event | undefined {
+export function getNewEvent(type: EventType): Event{
     if (type == 'document')
         return new DocumentChangeInfo();
     if (type == 'execution')
         return new ExecutionEventInfo();
     if (type == 'userActivity')
         return new UserActivityEventInfo();
-    return undefined;
+    if (type == 'successIndicator')
+        return new SuccessIndicator();
+    if (type == 'windowFocus')
+        return new WindowFocus();
+    throw new Error(`Unknown event type: ${type}`);
 }
 
+export function getEventType(event: Event): EventType {
+    if (event instanceof DocumentChangeInfo)
+        return 'document';
+    if (event instanceof ExecutionEventInfo)
+        return 'execution';
+    if (event instanceof UserActivityEventInfo)
+        return 'userActivity';
+    if (event instanceof SuccessIndicator)
+        return 'successIndicator';
+    if (event instanceof WindowFocus)
+        return 'windowFocus';
+    throw new Error(`Unknown event type: ${event}`);
+}
+
+export class WindowFocus extends Event {
+    constructor();
+    constructor(cacheEvent: Partial<WindowFocus>);
+
+    constructor(cacheEvent?: Partial<WindowFocus>) {
+        super(cacheEvent as Partial<Event>); // this works fine even if cacheEvent is undefined
+        // no additional properties for now
+    }
+
+    concatenateData(cacheEvent: Event): void {
+        super.concatenateData(cacheEvent);
+    }
+
+    static buildEventFromJson(data: any): WindowFocus {
+        const event = new WindowFocus();
+
+        event.start = data.start;
+        event.end = data.end;
+        event.projectName = data.projectName;
+        event.projectDirectory = data.projectDirectory;
+        event.branch = data.branch;
+
+        return event;
+    }
+
+    noEvents(): number {
+        return 1; // this is a single event
+    }
+
+    computeRateOfEvent(): number {
+        // this is a single event, so we don't compute a rate
+        return 1; // or 0?
+    }
+}
 
 export type ExecutionType = 'debug' | 'run' | 'test' | 'deploy' | ''
 export class ExecutionEventInfo extends Event {
@@ -132,14 +184,14 @@ export class ExecutionEventInfo extends Event {
 
 // I don't think we need Window focus info
 
-export type UserActivityType = 'file' | 'git' | 'window' | 'document' | 'terminal' | undefined;
+export type UserActivityType = 'file' | 'git' | 'window' | 'cursor' | 'others' | undefined;
 // per project, and per timeframe
 export class UserActivityEventInfo extends Event{
 
     file_actions: number = 0; // open, close, save, delete, create
     git_actions: number = 0; // commit, push, pull, etc
     window_focus_changes: number = 0;
-    // deployment actions??
+    cursor_changes: number = 0;
     total_actions: number = 0; // all actions??
     others: number = 0; // irrelevant stuff such as undo, redo, copy, paste, etc
 
@@ -150,6 +202,7 @@ export class UserActivityEventInfo extends Event{
         this.file_actions = cacheEvent?.file_actions ?? 0;
         this.git_actions = cacheEvent?.git_actions ?? 0;
         this.window_focus_changes = cacheEvent?.window_focus_changes ?? 0;
+        this.cursor_changes = cacheEvent?.cursor_changes ?? 0;
         this.total_actions = cacheEvent?.total_actions ?? 0;
         this.others = cacheEvent?.others ?? 0;
     }
@@ -160,6 +213,7 @@ export class UserActivityEventInfo extends Event{
         this.file_actions += cacheEvent.file_actions;
         this.git_actions += cacheEvent.git_actions;
         this.window_focus_changes += cacheEvent.window_focus_changes;
+        this.cursor_changes += cacheEvent.cursor_changes;
         this.others += cacheEvent.others;
 
         this.total_actions += cacheEvent.file_actions + cacheEvent.git_actions + cacheEvent.window_focus_changes + cacheEvent.others;
@@ -177,6 +231,7 @@ export class UserActivityEventInfo extends Event{
         event.file_actions = data.file_actions;
         event.git_actions = data.git_actions;
         event.window_focus_changes = data.window_focus_changes;
+        event.cursor_changes = data.cursor_changes;
         event.total_actions = data.total_actions;
         event.others = data.others;
         return event;
@@ -194,10 +249,10 @@ export class UserActivityEventInfo extends Event{
     }
 }
 
-export type SuccessType = 'commit' | 'push' | 'run' | 'test' | 'tag' | undefined
+export type SuccessType = 'release' | 'deployment' | 'PR close' | 'main push' | 'push' | 'commit' | 'run' | 'test' | 'other';
 
 export class SuccessIndicator extends Event { // can be about git commits / other actions or comments or some kind of execution
-    type: SuccessType = undefined
+    type: SuccessType;
     status: string = ''; // optional - execution/deployment : success, failure
     message: string = ''; // optional - commit message: positive / negative / neutral
 
@@ -207,7 +262,7 @@ export class SuccessIndicator extends Event { // can be about git commits / othe
 
     constructor(cacheEvent?: Partial<SuccessIndicator>) {
         super(cacheEvent as Partial<Event>);
-        this.type = cacheEvent?.type ?? undefined;
+        this.type = cacheEvent?.type ?? 'other';
         this.status = cacheEvent?.status ?? '';
         this.message = cacheEvent?.message ?? '';
     }

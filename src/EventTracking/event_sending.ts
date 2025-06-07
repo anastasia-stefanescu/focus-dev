@@ -19,8 +19,6 @@ export async function emitFromCacheProjectChangeData() {
 export async function emitToCacheProjectData(deactivation: boolean = false) {
     // Checks if we have events of any of the 3 types to send
 
-    const one_minute_ago: number = new Date().getTime() - DEFAULT_CHANGE_EMISSION_INTERVAL;
-
     const projectInfo = instance.getProjectInfo();
 
     if (!projectInfo) {
@@ -89,7 +87,7 @@ export function saveToCacheDocumentChanges(instance: CurrentSessionVariables, so
 export function saveToCacheUserActivity(instance: CurrentSessionVariables) {
     const userActivity = instance.getUserActivityInfo();
 
-    if (!userActivity || userActivity.total_actions === 0) {
+    if (!userActivity || userActivity.noEvents() === 0) {
         window.showInformationMessage('No user activity to send to cache');
         return;
     }

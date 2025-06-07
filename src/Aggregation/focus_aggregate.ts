@@ -1,15 +1,8 @@
-
-
-// passive vs active code time
-// get overall time??
-
-import { DocumentChangeInfo, Event, EventType, ExecutionEventInfo, getNewEvent, Source, UserActivityEventInfo } from "../EventTracking/event_models";
-import { instance } from "../extension";
-import { window } from 'vscode';
 import { BucketEvent, group_events_by_time_unit } from "./time_aggregate";
 import { post_to_services } from "../API/api_wrapper";
 import { NO_SECONDS_IN_HOUR, NO_SECONDS_IN_DAY } from "../Constants";
-import { time } from "console";
+import { sqlInstance, debug_focus_aggregate} from "../extension";
+
 
 // Looking for:
 // idle => window is in focus, little to no activity
@@ -31,9 +24,10 @@ const FOCUS_RATE_TRESHOLD : number = 0.5; // > 0.5 - 0.7 keystrokes per second. 
 const ACTIVE_RATE_TRESHOLD : number = 0.2; // > 0.2 - 0.5 keystrokes per second. If writing continuously, it can even be easily double
 const VARIANCE_TRESHOLD : number = 0.5;
 
-const FIFTEEN_MINUTES_IN_MS = 15 * 60 * 1000; // 15 minutes in milliseconds
+const FIFTEEN_MINUTES_IN_MS = 15 * 60 * 1000;
 
-export type FocusLevel = 'active' | 'focus' | 'idle'; // focus level of the user
+export type FocusLevel = 'active' | 'focus' | 'idle';
+const focusLevels: FocusLevel[] = ['active', 'focus', 'idle'];
 
 export function computeFocusStatistics(time_unit: 'hour' | 'day', projectName: string | undefined) {}
 
@@ -44,53 +38,67 @@ interface HDBSCANEvent {
     'no_events': number;
 }
 
-interface IntervalFocusData {
-    focusPeriods: [number, number][];
-    activePeriods: [number, number][];
-    focusPercentage: number;
-    totalFocusTime: number;
-    activePercentage: number;
-    totalActiveTime: number; // optional, we can compute this later
+interface FocusLevelData {
+    periods: [number, number][];
+    percentage: number;
+    totalTime: number;
 }
 
-// Includes all kinds of events
-// spans over an entire hour / day
+function _debug_logs(message: string) {
+    if (debug_focus_aggregate) {
+        console.log(message);
+    }
+}
+
 export async function computeIntervalsFocusData(time_unit: 'hour' | 'day', projectName: string | undefined) {
-    // determine doc changes focus first
-    //const typesOfEvents: EventType[] = [DocumentChange, EventType.UserActivity, EventType.Execution];
-    const allbucketEvents: { [key: string]: BucketEvent[] } = await group_events_by_time_unit(time_unit, 'execution', projectName); // change back to 'documtent' when done testing
+    // change back to 'document' when done testing
+
+    const intervalFocusLevelsData: { [key in FocusLevel]?: FocusLevelData } = {};
+
+    const now = new Date();
+    const docEvents: { [key: string]: BucketEvent[] } = await group_events_by_time_unit(time_unit, 'execution', projectName, now);
+    const userActivityEvents: { [key: string]: BucketEvent[] } = await group_events_by_time_unit(time_unit, 'userActivity', projectName, now);
+    const executionEvents: { [key: string]: BucketEvent[] } = await group_events_by_time_unit(time_unit, 'execution', projectName, now);
+    // does this work, how to common intervals concatenate??
+    const allbucketEvents: { [key: string]: BucketEvent[] } = {...docEvents, ...userActivityEvents, ...executionEvents};
 
     const intervalSeconds = time_unit === 'hour' ? NO_SECONDS_IN_HOUR : NO_SECONDS_IN_DAY;
 
-    const intervalsData: { [key: string]: IntervalFocusData } = {};
-
-    for (const interval in Object.keys(allbucketEvents)) {
+    // intervals are unix seconds strings
+    const intervals = Object.keys(allbucketEvents).sort();
+    const noIntervals = intervals.length;
+    for (let i = 0; i<noIntervals; i++) {
+        const interval = intervals[i];
         const events : BucketEvent[] = allbucketEvents[interval];
 
-        const focusPeriods = await getHDBSCANResults(events, FOCUS_RATE_TRESHOLD);
-        const activePeriods = await getHDBSCANResults(events, ACTIVE_RATE_TRESHOLD);
+        for (const focusLevel of focusLevels) {
+            let focusPeriods: [number, number][]; // can we create a type for this?
+            if (focusLevel in ['active', 'focus']) {
+                const rate_threshold = focusLevel === 'focus' ? FOCUS_RATE_TRESHOLD : ACTIVE_RATE_TRESHOLD;
+                const focusClusters = await getHDBSCANResults(events, rate_threshold);
+                focusPeriods = focusClusters.map((cluster: HDBSCANEvent) => [cluster.start_time, cluster.end_time]);
+            } else {
+                const nextInterval = i + 1 < noIntervals ? intervals[i + 1] : now.getTime().toString();
+                const windowFocusEvents = await sqlInstance.executeSelect('windowFocus', interval,  nextInterval, projectName);
+                _debug_logs(`Window focus for ${interval} - ${nextInterval}: ${JSON.stringify(windowFocusEvents)}`);
+                focusPeriods = windowFocusEvents.map((event: any) => [Number(event.start), Number(event.end)]);
+            }
 
-        const intervalTotalFocusTime = focusPeriods.reduce((sum: number, cluster: HDBSCANEvent) =>
-                                                            sum + (cluster["end_time"] - cluster["start_time"]), 0);
-        const intervalFocusPercentage = intervalTotalFocusTime / intervalSeconds;
+            const intervalTotalFocusTime = focusPeriods.reduce((sum: number, period: [number, number]) =>
+                sum + (period[1] - period[0]), 0);
 
-        const intervalActiveTime = activePeriods.reduce((sum: number, cluster: HDBSCANEvent) =>
-                                                            sum + (cluster["end_time"] - cluster["start_time"]), 0) - intervalTotalFocusTime;
-        const intervalActivePercentage = intervalActiveTime / intervalSeconds;
+            const intervalFocusPercentage = intervalTotalFocusTime / intervalSeconds;
 
-        intervalsData[interval] = {
-            focusPeriods: focusPeriods,
-            activePeriods: activePeriods, // we can compute this later
-            focusPercentage: intervalFocusPercentage,
-            totalFocusTime: intervalTotalFocusTime,
-            activePercentage: intervalActivePercentage,
-            totalActiveTime: intervalActiveTime
+            const intervalFocusLevelData: FocusLevelData = {
+                periods: focusPeriods,
+                percentage: intervalFocusPercentage,
+                totalTime: intervalTotalFocusTime
+            };
+            intervalFocusLevelsData[focusLevel] = intervalFocusLevelData;
         }
     }
 
-    return intervalsData;
-
-    // if these exist in a decent amount, we can add in user activity and execution events
+    return intervalFocusLevelsData;
 
 }
 
@@ -139,6 +147,12 @@ export function getHDBSCANEvents(bucketEvents: BucketEvent[]) {
 
     return hdbscanEvents;
 }
+
+
+
+
+
+
 
 export function iterateThroughEvents(bucketEvents: BucketEvent[], time_unit: 'hour' | 'day', projectName: string | undefined) {
     // de intrebat chatgpt daca e ok

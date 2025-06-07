@@ -11,7 +11,6 @@ import { testTimeAggregate } from './testScripts/test_aggregate';
 import { NodeCacheManager } from './Cache';
 import { SQLiteManager } from './Database/sqlite_db';
 // import { ChartWebviewPanel } from './Panels/panel_manager';
-import { Chart } from 'chart.js/dist';
 
 import { getHDBSCANResults } from './Aggregation/focus_aggregate';
 
@@ -21,9 +20,11 @@ export let cacheInstance: NodeCacheManager;
 export let sqlInstance: SQLiteManager;
 export let authProvider: MyAuth0AuthProvider | undefined = undefined;
 
-export let debug_event_processing = false;
+export let debug_event_processing = true;
 export let debug_cache = true;
 export let debug_time_aggregate = false;
+export let debug_focus_aggregate = true;
+export let debug_efficiency_aggregate = true;
 
 // activate runs for every workspace / project / window
 export async function activate(context: ExtensionContext) {

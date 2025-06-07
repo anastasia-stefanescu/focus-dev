@@ -1,10 +1,44 @@
 import sqlite3 from 'sqlite3';
 import path from 'path';
 import { window } from 'vscode';
-import { executionTableCreation, userActivityTableCreation, documentChangeTableCreation, constructSelect, successIndicatorInsertion, successIndicatorTableCreation } from './sql_commands';
+import { executionTableCreation, userActivityTableCreation, documentChangeTableCreation, constructSelect,} from './sql_commands';
+import { windowFocusTableCreation, windowFocusInsertion, successIndicatorInsertion, successIndicatorTableCreation } from './sql_commands';
 import { executionEventInsertion, userActivityEventInsertion, documentChangeEventInsertion } from './sql_commands';
-import { Event, EventType, DocumentChangeInfo, ExecutionEventInfo, UserActivityEventInfo, SuccessIndicator } from '../EventTracking/event_models';
+import { Event, EventType, getEventType } from '../EventTracking/event_models';
 
+const eventTables: { [key in EventType]: TableCommands} = {
+    document: {
+        name: 'document_change_events',
+        create: documentChangeTableCreation,
+        insert: documentChangeEventInsertion
+    },
+    execution: {
+        name: 'execution_events',
+        create: executionTableCreation,
+        insert: executionEventInsertion
+    },
+    userActivity: {
+        name: 'user_activity_events',
+        create: userActivityTableCreation,
+        insert: userActivityEventInsertion
+    },
+    successIndicator: {
+        name: 'success_indicators',
+        create: successIndicatorTableCreation,
+        insert: successIndicatorInsertion
+    },
+    windowFocus: {
+        name: 'window_focus',
+        create: windowFocusTableCreation,
+        insert: windowFocusInsertion
+    },
+};
+
+interface TableCommands {
+    name: string;
+    create: string;
+    insert: string;
+}
 
 export class SQLiteManager {
     private static instance: SQLiteManager;
@@ -22,10 +56,9 @@ export class SQLiteManager {
         });
 
         this.db.serialize(() => {
-            this.db.run(executionTableCreation);
-            this.db.run(userActivityTableCreation);
-            this.db.run(documentChangeTableCreation);
-            this.db.run(successIndicatorTableCreation);
+            for (const table of Object.values(eventTables)) {
+                this.db.run(table.create);
+            }
         });
     }
 
@@ -52,8 +85,8 @@ export class SQLiteManager {
     }
 
     public clearDatabase() {
-        const tables = ['execution_events', 'user_activity_events', 'document_change_events', 'success_indicators'];
-        tables.forEach(table => {
+        const tableNames = Object.values(eventTables).map(table => table.name);
+        tableNames.forEach(table => {
             const query = `DELETE FROM ${table}`;
 
             this.db.run(query, (err) => {
@@ -66,6 +99,7 @@ export class SQLiteManager {
         });
     }
 
+    // what type does this return?
     public async executeSelect(eventType: EventType, start: string, end: string,
         project: string | undefined = undefined, branch: string | undefined = undefined,
         source: string | undefined = undefined): Promise<any[]> {
@@ -86,29 +120,13 @@ export class SQLiteManager {
     }
 
     private getTableName(eventType: EventType): string {
-        if (eventType === 'document') {
-            return 'document_change_events';
-        } else if (eventType === 'execution') {
-            return 'execution_events';
-        } else if (eventType === 'userActivity') {
-            return 'user_activity_events';
-        } else if (eventType === 'successIndicator') {
-            return 'success_indicators';
-        }
-        throw new Error('Unknown event type');
+        return eventTables[eventType].name;
     }
 
     private chooseQuery(event: Event): string {
         console.log("Choosing query for event:", event);
-        if (event instanceof DocumentChangeInfo) {
-            return documentChangeEventInsertion;
-        } else if (event instanceof ExecutionEventInfo) {
-            return executionEventInsertion;
-        } else if (event instanceof UserActivityEventInfo) {
-            return userActivityEventInsertion;
-        } else if (event instanceof SuccessIndicator) {
-            return successIndicatorInsertion;
-        }
-        throw new Error('Unknown event type');
+        const eventType : EventType = getEventType(event);
+        const tableCreate = eventTables[eventType].insert;
+        return tableCreate;
     }
 }

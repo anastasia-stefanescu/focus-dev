@@ -8,10 +8,11 @@ import { SidebarViewProvider } from './Sidebar/webview_provider';
 import { AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET, REDIRECT_URI } from './Constants';
 import { _tokenEmitter, MyAuth0AuthProvider } from './Authentication/auth_provider';
 import { post_to_services } from './API/api_wrapper';
-import { endExecutionSession, handleCloseFile, handleOpenFile, startExecutionSession, verifyDocumentChange } from './EventTracking/event_processing_by_type';
-import { tests } from 'vscode';
+import { endExecutionSession, handleCloseFile, handleOpenFile, handleWindowFocusChange, startExecutionSession, verifyDocumentChange } from './EventTracking/event_processing_by_type';
+import { createAndSaveUserActivityEvent } from './EventTracking/event_processing_by_type';
 
 import { instance } from './extension';
+import { create } from 'lodash';
 
 export function createCommands(ctx: ExtensionContext, authProvider: MyAuth0AuthProvider  /* add: kpm controller, storageManager */)
 // { dispose: () => { }; }
@@ -77,38 +78,16 @@ export function createCommands(ctx: ExtensionContext, authProvider: MyAuth0AuthP
 
 
 
-  // check if these work normally!!!!!
-
-  // register VCode API user events
-
-  // inside each of these we should do a snowplow.trackSelfDescribingEvent
-
-
-
   const copyPasteCutDisposables: Disposable[] = copyPasteCutCommands();
 
   const fileEvents : Disposable[] = fileCommands();
 
   const executionCommandsList : Disposable[] = executionCommands();
 
-
+  const UIEventsList : Disposable[] = UIEvents();
 
   // also check test runs from terminal
 
-
-
-  const changedWindowState = window.onDidChangeWindowState(async (state) => {
-    // if it's focused / unfocused, because we're handling it as continuous action??
-    const window_session_id = env.sessionId;
-
-    // send changes for closed window?
-    if (state.focused)
-      window.showInformationMessage(`Window ${window_session_id} gained focus`);
-    else
-      window.showInformationMessage(`Window ${window_session_id} lost focus`);
-  });
-
-  // close/ open window?
 
   //============================DOCUMENT CHANGE EVENTS=========================================
 
@@ -125,7 +104,7 @@ export function createCommands(ctx: ExtensionContext, authProvider: MyAuth0AuthP
   cmds.push(...copyPasteCutDisposables);
   cmds.push(...fileEvents);
   cmds.push(...executionCommandsList);
-  cmds.push(changedWindowState);
+  cmds.push(...UIEventsList);
   cmds.push(codeChange)
 
   return Disposable.from(...cmds);
@@ -232,4 +211,19 @@ function copyPasteCutCommands() : Disposable[] {
 }
 
 
-//============================WINDOW EVENTS=========================================
+//============================UI EVENTS=========================================
+
+function UIEvents(): Disposable[] {
+  const changedWindowState = window.onDidChangeWindowState(async (state) => {
+    const window_session_id = env.sessionId;
+    const window_focus_state = state.focused;
+    window.showInformationMessage(`Window ${window_session_id} is focused: ${window_focus_state}`);
+    handleWindowFocusChange(window_session_id, window_focus_state);
+  });
+
+  const changedCursorSelection = window.onDidChangeTextEditorSelection((event) => {
+    createAndSaveUserActivityEvent('cursor');
+  });
+
+  return [changedWindowState, changedCursorSelection];
+}
