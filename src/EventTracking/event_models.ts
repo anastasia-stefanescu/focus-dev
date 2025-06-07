@@ -59,6 +59,10 @@ export class Event {
         return event;
     }
 
+    noEvents() : number {
+        return 0; // this is a base class, so we don't have any events
+    }
+
     computeRateOfEvent() :number {
         return 0;
     }
@@ -111,10 +115,14 @@ export class ExecutionEventInfo extends Event {
         return event;
     }
 
+    noEvents() : number {
+        return 1;
+    }
+
     computeRateOfEvent() : number{
         //super.computeRateOfEvent();
         const duration = new Date(this.end).getTime() - new Date(this.start).getTime();
-        return 1 / duration;
+        return this.noEvents() / duration;
     }
 }
 
@@ -174,11 +182,15 @@ export class UserActivityEventInfo extends Event{
         return event;
     }
 
+    noEvents() : number {
+        return this.total_actions;
+    }
+
     computeRateOfEvent() : number {
         const duration = new Date(this.end).getTime() - new Date(this.start).getTime();
         if (duration == 0)
-            return this.total_actions;
-        return this.total_actions / duration;
+            return this.noEvents();
+        return this.noEvents() / duration;
     }
 }
 
@@ -219,6 +231,10 @@ export class SuccessIndicator extends Event { // can be about git commits / othe
         event.message = data.message;
 
         return event;
+    }
+
+    noEvents() : number {
+        return 1; // this is a single event
     }
 
     computeRateOfEvent() : number {
@@ -342,15 +358,22 @@ export class DocumentChangeInfo extends Event {
         return event;
     }
 
-    computeRateOfEvent() :number {
-        const duration = new Date(this.end).getTime() - new Date(this.start).getTime();
-
+    noEvents() : number {
         let noActions = 0;
         if (this.source === 'user') {
             noActions = this.keystrokes;
         } else if (this.source === 'AI' || this.source === 'external') {
             noActions = this.singleAdds + this.multiAdds;
         }
+
+        return noActions;
+    }
+
+
+    computeRateOfEvent() :number {
+        const duration = new Date(this.end).getTime() - new Date(this.start).getTime();
+
+        const noActions = this.noEvents();
 
         if (duration == 0)
             return noActions;

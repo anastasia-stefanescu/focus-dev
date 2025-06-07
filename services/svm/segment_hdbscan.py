@@ -18,7 +18,7 @@ segments = [
 ]
 
 
-def get_clusters(segments):
+def get_clusters(segments, activity_treshold=0.5):
 
     # Step 2: Extract feature values (e.g., mean value) for each segment
     segment_values = np.array([seg['rate'] for seg in segments])
@@ -32,25 +32,37 @@ def get_clusters(segments):
 
     # Step 4: Apply HDBSCAN using the precomputed distance matrix
     distance_matrix = squareform(combined_distances)
-    clusterer = HDBSCAN(min_cluster_size=2, metric='precomputed', cluster_selection_epsilon=0.5)
+    clusterer = HDBSCAN(min_cluster_size=2, metric='precomputed') # cluster_selection_epsilon=0.5
     clusterer.fit(distance_matrix)
 
     cluster_labels = clusterer.labels_
     print(cluster_labels)
 
     cluster_data = {}
-
+    cluster_sum_of_no_events = {}
+    cluster_sum_of_rates_and_events = {}
     for idx, label in enumerate(cluster_labels):
         if label not in cluster_data:
             cluster_data[int(label)] = {'start_time': segments[idx]["start_time"], 'end_time': segments[idx]["end_time"], 'rate': segments[idx]["rate"], 'no_events': 1}
+            cluster_sum_of_no_events[int(label)] = segments[idx]["no_events"]
+            cluster_sum_of_rates_and_events[int(label)] = segments[idx]["rate"] * segments[idx]["no_events"]
         else:
             if segments[idx]["start_time"] < cluster_data[label]['start_time']:
                 cluster_data[label]['start_time'] = segments[idx]["start_time"]
             if segments[idx]["end_time"] > cluster_data[label]['end_time']:
                 cluster_data[label]['end_time'] = segments[idx]["end_time"]
-            cluster_data[label]['rate'] = cluster_data[label]['rate'] + segments[idx]["rate"]
+            cluster_sum_of_no_events[label] += segments[idx]["no_events"]
+            cluster_sum_of_rates_and_events[label] += segments[idx]["rate"] * segments[idx]["no_events"]
             cluster_data[label]['no_events'] += 1
 
+    # Calculate the mean rate for each cluster so we can filter out based on activity threshold
+    for idx, label in enumerate(cluster_labels):
+        cluster_mean_rate = cluster_sum_of_rates_and_events[label] / cluster_sum_of_no_events[label]
+        if cluster_mean_rate < activity_treshold:
+            print(f"Cluster {label} with mean rate {cluster_mean_rate} < {activity_treshold}. Removing it.")
+            cluster_data.pop(label, None)
+        else:
+            print(f"Cluster {label} with mean rate {cluster_mean_rate} > {activity_treshold}. Keeping it.")
 
     return cluster_data
 

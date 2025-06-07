@@ -1,6 +1,8 @@
 import axios from 'axios';
 
 
+// cluster also events of the same type, but with larger time gaps?
+
 
 
 
