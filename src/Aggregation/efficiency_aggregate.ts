@@ -9,6 +9,12 @@ function _debug_logs(message: string) {
 
 const successTypes = ['release', 'deployment', 'PR close', 'main push', 'push', 'commit']
 
+export async function getStatsBetweenSuccessIndicators(start: Date, end: Date, projectName: string | undefined = undefined,
+    branch: string | undefined = undefined)
+{
+    
+}
+
 export async function getEventsBetweenSuccessIndicators(start: Date, end: Date, projectName: string | undefined = undefined,
     branch: string | undefined = undefined)
 : Promise<Event[]>
@@ -40,7 +46,7 @@ export async function getSuccessIndicators(start: Date, end: Date, projectName: 
         const indicators = successIndicators.filter(indicator => indicator.type === successType);
         _debug_logs(`Type ${successType}: ${JSON.stringify(indicators)}`);
         // Transform to SuccessIndicator Type
-        successIndicatorsByType[successType] = indicators;
+        successIndicatorsByType[successType as SuccessType] = indicators;
     }
 
     return successIndicatorsByType;

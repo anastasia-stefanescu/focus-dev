@@ -26,6 +26,7 @@ def get_clusters(segments, activity_treshold=0.5):
     # Step 3: Calculate distances (both based on time and mean values)
     time_distances = pdist([[seg['start_time'], seg['end_time']] for seg in segments], metric='euclidean')
     mean_value_distances = pdist(segment_values.reshape(-1, 1), metric='euclidean')
+    # KEEP THIS ABOVE?
 
     # Combine distances into a single distance matrix (you can normalize them if necessary)
     combined_distances = (time_distances + mean_value_distances) / 2

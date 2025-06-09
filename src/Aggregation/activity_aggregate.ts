@@ -47,7 +47,7 @@ export async function computeIntervalsFocusData(time_unit: 'hour' | 'day', proje
 
     // get idle time!!
 
-    analyseData(intervalCodeData, intervalCodeReviewData, intervalTestingData);
+    analyseData(time_unit, intervalCodeData, intervalCodeReviewData, intervalTestingData);
 }
 
 export function analyseData(time_unit : 'hour' | 'day', intervalCodeData: CodingData, intervalCodeReviewData: CodeReviewData, intervalTestingData: TestingData) {
