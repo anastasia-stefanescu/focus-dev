@@ -2,23 +2,86 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <title>Charts</title>
-    <style>
-        canvas {
-            max-width: 1500px;
-            margin: 40px auto;
-            display: block;
-        }
-    </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FocusDev Dashboard</title>
+    <link rel="stylesheet" href="CHART_CSS_URI" />
 </head>
 
 <body>
-    <canvas id="myChart1"></canvas>
-    <canvas id="myChart2"></canvas>
-    <canvas id="myChart3"></canvas>
+    <!-- <canvas id="myChart1"></canvas> -->
+    <!-- <canvas id="myChart2"></canvas>
+    <canvas id="myChart3"></canvas> -->
 
-    <button onclick="updateCharts()">Update Charts</button>
+    <div class="dashboard">
+        <header class="header">
+            <div class="logo">FocusDev</div>
+
+            <div class="project-dropdown-class">
+                <select id="project-dropdown" class="select-like-btn">
+                </select>
+            </div>
+
+        </header>
+
+
+
+        <section class="reports">
+            <h2>Today's Reports</h2>
+            <div class="metrics">
+                <div class="metric">
+                    <div class="label">Time spent in editor</div>
+                    <div class="value" data-id="editorTime">–</div>
+                </div>
+                <div class="metric">
+                    <div class="label">Time of active coding</div>
+                    <div class="value" data-id="activeCoding">–</div>
+                </div>
+                <div class="metric">
+                    <div class="label">Time of focused coding</div>
+                    <div class="value" data-id="focusedCoding">–</div>
+                </div>
+                <div class="metric">
+                    <div class="label">Lines written</div>
+                    <div class="value" data-id="linesWritten">–</div>
+                </div>
+                <div class="metric">
+                    <div class="label">Lines generated using AI</div>
+                    <div class="value" data-id="linesAI">–</div>
+                </div>
+                <div class="metric">
+                    <div class="label">Lines imported</div>
+                    <div class="value" data-id="linesImported">–</div>
+                </div>
+            </div>
+
+        </section>
+
+        <nav class="timeframe-toggle">
+            <div id="mode-toggle" class="toggle-btn-wrapper">
+                <button class="toggle-btn" data-id="day-btn" data-mode="day">Day</button>
+                <button class="toggle-btn" data-id="week-btn" data-mode="week">Week</button>
+            </div>
+            <button class="btn">Previous time unit</button>
+        </nav>
+
+        <section class="dashboard-section">
+            <h2>Focus dashboard</h2>
+            <div class="focus-chart-wrapper">
+                <canvas id="myChart1"></canvas>
+            </div>
+        </section>
+
+        <section class="dashboard-section">
+            <h2>Activity dashboard</h2>
+            <div class="placeholder"></div>
+        </section>
+
+        <section class="dashboard-section">
+            <h2>Efficiency dashboard</h2>
+            <div class="placeholder tall"></div>
+        </section>
+    </div>
 
     <script src="CHART_JS_URI"></script>
     <script src="CHART_SCRIPT_URI"></script>

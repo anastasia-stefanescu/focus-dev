@@ -51,14 +51,14 @@ export async function activate(context: ExtensionContext) {
   const htmlDir = vscode.Uri.joinPath(context.extensionUri, 'resources', 'html');
   console.log(`HTML directory: ${htmlDir.fsPath}`);
 
-  const chartName = 'better-stats.html';
+  const chartName = 'chart.html';
   const chartHtmlPath = vscode.Uri.joinPath(htmlDir, chartName);
   let html = fs.readFileSync(chartHtmlPath.fsPath, 'utf8');
 
   const replaceUris = {
     'CHART_JS_URI': panel.webview.asWebviewUri(vscode.Uri.joinPath(htmlDir, 'chart.min.js')).toString(),
     'CHART_CSS_URI': panel.webview.asWebviewUri(vscode.Uri.joinPath(htmlDir, 'better-stats.css')).toString(),
-    'CHART_SCRIPT_URI': panel.webview.asWebviewUri(vscode.Uri.joinPath(htmlDir, 'better-stats.js')).toString()
+    'CHART_SCRIPT_URI': panel.webview.asWebviewUri(vscode.Uri.joinPath(htmlDir, 'chart-script.js')).toString()
   };
 
   for (const [key, value] of Object.entries(replaceUris)) {
@@ -75,8 +75,11 @@ export async function activate(context: ExtensionContext) {
       panel.webview.postMessage({ labels, data });
     }
     else if (message.command === 'selectionChanged') {
-      window.showInformationMessage(`Selection changed: ${message.text}`);
-      console.log('Received message from webview:', message.text);
+      window.showInformationMessage(`Selection changed: ${message.value}`);
+      console.log('Received message from webview:', message.value);
+    } else if (message.command === 'modeSelected') {
+      window.showInformationMessage(`Mode selected: ${message.value}`);
+      console.log('Received mode selection from webview:', message.value);
     }
   });
 

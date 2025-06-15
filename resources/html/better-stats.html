@@ -6,7 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FocusDev Dashboard</title>
     <link rel="stylesheet" href="CHART_CSS_URI" />
-    <script src="CHART_SCRIPT_URI" defer></script>
+
+    <!-- <script src="CHART_JS_URI" defer></script> -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script> -->
 </head>
 
 <body>
@@ -15,55 +17,58 @@
             <div class="logo">FocusDev</div>
 
             <div class="project-dropdown-class">
-                <select id="project-dropdown">
-                    <option value="apple">Apple</option>
-                    <option value="banana">Banana</option>
-                    <option value="cherry">Cherry</option>
+                <select id="project-dropdown" class="select-like-btn">
                 </select>
-                <p id="selected-project"></p>
             </div>
 
         </header>
+
+        <canvas id="myChart1"></canvas>
 
         <section class="reports">
             <h2>Today's Reports</h2>
             <div class="metrics">
                 <div class="metric">
                     <div class="label">Time spent in editor</div>
-                    <div class="value">6 h 36 min</div>
+                    <div class="value" data-id="editorTime">–</div>
                 </div>
                 <div class="metric">
                     <div class="label">Time of active coding</div>
-                    <div class="value">3 h 24 min</div>
+                    <div class="value" data-id="activeCoding">–</div>
                 </div>
                 <div class="metric">
                     <div class="label">Time of focused coding</div>
-                    <div class="value">2 h 15 min</div>
+                    <div class="value" data-id="focusedCoding">–</div>
                 </div>
                 <div class="metric">
                     <div class="label">Lines written</div>
-                    <div class="value">375</div>
+                    <div class="value" data-id="linesWritten">–</div>
                 </div>
                 <div class="metric">
                     <div class="label">Lines generated using AI</div>
-                    <div class="value">375</div>
+                    <div class="value" data-id="linesAI">–</div>
                 </div>
                 <div class="metric">
                     <div class="label">Lines imported</div>
-                    <div class="value">–</div>
+                    <div class="value" data-id="linesImported">–</div>
                 </div>
             </div>
+
         </section>
 
         <nav class="timeframe-toggle">
-            <button class="btn">Day</button>
-            <button class="btn">Week</button>
-            <button class="btn">Other timeframe</button>
+            <div id="mode-toggle" class="toggle-btn-wrapper">
+                <button class="toggle-btn" data-id="day-btn" data-mode="day">Day</button>
+                <button class="toggle-btn" data-id="week-btn" data-mode="week">Week</button>
+            </div>
+            <button class="btn">Previous time unit</button>
         </nav>
 
         <section class="dashboard-section">
             <h2>Focus dashboard</h2>
-            <div class="placeholder"></div>
+            <div class="focus-chart-wrapper">
+
+            </div>
         </section>
 
         <section class="dashboard-section">
@@ -77,6 +82,8 @@
         </section>
     </div>
 
+    <script src="CHART_JS_URI"></script>
+    <script src="CHART_SCRIPT_URI"></script>
 </body>
 
 </html>
