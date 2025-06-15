@@ -3,9 +3,6 @@ import joblib
 import numpy as np
 from segment_hdbscan import get_clusters
 
-# Load the trained SVM model
-model = joblib.load('svm_model.pkl')
-
 app = Flask(__name__)
 
 @app.route('/cluster', methods=['POST'])

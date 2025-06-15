@@ -17,7 +17,7 @@ import { debug_event_processing } from "../extension";
 // Add content length? -> for spontaneous activities such as typing, pasting, cutting, deleting, etc
 //      To obtain statistics for how much code was generated, from external sources, etc
 
-// manage initialization of the CurrentSessionVariables per window
+// manage initialization of the ProjectInfoManager per window
 // when window closes / loses focus => send all to cache
 // therefore, when each event is created, it should have the project set?
 
@@ -26,13 +26,13 @@ function _debug_logs(message: string) {
     if (debug_event_processing)
         console.log(message);
 }
-export class CurrentSessionVariables {
+export class ProjectInfoManager {
     // By design, the VS Code API only works within a single instance (or window).
     // Is this the information for only one window?
     // - yes, because we also have the project info which is basically the window
     // Theoretically, no, only node-cache is per process and thus per window.
     // What do we do about this then?
-    private static instance: CurrentSessionVariables;
+    private static instance: ProjectInfoManager;
 
     private projectInfo: ProjectInfo | undefined = undefined;
 
@@ -59,12 +59,12 @@ export class CurrentSessionVariables {
     private last_time_of_merge: Date = new Date();
     private last_time_of_branch_change: Date = new Date();
 
-    public CurrentSessionVariables() { }
+    public ProjectInfoManager() { }
 
     public static getInstance() {
-        if (!CurrentSessionVariables.instance)
-            CurrentSessionVariables.instance = new CurrentSessionVariables();
-        return CurrentSessionVariables.instance;
+        if (!ProjectInfoManager.instance)
+            ProjectInfoManager.instance = new ProjectInfoManager();
+        return ProjectInfoManager.instance;
     }
 
 
@@ -459,15 +459,15 @@ export class CurrentSessionVariables {
 //     let event : Event|undefined = undefined;
 //     if (activityType in list) {
 //         if (activityType == "start") { // just started debug session
-//             CurrentSessionVariables.getInstance().startSession(local_session_id, activityTime, activityName);
+//             ProjectInfoManager.getInstance().startSession(local_session_id, activityTime, activityName);
 //         }
 //         else {
-//             event = CurrentSessionVariables.getInstance().stopSession(local_session_id, activityTime, activityName);
+//             event = ProjectInfoManager.getInstance().stopSession(local_session_id, activityTime, activityName);
 //         }
 //     }
 //     else {
 
-//         event = CurrentSessionVariables.getInstance().createEvent(undefined, activityTime, undefined, activityName)
+//         event = ProjectInfoManager.getInstance().createEvent(undefined, activityTime, undefined, activityName)
 //     }
 
 //     if (event != undefined)

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FocusDev Dashboard</title>
+    <link rel="stylesheet" href="CHART_CSS_URI" />
+    <script src="CHART_SCRIPT_URI" defer></script>
+</head>
+
+<body>
+    <div class="dashboard">
+        <header class="header">
+            <div class="logo">FocusDev</div>
+
+            <div class="project-dropdown-class">
+                <select id="project-dropdown">
+                    <option value="apple">Apple</option>
+                    <option value="banana">Banana</option>
+                    <option value="cherry">Cherry</option>
+                </select>
+                <p id="selected-project"></p>
+            </div>
+
+        </header>
+
+        <section class="reports">
+            <h2>Today's Reports</h2>
+            <div class="metrics">
+                <div class="metric">
+                    <div class="label">Time spent in editor</div>
+                    <div class="value">6 h 36 min</div>
+                </div>
+                <div class="metric">
+                    <div class="label">Time of active coding</div>
+                    <div class="value">3 h 24 min</div>
+                </div>
+                <div class="metric">
+                    <div class="label">Time of focused coding</div>
+                    <div class="value">2 h 15 min</div>
+                </div>
+                <div class="metric">
+                    <div class="label">Lines written</div>
+                    <div class="value">375</div>
+                </div>
+                <div class="metric">
+                    <div class="label">Lines generated using AI</div>
+                    <div class="value">375</div>
+                </div>
+                <div class="metric">
+                    <div class="label">Lines imported</div>
+                    <div class="value">–</div>
+                </div>
+            </div>
+        </section>
+
+        <nav class="timeframe-toggle">
+            <button class="btn">Day</button>
+            <button class="btn">Week</button>
+            <button class="btn">Other timeframe</button>
+        </nav>
+
+        <section class="dashboard-section">
+            <h2>Focus dashboard</h2>
+            <div class="placeholder"></div>
+        </section>
+
+        <section class="dashboard-section">
+            <h2>Activity dashboard</h2>
+            <div class="placeholder"></div>
+        </section>
+
+        <section class="dashboard-section">
+            <h2>Efficiency dashboard</h2>
+            <div class="placeholder tall"></div>
+        </section>
+    </div>
+
+</body>
+
+</html>
+
+
+

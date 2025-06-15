@@ -1,0 +1,9 @@
+brew install terraform
+
+aws configure
+
+In the directory of tf:
+
+terraform init
+terraform plan
+terraform apply

@@ -2,7 +2,7 @@
 import { emit, hasUncaughtExceptionCaptureCallback } from "process";
 import { TextDocumentChangeEvent, TextDocumentChangeReason } from "vscode";
 import { window } from "vscode";
-import { CurrentSessionVariables} from "./event_management";
+import { ProjectInfoManager } from "./event_management";
 import { DocumentChangeInfo, ExecutionEventInfo, ExecutionType, ProjectInfo, UserActivityEventInfo, UserActivityType } from "./event_models";
 import { extractChangeData } from "./event_data_extraction";
 import { Source } from "./event_models";
@@ -17,12 +17,12 @@ export function verifyDocumentChange(event: TextDocumentChangeEvent) {
     const now = new Date();
 
     if (contentChanges.length === 0) {
-      return "nothing"
+        return "nothing"
     }
 
     let undo_redo: boolean = (reason === TextDocumentChangeReason.Redo || reason === TextDocumentChangeReason.Undo) ? true : false;
 
-    let multiCursorInserts : boolean = (contentChanges.length > 1) ? true : false; // git additions, refactorizations, etc.
+    let multiCursorInserts: boolean = (contentChanges.length > 1) ? true : false; // git additions, refactorizations, etc.
 
     // relative filePath
     const fileUri = window.activeTextEditor?.document.uri;
@@ -107,14 +107,14 @@ export function verifyPaste(): Source {
 // ======================================================
 
 // CLOSE / SAVE / DELETE FILE
-export function handleCloseFile(fileName:string) {
+export function handleCloseFile(fileName: string) {
     createAndSaveUserActivityEvent('file');
     instance.closeFileEvent(fileName); // close file's document change events
 }
 
 // OPEN / CREATE FILE
 // what happens if file reopens in the same minute before sending to cache?
-export function handleOpenFile(fileName:string) {
+export function handleOpenFile(fileName: string) {
     createAndSaveUserActivityEvent('file');
     instance.closeAllFileEventsExcept(fileName);
 }
@@ -124,9 +124,9 @@ export function handleOpenFile(fileName:string) {
 // WE TRACK WINDOW FOCUS BY THE USER ACTIVITY EVENT IN PROJECT INFO
 export function handleWindowFocusChange(window_id: string, focused: boolean) {
     createAndSaveUserActivityEvent('window');
-    if (!focused) {
-        instance.closeProjectUserActivity();
-    }
+    // if (!focused) {
+    //     instance.closeProjectUserActivity();
+    // }
 }
 
 
@@ -138,7 +138,7 @@ export function handleMultipleInserts(now: Date) {
         createAndSaveUserActivityEvent('others');
 }
 
-function verifyMultipleInserts(now: Date) : string {
+function verifyMultipleInserts(now: Date): string {
     const pullDate: Date = instance.getLastTimeofPull();
     const mergeDate: Date = instance.getLastTimeofMerge();
     const branchChangeDate: Date = instance.getLastTimeofBranchChange();
@@ -191,11 +191,11 @@ export function createAndSaveUserActivityEvent(eventType: UserActivityType) {
 
 
 // ======================================================
-export function startExecutionSession(session: any, type:ExecutionType){
+export function startExecutionSession(session: any, type: ExecutionType) {
     instance.returnOrCreateExecution(session, type);
 }
 
-export function endExecutionSession(session:any) {
+export function endExecutionSession(session: any) {
     const execSession = instance.getExecutionEventInfo(session.id);
     if (execSession) {
         execSession.end = new Date().getTime().toString();

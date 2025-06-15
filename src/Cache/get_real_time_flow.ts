@@ -1,7 +1,7 @@
 // Check whether the total amount of events of any type of the three in [timeframe] exceeds [threshold]
 // also check if flow period stops
 
-import { CurrentSessionVariables } from "../EventTracking/event_management";
+import { ProjectInfoManager } from "../EventTracking/event_management";
 import { DocumentChangeInfo, ExecutionEventInfo, UserActivityEventInfo } from "../EventTracking/event_models";
 import { cacheInstance } from "../extension"; // !!
 
@@ -20,9 +20,9 @@ export function getRealTimeFlow() {
     // we would like to get the distribution?
     //const executionEvents : ExecutionEventInfo[] = executionCache.getAllInOrder<ExecutionEventInfo>();
     //const userActivityEvents : UserActivityEventInfo[] = userActivityCache.getAllInOrder<UserActivityEventInfo>();
-    const userDocumentEvents : DocumentChangeInfo[] | undefined = userDocumentCache?.getAllInOrder<DocumentChangeInfo>();
-    const aiDocumentEvents : DocumentChangeInfo[] | undefined = aiDocumentCache?.getAllInOrder<DocumentChangeInfo>();
-    const externalDocumentEvents : DocumentChangeInfo[] | undefined = externalDocumentCache?.getAllInOrder<DocumentChangeInfo>();
+    const userDocumentEvents: DocumentChangeInfo[] | undefined = userDocumentCache?.getAllInOrder<DocumentChangeInfo>();
+    const aiDocumentEvents: DocumentChangeInfo[] | undefined = aiDocumentCache?.getAllInOrder<DocumentChangeInfo>();
+    const externalDocumentEvents: DocumentChangeInfo[] | undefined = externalDocumentCache?.getAllInOrder<DocumentChangeInfo>();
 
     // putem avea practic 10 evenimente mai mari => facem sumele evenimentelor
     const sum_user = get_sum_of_events(userDocumentEvents);

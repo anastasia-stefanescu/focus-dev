@@ -155,7 +155,7 @@ export async function getHDBSCANResults(bucketEvents: BucketEvent[], rate_thresh
 
     const hdbscanResults = await post_to_services('/cluster', { "events": hdbscanEvents, "rate_threshold": rate_threshold});
     const clusters = hdbscanResults['clusters'];
-
+    console.log(`HDBSCAN clusters: ${JSON.stringify(clusters)}`);
     return clusters;
 }
 

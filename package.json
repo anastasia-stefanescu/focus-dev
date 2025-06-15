@@ -56,21 +56,6 @@
         }
       ]
     },
-    "menus": {
-      "commandPalette": [
-        {
-          "command": "extension.runWithoutDebugging",
-          "when": "editorTextFocus",
-          "group": "navigation"
-        }
-      ],
-      "editor/title": [
-        {
-          "command": "extension.runWithoutDebugging",
-          "group": "navigation"
-        }
-      ]
-    },
     "commands": [
       {
         "command": "extension.runWithoutDebugging",

@@ -5,7 +5,7 @@ import { createCommands } from './command_creator';
 import { window, Uri, ExtensionContext, commands, workspace, authentication } from 'vscode';
 import { getServerRunning } from './server';
 import { MyAuth0AuthProvider } from './Authentication/auth_provider';
-import { CurrentSessionVariables } from './EventTracking/event_management';
+import { ProjectInfoManager } from './EventTracking/event_management';
 import { GitTracking } from './Git/local_git_tracking';
 import { testTimeAggregate } from './testScripts/test_aggregate';
 import { NodeCacheManager } from './Cache';
@@ -14,7 +14,7 @@ import { SQLiteManager } from './Database/sqlite_db';
 
 import { getHDBSCANResults } from './Aggregation/focus_aggregate';
 
-export let instance: CurrentSessionVariables;
+export let instance: ProjectInfoManager;
 export let gitInstance: GitTracking | undefined = undefined;
 export let cacheInstance: NodeCacheManager;
 export let sqlInstance: SQLiteManager;
@@ -39,45 +39,51 @@ export async function activate(context: ExtensionContext) {
   //ChartWebviewPanel.show(context);
 
   const panel = vscode.window.createWebviewPanel(
-      'chartView',
-      'Line Chart',
-      vscode.ViewColumn.One,
-      {
-          enableScripts: true,
-          localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'resources', 'html')]
-      }
+    'chartView',
+    'Line Chart',
+    vscode.ViewColumn.One,
+    {
+      enableScripts: true,
+      localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'resources', 'html')]
+    }
   );
 
   const htmlDir = vscode.Uri.joinPath(context.extensionUri, 'resources', 'html');
   console.log(`HTML directory: ${htmlDir.fsPath}`);
 
-  const chartHtmlPath = vscode.Uri.joinPath(htmlDir, 'chart.html');
+  const chartName = 'better-stats.html';
+  const chartHtmlPath = vscode.Uri.joinPath(htmlDir, chartName);
   let html = fs.readFileSync(chartHtmlPath.fsPath, 'utf8');
 
   const replaceUris = {
-      'CHART_JS_URI': panel.webview.asWebviewUri(vscode.Uri.joinPath(htmlDir, 'chart.min.js')).toString(),
-      'CHART_SCRIPT_URI': panel.webview.asWebviewUri(vscode.Uri.joinPath(htmlDir, 'chart-script.js')).toString()
+    'CHART_JS_URI': panel.webview.asWebviewUri(vscode.Uri.joinPath(htmlDir, 'chart.min.js')).toString(),
+    'CHART_CSS_URI': panel.webview.asWebviewUri(vscode.Uri.joinPath(htmlDir, 'better-stats.css')).toString(),
+    'CHART_SCRIPT_URI': panel.webview.asWebviewUri(vscode.Uri.joinPath(htmlDir, 'better-stats.js')).toString()
   };
 
   for (const [key, value] of Object.entries(replaceUris)) {
-      html = html.replace(key, value);
+    html = html.replace(key, value);
   }
 
   panel.webview.html = html;
 
   panel.webview.onDidReceiveMessage(message => {
-      if (message.command === 'requestData') {
-          console.log('Received requestData message from webview');
-          const labels = ['Jan', 'Feb', 'Mar', 'Apr'];
-          const data = [100, 250, 180, 300];
-          panel.webview.postMessage({ labels, data });
-      }
+    if (message.command === 'requestData') {
+      console.log('Received requestData message from webview');
+      const labels = ['Jan', 'Feb', 'Mar', 'Apr'];
+      const data = [100, 250, 180, 300];
+      panel.webview.postMessage({ labels, data });
+    }
+    else if (message.command === 'selectionChanged') {
+      window.showInformationMessage(`Selection changed: ${message.text}`);
+      console.log('Received message from webview:', message.text);
+    }
   });
 
 
   // if user doesn't log in, create an anonymous session??
 
-  instance = CurrentSessionVariables.getInstance();
+  instance = ProjectInfoManager.getInstance();
 
   cacheInstance = NodeCacheManager.getInstance();
 

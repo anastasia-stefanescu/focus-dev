@@ -1,5 +1,5 @@
 import { DEFAULT_CHANGE_EMISSION_INTERVAL } from "../Constants";
-import { CurrentSessionVariables } from "./event_management";
+import { ProjectInfoManager } from "./event_management";
 import { window } from "vscode";
 import { FullChangeData, ProjectInfo, Source, UserActivityEventInfo } from "./event_models";
 import { all } from "axios";
@@ -32,7 +32,7 @@ export async function emitToCacheProjectData(deactivation: boolean = false) {
     const userActivityExists = !!(projectInfo.userActivity && projectInfo.userActivity.total_actions > 0);
 
     let sessionsToSendKeys;
-    if(deactivation)
+    if (deactivation)
         sessionsToSendKeys = Object.keys(projectInfo.execution_sessions)
     else
         sessionsToSendKeys = filterFinishedExecutionSessions(instance);
@@ -60,7 +60,7 @@ export async function emitToCacheProjectData(deactivation: boolean = false) {
 }
 
 //=====================================================
-export function saveToCacheDocumentChanges(instance: CurrentSessionVariables, source: Source) {
+export function saveToCacheDocumentChanges(instance: ProjectInfoManager, source: Source) {
     const changes_dict = instance.getAllDocChangesForSource(source); // returns dict or undefined
 
     if (!changes_dict || Object.keys(changes_dict).length === 0) {
@@ -84,7 +84,7 @@ export function saveToCacheDocumentChanges(instance: CurrentSessionVariables, so
     //instance.setAllDocChangesForSource(source, {});       // reset it
 }
 
-export function saveToCacheUserActivity(instance: CurrentSessionVariables) {
+export function saveToCacheUserActivity(instance: ProjectInfoManager) {
     const userActivity = instance.getUserActivityInfo();
 
     if (!userActivity || userActivity.noEvents() === 0) {
@@ -100,7 +100,7 @@ export function saveToCacheUserActivity(instance: CurrentSessionVariables) {
     //instance.setUserActivityInfo(undefined); // reset it
 }
 
-export function saveToCacheExecutionSessions(instance: CurrentSessionVariables, sessionsToSendKeys: string[] | undefined, deactivation: boolean = false) {
+export function saveToCacheExecutionSessions(instance: ProjectInfoManager, sessionsToSendKeys: string[] | undefined, deactivation: boolean = false) {
     if (!sessionsToSendKeys) {
         window.showInformationMessage(`No execution sessions to send to cache`);
         return;
@@ -120,7 +120,7 @@ export function saveToCacheExecutionSessions(instance: CurrentSessionVariables, 
 
 //=====================================================
 
-function filterFinishedExecutionSessions(instance: CurrentSessionVariables) {
+function filterFinishedExecutionSessions(instance: ProjectInfoManager) {
     const allSessions = instance.getAllExecutionEvents();
     const finishedSessions = Object.keys(allSessions).filter((key) => allSessions[key].end);
 
@@ -133,7 +133,7 @@ function filterFinishedExecutionSessions(instance: CurrentSessionVariables) {
 
 //=====================================================
 
-export function getAllProjectDataAndSendToCache(changes_dict: any, instance: CurrentSessionVariables) {
+export function getAllProjectDataAndSendToCache(changes_dict: any, instance: ProjectInfoManager) {
 
     const allChangedFiles = Object.keys(changes_dict);
     for (const file of allChangedFiles) { // WITHOUT AWAIT????

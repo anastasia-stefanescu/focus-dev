@@ -1,5 +1,5 @@
 import { DEFAULT_CHANGE_EMISSION_INTERVAL } from "../../Constants";
-import { CurrentSessionVariables, DocumentChangeInfo, Event } from "../../EventTracking";
+import { ProjectInfoManager, DocumentChangeInfo, Event } from "../../EventTracking";
 import { window } from "vscode";
 import { EventCache } from "./node-cache";
 import { FullChangeData, ProjectInfo, Source, UserActivityEventInfo, ExecutionEventInfo } from "../../EventTracking";
@@ -61,7 +61,7 @@ export async function saveToDBDocumentChanges(source: Source) {
     const allEvents = Object.values(events);
 
     for (const event of allEvents) {                         // check duplicate events from another window - i don't think we will need this
-        const typedEvent : DocumentChangeInfo = DocumentChangeInfo.buildEventFromJson(event) as DocumentChangeInfo; // create a new instance to avoid modifying the original event
+        const typedEvent: DocumentChangeInfo = DocumentChangeInfo.buildEventFromJson(event) as DocumentChangeInfo; // create a new instance to avoid modifying the original event
 
 
         window.showInformationMessage(`Sending to DB: ${typedEvent.keystrokes} keystrokes, ${typedEvent.charactersAdded}
@@ -129,7 +129,7 @@ export async function saveToDBExecutionSessions() {
 
 //=====================================================
 
-export function getAllProjectDataAndSendToCache(changes_dict: any, instance: CurrentSessionVariables) {
+export function getAllProjectDataAndSendToCache(changes_dict: any, instance: ProjectInfoManager) {
 
     const allChangedFiles = Object.keys(changes_dict);
     for (const file of allChangedFiles) { // WITHOUT AWAIT????
