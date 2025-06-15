@@ -1,4 +1,4 @@
-# Code Stats - Efficiency Tracker VSCode Extension for programmers 
+# Focus Dev - Efficiency Tracker VSCode Extension for programmers 
 
 A Visual Studio Code Extension (destined for self-use!) that monitors and puts together detailed statistics on developers’ activities within the IDE
 
