@@ -15,7 +15,16 @@
 
     <div class="dashboard">
         <header class="header">
-            <div class="logo">FocusDev</div>
+            <nav class="timeframe-toggle">
+                <div id="mode-toggle" class="toggle-btn-wrapper">
+                    <button class="toggle-btn" data-id="day-btn" data-mode="day">Day</button>
+                    <button class="toggle-btn" data-id="week-btn" data-mode="week">Week</button>
+                </div>
+                <div id="mode-toggle" class="toggle-btn-wrapper">
+                    <button class="btn">Previous time unit</button>
+                    <button class="btn">Next time unit</button>
+                </div>
+            </nav>
 
             <div class="project-dropdown-class">
                 <select id="project-dropdown" class="select-like-btn">
@@ -27,7 +36,7 @@
 
 
         <section class="reports">
-            <h2>Today's Reports</h2>
+            <h2 class="report-title">-</h2>
             <div class="metrics">
                 <div class="metric">
                     <div class="label">Time spent in editor</div>
@@ -57,24 +66,20 @@
 
         </section>
 
-        <nav class="timeframe-toggle">
-            <div id="mode-toggle" class="toggle-btn-wrapper">
-                <button class="toggle-btn" data-id="day-btn" data-mode="day">Day</button>
-                <button class="toggle-btn" data-id="week-btn" data-mode="week">Week</button>
-            </div>
-            <button class="btn">Previous time unit</button>
-        </nav>
+
 
         <section class="dashboard-section">
             <h2>Focus dashboard</h2>
-            <div class="focus-chart-wrapper">
+            <div class="chart-wrapper">
                 <canvas id="myChart1"></canvas>
             </div>
         </section>
 
         <section class="dashboard-section">
             <h2>Activity dashboard</h2>
-            <div class="placeholder"></div>
+            <div class="chart-wrapper">
+                <canvas id="myChart2"></canvas>
+            </div>
         </section>
 
         <section class="dashboard-section">
@@ -84,7 +89,10 @@
     </div>
 
     <script src="CHART_JS_URI"></script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.4.0/dist/chartjs-plugin-annotation.min.js"></script>
     <script src="CHART_SCRIPT_URI"></script>
+
 </body>
 
 </html>

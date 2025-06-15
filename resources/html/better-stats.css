@@ -39,6 +39,15 @@
     /* optional click compression effect */
 }
 
+.toggle-btn-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    /* Adds spacing between rows or columns */
+    margin-bottom: 16px;
+    /* Optional: adds space between button groups */
+}
+
 .toggle-btn {
     background-color: #2C2C2C;
     color: #F5F5F5;
