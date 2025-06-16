@@ -161,3 +161,10 @@
     margin: 40px auto;
     display: block;
 }
+
+.chart-title-wrapper {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    margin-bottom: 20px;
+}

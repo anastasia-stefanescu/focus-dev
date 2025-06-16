@@ -2,13 +2,22 @@ const vscode = acquireVsCodeApi();
 
 // backend sends: Git project names, daily stats, activity/focus stats for day,
 
-const projectOptions = ['Select Project', 'NLP', 'AI', 'Networking'];
+const projectOptions = ['Select Project', 'django-proj', 'AI', 'Networking'];
 
 const projectDropdown = document.getElementById('project-dropdown');
 
+const efficiencyTitle = document.querySelector('[data-id="efficiency-title"]');
+
 projectDropdown.addEventListener('change', () => {
-    selectedProject.textContent = `You selected: ${selectedProject.value}`;
-    vscode.postMessage({ command: 'selectionChanged', value: selectedProject.value });
+    const selectedValue = projectDropdown.value;
+    efficiencyTitle.textContent = `Efficiency dashboard - Project '${selectedValue}'`;
+    vscode.postMessage({ command: 'selectionChanged', value: selectedValue });
+    if (selectedValue !== 'Select Project') {
+        if (myChart3) {
+            myChart3.destroy();
+        }
+        myChart3 = getEfficiencyChart();
+    }
 });
 
 projectOptions.forEach(optionText => {
@@ -55,7 +64,8 @@ toggleButtons.forEach(btn => {
         } else if (selectedMode === 'week') {
             myChart1 = getChart1ForWeek();
             myChart2 = getChart2ForWeek();
-            reportTitle.textContent = `Weekly Report - ${new Date().toLocaleDateString()}`;
+            const sevenDaysAgo = new Date(new Date().getTime() - 7 * 24 * 60 * 60 * 1000);
+            reportTitle.textContent = `Weekly Report - ${sevenDaysAgo.toLocaleDateString()} to ${new Date().toLocaleDateString()}`;
             Object.entries(weeklyMetrics).forEach(([key, value]) => {
                 const element = document.querySelector(`.value[data-id="${key}"]`);
                 if (element) {
@@ -423,6 +433,15 @@ function getChart2ForWeek() {
 
 
 //===============================================
+
+let currentTime = Math.floor(new Date('2025-04-13T00:00:00Z').getTime() / 1000); // UNIX seconds
+
+function nextTime(minGap = 1 * 3600, maxGap = 3 * 86400) {
+    const gap = Math.floor(Math.random() * (maxGap - minGap + 1)) + minGap;
+    currentTime += gap;
+    return currentTime;
+}
+
 class intervalEfficiencyData {
     constructor(start, label, timeInFocus, timeActive, timeIdle, codingTime, codeReviewTime, refactoringTime, testingTime, codeByAI, codeByUser, codeByExternal) {
         this.start = start;
@@ -442,14 +461,15 @@ class intervalEfficiencyData {
 
     computeEfficiencyScore() {
         if (this.label === 'Commit') {
-            // Fake score based on activity time and user code
             const activeEffort = this.codingTime + this.codeReviewTime + this.refactoringTime;
             const codeWeight = this.codeByUser + 0.5 * this.codeByAI;
             const base = this.timeActive || 1;
-            return ((activeEffort + codeWeight) / base).toFixed(2);
+            const score = (activeEffort + codeWeight) / base;
+            return parseFloat(score.toFixed(2)) + 0.2; // returns value between 0 and 1
         }
         return 0;
     }
+
 }
 
 
@@ -472,42 +492,45 @@ class projectEfficiencyData {
 }
 
 const branchXdata = new branchEfficiencyData(
-    'Branch X',
+    "Branch 'Database'",
     100,
     [
-        new intervalEfficiencyData(120, 'Branch create', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-        new intervalEfficiencyData(180, 'Commit', 50, 100, 20, 5, 3, 1, 80, 300, 25, 75),
-        new intervalEfficiencyData(600, 'PR create', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-        new intervalEfficiencyData(800, 'Commit', 1100, 200, 1500, 200, 600, 900, 1300, 5000, 750, 200),
-        new intervalEfficiencyData(1100, 'PR close', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new intervalEfficiencyData(nextTime(), 'Branch create', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new intervalEfficiencyData(nextTime(), 'Commit', 50, 100, 20, 5, 3, 1, 80, 300, 25, 75),
+        new intervalEfficiencyData(nextTime(), 'PR create', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new intervalEfficiencyData(nextTime(), 'Commit', 1100, 200, 1500, 200, 600, 900, 1300, 5000, 750, 200),
+        new intervalEfficiencyData(nextTime(), 'PR close', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
     ],
     1100
 );
+
+currentTime = Math.floor(new Date('2025-04-13T00:00:00Z').getTime() / 1000);
 const branchYdata = new branchEfficiencyData(
-    'Branch Y',
+    'Branch "Setup"',
     350,
     [
-        new intervalEfficiencyData(350, 'Branch create', 0, 0, 0, 0, 0, 0, 0, 0),
-        new intervalEfficiencyData(360, 'Commit', 30, 50, 10, 5, 2, 1, 40, 200, 15, 50),
-        new intervalEfficiencyData(700, 'Commit', 20, 45, 15, 8, 4, 2, 60, 100, 10, 90),
-        new intervalEfficiencyData(1400, 'PR create', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-        new intervalEfficiencyData(1800, 'PR close', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new intervalEfficiencyData(nextTime(), 'Branch create', 0, 0, 0, 0, 0, 0, 0, 0),
+        new intervalEfficiencyData(nextTime(), 'Commit', 30, 50, 10, 5, 2, 1, 40, 200, 15, 50),
+        new intervalEfficiencyData(nextTime(), 'Commit', 20, 45, 15, 8, 4, 2, 60, 100, 10, 90),
+        new intervalEfficiencyData(nextTime(), 'PR create', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new intervalEfficiencyData(nextTime(), 'PR close', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
     ],
     2600
 );
 
+currentTime = Math.floor(new Date('2025-04-13T00:00:00Z').getTime() / 1000);
 const mainData = new branchEfficiencyData(
     'Main',
     0,
     [
-        new intervalEfficiencyData(0, 'Branch create', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-        new intervalEfficiencyData(200, 'Commit', 50, 100, 20, 5, 3, 1, 80, 300, 25, 50),
-        new intervalEfficiencyData(1200, 'Commit', 300, 500, 200, 80, 40, 35, 600, 1800, 100, 200),
-        new intervalEfficiencyData(1500, 'Deploy', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-        new intervalEfficiencyData(2500, 'Commit', 5, 20, 45, 15, 8, 4, 2, 60, 100, 10, 90),
-        new intervalEfficiencyData(3000, 'Commit', 350, 600, 250, 180, 120, 110, 400, 2100, 320, 150),
-        new intervalEfficiencyData(3500, 'Deploy', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-        new intervalEfficiencyData(4000, 'Release', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new intervalEfficiencyData(nextTime(), 'Branch create', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new intervalEfficiencyData(nextTime(), 'Commit', 50, 100, 20, 5, 3, 1, 80, 300, 25, 50),
+        new intervalEfficiencyData(nextTime(), 'Commit', 300, 500, 200, 80, 40, 35, 600, 1800, 100, 200),
+        new intervalEfficiencyData(nextTime(), 'Deploy', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new intervalEfficiencyData(nextTime(), 'Commit', 5, 20, 45, 15, 8, 4, 2, 60, 100, 10, 90),
+        new intervalEfficiencyData(nextTime(), 'Commit', 350, 600, 250, 180, 120, 110, 400, 2100, 320, 150),
+        new intervalEfficiencyData(nextTime(), 'Deploy', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new intervalEfficiencyData(nextTime(), 'Release', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
     ],
     4000
 );
@@ -547,7 +570,7 @@ const datasets = projectData.branchesData.map(branch => {
         fill: false,
         tension: 0.3,
         data: branch.intervals.map(interval => ({
-            x: interval.start,
+            x: interval.start * 1000, // <- Multiply by 1000
             y: parseFloat(interval.efficiencyScore),
         })),
         pointBackgroundColor: branch.intervals.map(interval =>
@@ -557,57 +580,83 @@ const datasets = projectData.branchesData.map(branch => {
         pointHoverRadius: 8,
     };
 });
-console.log(datasets);
+
+const gitActionTypes = Object.entries(labelColorMap).map(([label, color]) => ({
+    label: label,
+    data: [], // empty so nothing is plotted
+    pointRadius: 0,
+    borderWidth: 0,
+    backgroundColor: color,
+    borderColor: color,
+    hidden: false, // so it shows in legend
+}));
+const allDatasets = [...datasets, ...gitActionTypes];
 
 const ctx3 = document.getElementById('myChart3').getContext('2d');
-let myChart3 = getEfficiencyChart();
+let myChart3 = null;
+
 
 
 function getEfficiencyChart() {
     return new Chart(ctx3, {
         type: 'line',
         data: {
-            datasets: datasets
+            datasets: allDatasets
         },
         options: {
             responsive: true,
             plugins: {
-                title: {
-                    display: true,
-                    text: 'Interval Efficiency Score by Branch'
-                },
                 tooltip: {
                     callbacks: {
                         label: function (context) {
                             const x = context.parsed.x;
                             const y = context.parsed.y;
-                            return `Start: ${x}, Score: ${y}`;
+                            return `Start: ${x}, Score: ${y}%`;
                         }
                     }
                 },
                 legend: {
-                    position: 'bottom'
+                    position: 'top', // move it to the top
+                    labels: {
+                        usePointStyle: true,
+                        filter: function (item, chart) {
+                            // Avoid legend duplication by showing one entry per label
+                            return true;
+                        }
+                    }
                 }
             },
             scales: {
                 x: {
-                    type: 'linear',
+                    type: 'time',
+                    time: {
+                        unit: 'day',
+                        displayFormats: {
+                            day: 'dd MMM yyyy'
+                        },
+                        tooltipFormat: 'dd MMM yyyy'
+                    },
                     title: {
                         display: true,
-                        text: 'Start Time'
+                        text: 'Date'
+                    },
+                    ticks: {
+                        maxTicksLimit: 10
                     }
                 },
                 y: {
                     title: {
                         display: true,
-                        text: 'Efficiency Score'
+                        text: 'Efficiency Score (%)'
                     },
-                    suggestedMin: 0
+                    suggestedMin: 0,
+                    suggestedMax: 100
                 }
             }
         }
     });
 }
+
 
 // Function to update all charts
 // function updateCharts() {
@@ -616,9 +665,9 @@ function getEfficiencyChart() {
 //     myChart3.update();
 // }
 
-// window.addEventListener('message', event => {
-//     const { labels, data } = event.data;
+window.addEventListener('message', event => {
+    const { labels, data } = event.data;
 
-//     chart.updateChartData(data, labels);
-// });
+    chart.updateChartData(data, labels);
+});
 
