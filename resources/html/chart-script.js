@@ -118,12 +118,15 @@ const segments = [
 
 const allMinutes = Array.from({ length: 1440 }, (_, i) => i);
 const valueMapping = {};
-segments.forEach(({ start, end, value }) => {
-    valueMapping[start] = 0;      // explicitly 0 at start
-    valueMapping[start+1] = value;  // filled value between
-    valueMapping[end-1] = value;    // actual value at the end
-    valueMapping[end] = 0;        // explicitly 0 at end
-});
+
+for (let i = 0; i < segments.length; i++) {
+    const middle = Math.floor((segments[i].start + segments[i].end) / 2);
+    valueMapping[middle] = segments[i].value;
+
+    nextStart = i + 1 < segments.length ? segments[i + 1].start : 1440; // Default to end of day if no next segment
+    const middleOfSpace = Math.floor((segments[i].end + nextStart) / 2);
+    valueMapping[middleOfSpace] = 0;
+}
 
 const allDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const dailyActivities = {
@@ -164,16 +167,20 @@ const allActivitiesOfDay = [];
 
 for (let i = 0; i < activitiesOfDay.length; i++) {
     allActivitiesOfDay.push(activitiesOfDay[i]);
-    if (i < activitiesOfDay.length - 1) {
-        const nextStart = activitiesOfDay[i + 1].start;
-        const currentEnd = activitiesOfDay[i].end;
-        if (nextStart > currentEnd) {
-            allActivitiesOfDay.push({
-                label: 'Undefined',
-                start: currentEnd,
-                end: nextStart
-            });
-        }
+
+    const currentEnd = activitiesOfDay[i].end;
+
+    let nextStart = 1440; // Default to end of day if no next activity
+    if (i + 1 < activitiesOfDay.length) {
+        nextStart = activitiesOfDay[i + 1].start;
+    }
+
+    if (nextStart > currentEnd) {
+        allActivitiesOfDay.push({
+            label: 'Undefined',
+            start: currentEnd,
+            end: nextStart
+        });
     }
 }
 
@@ -322,21 +329,6 @@ function getChart2ForDay() {
             labels: [''], // One bar
             datasets: activityDayDatasets
         },
-        // options: {
-        //     indexAxis: 'y', // Horizontal
-        //     scales: {
-        //         x: {
-        //             stacked: true,
-        //             beginAtZero: true
-        //         },
-        //         y: {
-        //             stacked: true,
-        //             ticks: {
-        //                 display: false
-        //             }
-        //         }
-        //     }
-        // }
         options: {
             indexAxis: 'y', // Make it horizontal
             responsive: true,
@@ -430,30 +422,203 @@ function getChart2ForWeek() {
 }
 
 
-const ctx3 = document.getElementById('myChart3').getContext('2d');
-const myChart3 = new Chart(ctx3, {
-    type: 'pie',
-    data: {
-        labels: ['Red', 'Blue', 'Yellow'],
-        datasets: [{
-            label: 'Pie Chart',
-            data: [300, 50, 100],
-            backgroundColor: ['red', 'blue', 'yellow']
-        }]
-    },
-    options: { responsive: true }
-});
+//===============================================
+class intervalEfficiencyData {
+    constructor(start, label, timeInFocus, timeActive, timeIdle, codingTime, codeReviewTime, refactoringTime, testingTime, codeByAI, codeByUser, codeByExternal) {
+        this.start = start;
+        this.label = label;
+        this.timeInFocus = timeInFocus || 0;
+        this.timeActive = timeActive || 0;
+        this.timeIdle = timeIdle || 0;
+        this.codingTime = codingTime || 0;
+        this.codeReviewTime = codeReviewTime || 0;
+        this.refactoringTime = refactoringTime || 0;
+        this.testingTime = testingTime || 0;
+        this.codeByAI = codeByAI || 0;
+        this.codeByUser = codeByUser || 0;
+        this.codeByExternal = codeByExternal || 0;
+        this.efficiencyScore = this.computeEfficiencyScore();
+    }
 
-// Function to update all charts
-function updateCharts() {
-    myChart1.update();
-    myChart2.update();
-    myChart3.update();
+    computeEfficiencyScore() {
+        if (this.label === 'Commit') {
+            // Fake score based on activity time and user code
+            const activeEffort = this.codingTime + this.codeReviewTime + this.refactoringTime;
+            const codeWeight = this.codeByUser + 0.5 * this.codeByAI;
+            const base = this.timeActive || 1;
+            return ((activeEffort + codeWeight) / base).toFixed(2);
+        }
+        return 0;
+    }
 }
 
-window.addEventListener('message', event => {
-    const { labels, data } = event.data;
 
-    chart.updateChartData(data, labels);
+class branchEfficiencyData {
+    constructor(branchName, start, intervals, end) {
+        this.branchName = branchName;
+        this.start = start;
+        this.intervals = intervals;
+        this.end = end;
+    }
+}
+
+class projectEfficiencyData {
+    constructor(projectName, start, branchesData, end) {
+        this.projectName = projectName;
+        this.start = start;
+        this.branchesData = branchesData
+        this.end = end;
+    }
+}
+
+const branchXdata = new branchEfficiencyData(
+    'Branch X',
+    100,
+    [
+        new intervalEfficiencyData(120, 'Branch create', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new intervalEfficiencyData(180, 'Commit', 50, 100, 20, 5, 3, 1, 80, 300, 25, 75),
+        new intervalEfficiencyData(600, 'PR create', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new intervalEfficiencyData(800, 'Commit', 1100, 200, 1500, 200, 600, 900, 1300, 5000, 750, 200),
+        new intervalEfficiencyData(1100, 'PR close', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    ],
+    1100
+);
+const branchYdata = new branchEfficiencyData(
+    'Branch Y',
+    350,
+    [
+        new intervalEfficiencyData(350, 'Branch create', 0, 0, 0, 0, 0, 0, 0, 0),
+        new intervalEfficiencyData(360, 'Commit', 30, 50, 10, 5, 2, 1, 40, 200, 15, 50),
+        new intervalEfficiencyData(700, 'Commit', 20, 45, 15, 8, 4, 2, 60, 100, 10, 90),
+        new intervalEfficiencyData(1400, 'PR create', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new intervalEfficiencyData(1800, 'PR close', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    ],
+    2600
+);
+
+const mainData = new branchEfficiencyData(
+    'Main',
+    0,
+    [
+        new intervalEfficiencyData(0, 'Branch create', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new intervalEfficiencyData(200, 'Commit', 50, 100, 20, 5, 3, 1, 80, 300, 25, 50),
+        new intervalEfficiencyData(1200, 'Commit', 300, 500, 200, 80, 40, 35, 600, 1800, 100, 200),
+        new intervalEfficiencyData(1500, 'Deploy', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new intervalEfficiencyData(2500, 'Commit', 5, 20, 45, 15, 8, 4, 2, 60, 100, 10, 90),
+        new intervalEfficiencyData(3000, 'Commit', 350, 600, 250, 180, 120, 110, 400, 2100, 320, 150),
+        new intervalEfficiencyData(3500, 'Deploy', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        new intervalEfficiencyData(4000, 'Release', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    ],
+    4000
+);
+
+const projectData = new projectEfficiencyData(
+    'AI Project',
+    0,
+    [mainData, branchXdata, branchYdata],
+    4000
+);
+
+//===============================================
+const labelColorMap = {
+    'Branch create': 'yellow',
+    'Commit': 'blue',
+    'PR create': 'orange',
+    'PR close': 'green',
+    'Deploy': 'teal'
+};
+
+function getRandomColor() {
+    const r = Math.floor(Math.random() * 200);  // Limit to avoid super bright colors
+    const g = Math.floor(Math.random() * 200);
+    const b = Math.floor(Math.random() * 200);
+    return `rgb(${r}, ${g}, ${b})`;
+}
+
+
+
+const datasets = projectData.branchesData.map(branch => {
+    const color = getRandomColor();
+
+    return {
+        label: branch.branchName,
+        borderColor: color,
+        borderWidth: 2,
+        fill: false,
+        tension: 0.3,
+        data: branch.intervals.map(interval => ({
+            x: interval.start,
+            y: parseFloat(interval.efficiencyScore),
+        })),
+        pointBackgroundColor: branch.intervals.map(interval =>
+            labelColorMap[interval.label] || 'gray'
+        ),
+        pointRadius: 6,
+        pointHoverRadius: 8,
+    };
 });
+console.log(datasets);
+
+const ctx3 = document.getElementById('myChart3').getContext('2d');
+let myChart3 = getEfficiencyChart();
+
+
+function getEfficiencyChart() {
+    return new Chart(ctx3, {
+        type: 'line',
+        data: {
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Interval Efficiency Score by Branch'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            const x = context.parsed.x;
+                            const y = context.parsed.y;
+                            return `Start: ${x}, Score: ${y}`;
+                        }
+                    }
+                },
+                legend: {
+                    position: 'bottom'
+                }
+            },
+            scales: {
+                x: {
+                    type: 'linear',
+                    title: {
+                        display: true,
+                        text: 'Start Time'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Efficiency Score'
+                    },
+                    suggestedMin: 0
+                }
+            }
+        }
+    });
+}
+
+// Function to update all charts
+// function updateCharts() {
+//     myChart1.update();
+//     myChart2.update();
+//     myChart3.update();
+// }
+
+// window.addEventListener('message', event => {
+//     const { labels, data } = event.data;
+
+//     chart.updateChartData(data, labels);
+// });
 
