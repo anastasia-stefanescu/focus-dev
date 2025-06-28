@@ -40,7 +40,7 @@ export async function activate(context: ExtensionContext) {
 
   const panel = vscode.window.createWebviewPanel(
     'chartView',
-    'Line Chart',
+    'FocusDev Dashboard',
     vscode.ViewColumn.One,
     {
       enableScripts: true,

@@ -81,14 +81,46 @@
         </section>
 
         <section class="dashboard-section">
-            <h2>Efficiency dashboard</h2>
+            <h2 data-id="efficiency-title">Efficiency dashboard - Select a project to display</h2>
             <div class="chart-wrapper">
                 <canvas id="myChart3"></canvas>
             </div>
+
+            <section class="reports">
+                <h2 class="efficiency-report-title">-</h2>
+                <div class="metrics">
+                    <div class="metric">
+                        <div class="label">Average time </div>
+                        <div class="value" data-id="editorTime">–</div>
+                    </div>
+                    <div class="metric">
+                        <div class="label">Time of active coding</div>
+                        <div class="value" data-id="activeCoding">–</div>
+                    </div>
+                    <div class="metric">
+                        <div class="label">Time of focused coding</div>
+                        <div class="value" data-id="focusedCoding">–</div>
+                    </div>
+                    <div class="metric">
+                        <div class="label">Lines written</div>
+                        <div class="value" data-id="linesWritten">–</div>
+                    </div>
+                    <div class="metric">
+                        <div class="label">Lines generated using AI</div>
+                        <div class="value" data-id="linesAI">–</div>
+                    </div>
+                    <div class="metric">
+                        <div class="label">Lines imported</div>
+                        <div class="value" data-id="linesImported">–</div>
+                    </div>
+                </div>
+
+            </section>
         </section>
     </div>
 
     <script src="CHART_JS_URI"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
     <script
         src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.4.0/dist/chartjs-plugin-annotation.min.js"></script>
     <script src="CHART_SCRIPT_URI"></script>
