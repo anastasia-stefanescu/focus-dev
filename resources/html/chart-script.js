@@ -1,5 +1,9 @@
 const vscode = acquireVsCodeApi();
 
+let currentReportDate = new Date();
+let selectedProject = 'Select Project';
+let selectedMode = 'day';
+
 // backend sends: Git project names, daily stats, activity/focus stats for day,
 
 const projectOptions = ['Select Project', 'django-proj', 'AI', 'Networking'];
@@ -11,7 +15,11 @@ const efficiencyTitle = document.querySelector('[data-id="efficiency-title"]');
 projectDropdown.addEventListener('change', () => {
     const selectedValue = projectDropdown.value;
     efficiencyTitle.textContent = `Efficiency dashboard - Project '${selectedValue}'`;
-    vscode.postMessage({ command: 'selectionChanged', value: selectedValue });
+
+    //vscode.postMessage({ command: 'selectionChanged', value: selectedValue });
+
+    sendCurrentSelectionToBackend();
+
     if (selectedValue !== 'Select Project') {
         if (myChart3) {
             myChart3.destroy();
@@ -40,8 +48,11 @@ toggleButtons.forEach(btn => {
 
         btn.classList.add('selected');  // Add .selected to clicked button
 
-        const selectedMode = btn.dataset.mode; // Send selected mode back to extension (optional)
-        vscode.postMessage({ command: 'modeSelected', value: selectedMode });
+        const newMode = btn.dataset.mode; // Send selected mode back to extension (optional)
+        //vscode.postMessage({ command: 'modeSelected', value: selectedMode });
+
+        selectedMode = newMode; // Update the selected mode
+        sendCurrentSelectionToBackend();
 
         if (myChart1) {
             myChart1.destroy();
@@ -619,10 +630,10 @@ function getEfficiencyChart() {
                     position: 'top', // move it to the top
                     labels: {
                         usePointStyle: true,
-                        filter: function (item, chart) {
-                            // Avoid legend duplication by showing one entry per label
-                            return true;
-                        }
+                        // filter: function (item, chart) {
+                        //     // Avoid legend duplication by showing one entry per label
+                        //     return true;
+                        // }
                     }
                 }
             },
@@ -670,4 +681,15 @@ window.addEventListener('message', event => {
 
     chart.updateChartData(data, labels);
 });
+
+function sendCurrentSelectionToBackend(project, mode) {
+    vscode.postMessage({
+        command: 'selectionChanged',
+        payload: {
+            project: selectedProject,
+            mode: selectedMode,
+            date: currentReportDate.toISOString()
+        }
+    });
+}
 

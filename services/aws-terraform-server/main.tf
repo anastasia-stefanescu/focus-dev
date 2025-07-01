@@ -1,5 +1,5 @@
 provider "aws" {
-  region = "us-east-1" 
+  region = "us-east-1"
 }
 
 resource "aws_instance" "flask_server" {
@@ -13,14 +13,18 @@ resource "aws_instance" "flask_server" {
     "sg-016955aa99102b8cb"  # lambda-sg
   ]
 
-  user_data = <<-EOF
-              #!/bin/bash
-              apt update -y
-              apt install -y python3-pip git
-              sudo git clone https://github.com/anastasia-stefanescu/Flask-server /opt/flask-app
-              pip3 install -r /opt/flask-app/requirements.txt
-              nohup python3 /opt/flask-app/app.py &
+  user_data = <<EOF
+              #cloud-config
+              runcmd:
+                - apt update -y
+                - apt install -y python3-pip git
+                - |
+                  cd /opt && \
+                  git clone https://github.com/anastasia-stefanescu/Flask-server flask-app && \
+                  cd flask-app && \
+                  pip3 install -r requirements.txt && \
               EOF
+
 
   tags = {
     Name = "FlaskServer"

@@ -1,10 +1,18 @@
 import axios from 'axios';
 import { BucketEvent, group_events_by_time_unit } from './time_aggregate';
 import { DocumentChangeInfo, ExecutionEventInfo, UserActivityEventInfo } from '../EventTracking';
-import { Test } from 'mocha';
 import { NO_MS_IN_DAY, NO_MS_IN_HOUR } from '../Constants';
-import { time } from 'console';
+import { getHDBSCANEvents, getHDBSCANResults } from '../Clustering/hdbscan';
+import { debug_activity_aggregate } from '../extension';
+import { FocusDataByIntervalAndType } from './focus_aggregate';
 
+export type ActivityType = 'Coding' | 'Code Review' | 'Testing' | 'Refactoring' | 'Undefined';
+
+function _debug_logs(message: string) {
+    if (debug_activity_aggregate) {
+        console.log(message);
+    }
+}
 
 const actions_of_classes = {
     "Coding": ['typing', 'autocomplete', 'refactorize', 'copy/paste', 'file actions'],
@@ -13,6 +21,10 @@ const actions_of_classes = {
     "Refactoring" : ['refactorize', 'file actions', 'typing'], // less typing, "file actions" is more important
     // something in between coding and reviewing
 }
+
+type IntervalBucketEvents = {
+    [key: string]: BucketEvent[];
+};
 
 interface CodingData {
     noCharacterAdds: number;
@@ -35,20 +47,59 @@ interface TestingData {
 }
 
 // cluster also events of the same type, but with larger time gaps?
-export async function computeIntervalsFocusData(time_unit: 'hour' | 'day', projectName: string | undefined) {
+export async function computeIntervalsActivityData(time_unit: 'hour' | 'day', projectName: string | undefined, focusIntervalData: FocusDataByIntervalAndType) {
     // change back to 'document' when done testing
-    const docEvents: { [key: string]: BucketEvent[] } = await group_events_by_time_unit(time_unit, 'execution', projectName);
-    const userActivityEvents: { [key: string]: BucketEvent[] } = await group_events_by_time_unit(time_unit, 'userActivity', projectName);
-    const executionEvents: { [key: string]: BucketEvent[] } = await group_events_by_time_unit(time_unit, 'execution', projectName);
+    const docEvents: IntervalBucketEvents = await group_events_by_time_unit(time_unit, 'execution', projectName);
+    const userActivityEvents: IntervalBucketEvents = await group_events_by_time_unit(time_unit, 'userActivity', projectName);
+    const executionEvents: IntervalBucketEvents = await group_events_by_time_unit(time_unit, 'execution', projectName);
 
-    const intervalCodeData : CodingData = extractCodingData(Object.values(docEvents).flat());
-    const intervalCodeReviewData : CodeReviewData = extractCodeReviewData(Object.values(userActivityEvents).flat());
-    const intervalTestingData : TestingData = extractTestingData(Object.values(executionEvents).flat());
+    const noMinutes = time_unit === 'hour' ? 60 : 60 * 24;
+
+
+    for (const interval in Object.keys(docEvents)) {
+        // these clusters return data in minutes??
+        // are they also sorted???
+        const codingClusters = await getHDBSCANResults(docEvents[interval], 0.5);
+        const userActivityClusters = await getHDBSCANResults(userActivityEvents[interval], 0.2);
+        const executionClusters = await getHDBSCANResults(executionEvents[interval], 0.1);
+
+        _debug_logs(`Coding clusters for interval ${interval}: ${JSON.stringify(codingClusters)}`);
+        _debug_logs(`User activity clusters for interval ${interval}: ${JSON.stringify(userActivityClusters)}`);
+        _debug_logs(`Execution clusters for interval ${interval}: ${JSON.stringify(executionClusters)}`);
+
+        // 0- inactive, 1 - idle, 2 - review, 3 - refactoring, 4 - coding, 5 - testing
+        const allMinutes = Array.from({ length: noMinutes }, (_, i) => 0);
+
+        // we want to get idle times for review detection
+        const focusData = focusIntervalData[interval] || {}; // is this okay?
+        _debug_logs(`Focus data for interval ${interval}: ${JSON.stringify(focusData)}`);
+        const idlePeriods = focusData['idle' as keyof typeof focusData]?.periods || [];
+        for (const period of idlePeriods) {
+            const start = Math.floor(period[0] / 60); // convert to minutes
+            const end = Math.floor(period[1] / 60);
+            for (let i = start; i <= end; i++) {
+                allMinutes[i] = 1; // mark as idle
+            }
+        }
+
+        // we mark the obtained clusters in the allMinutes array, beginning with coding, execution,
+        //for (const cluster)
+
+
+        // depending on the time unit, combine the data,  or not, etc
+
+    }
+    // const intervalCodeData : CodingData = extractCodingData(Object.values(docEvents).flat());
+    // const intervalCodeReviewData : CodeReviewData = extractCodeReviewData(Object.values(userActivityEvents).flat());
+    // const intervalTestingData : TestingData = extractTestingData(Object.values(executionEvents).flat());
 
     // get idle time!!
 
-    analyseData(time_unit, intervalCodeData, intervalCodeReviewData, intervalTestingData);
+    // get clusters of intervals!!
+
+    //analyseData(time_unit, intervalCodeData, intervalCodeReviewData, intervalTestingData);
 }
+
 
 export function analyseData(time_unit : 'hour' | 'day', intervalCodeData: CodingData, intervalCodeReviewData: CodeReviewData, intervalTestingData: TestingData) {
 
@@ -135,21 +186,21 @@ export function extractTestingData(bucketEvents: BucketEvent[]) : TestingData {
     return testingData;
 }
 
-export async function classifyWithSVM(features: number[]): Promise<void> {
-    console.log('Classifying with SVM...');
-    try {
-        const convertedFeatures = features.map(feature => Number(feature));
-        console.log('Converted features:', convertedFeatures);
-        console.log('Type of converted features:', typeof convertedFeatures[0]);
+// export async function classifyWithSVM(features: number[]): Promise<void> {
+//     console.log('Classifying with SVM...');
+//     try {
+//         const convertedFeatures = features.map(feature => Number(feature));
+//         console.log('Converted features:', convertedFeatures);
+//         console.log('Type of converted features:', typeof convertedFeatures[0]);
 
-        const response = await axios.post('http://localhost:5000/predict', {
-            features: convertedFeatures
-        });
-        console.log('Response from SVM server:', response
-        );
+//         const response = await axios.post('http://localhost:5000/predict', {
+//             features: convertedFeatures
+//         });
+//         console.log('Response from SVM server:', response
+//         );
 
-        console.log('Predicted class:', response.data.prediction);
-    } catch (error) {
-        console.error('Error classifying:', error);
-    }
-}
+//         console.log('Predicted class:', response.data.prediction);
+//     } catch (error) {
+//         console.error('Error classifying:', error);
+//     }
+// }

@@ -1,0 +1,7 @@
+How to run it:
+npx tsc week.ts
+node week.js
+
+or
+
+ts-node week.ts

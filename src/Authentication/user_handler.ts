@@ -7,13 +7,14 @@ import * as https from 'https';
 import { AUTH0_DOMAIN } from "../Constants";
 import axios from "axios";
 
-let currentUser : any | null = null;
+let currentUser : UserData | null = null;
 
 interface UserData {
     sub?: string;
     id?: string;
     name?: string;
     username?: string;
+    
   }
 
 export async function fetchUserData(accessToken: string) {
@@ -25,6 +26,7 @@ export async function fetchUserData(accessToken: string) {
   });
 
   const data = response.data;
+  console.log('USER DATA FETCHED:', data);
   return {
     id: data.sub || data.id,
     name: data.name || data.username,

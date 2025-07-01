@@ -1,8 +1,9 @@
 import { BucketEvent, group_events_by_time_unit } from "./time_aggregate";
-import { post_to_services } from "../API/api_wrapper";
+import { getHDBSCANResults, HDBSCANEvent } from "../Clustering/hdbscan";
 import { NO_MS_IN_HOUR, NO_MS_IN_DAY, NO_SECONDS_IN_DAY, NO_SECONDS_IN_HOUR} from "../Constants";
 import { sqlInstance, debug_focus_aggregate} from "../extension";
 import { time } from "console";
+import { map } from "lodash";
 
 
 // Looking for:
@@ -23,14 +24,14 @@ const focusLevels: FocusLevel[] = ['active', 'focus', 'idle'];
 
 export function computeFocusStatistics(time_unit: 'hour' | 'day', projectName: string | undefined) {}
 
-interface HDBSCANEvent {
-    'start_time': number;
-    'end_time': number;
-    'rate': number;
-    'no_events': number;
+export const mapFocusToNumber = {
+    'active': 2,
+    'focus': 3,
+    'idle': 1
 }
 
-interface FocusLevelData {
+export type FocusDataByIntervalAndType = { [key: string]: { [key in FocusLevel] ?: FocusLevelData } };
+export interface FocusLevelData {
     id: number;
     periods: [number, number][];
     percentage: number;
@@ -43,53 +44,49 @@ function _debug_logs(message: string) {
     }
 }
 
-export async function markFocusByMinute(time_unit: 'hour' | 'day', projectName: string | undefined = undefined) {
-    const now = new Date();
-    const intervalsData: {[key:string]:{[key in FocusLevel]?: FocusLevelData}} = await computeIntervalsFocusData(now, time_unit, projectName);
-
-    const minutesList :number[] = [];
-    const noMinutes = time_unit === 'hour' ? 60 : (24 * 60); // 24 hours in a day
-    const noMS = time_unit === 'hour' ? NO_MS_IN_HOUR * 1000 : NO_MS_IN_DAY * 1000;
-    const minuteStart = new Date(now.getTime() - noMS);
-
-    for (let i = 0; i < noMinutes; i++) {
-        minutesList.push(0);
-    }
-
-    for (const interval in Object.keys(intervalsData)) {
-        const intervalData = intervalsData[interval];
-        for (const key in focusLevels) {
-            const focusPeriods : [number, number][] = intervalData[key as FocusLevel]?.periods || [];
-            const noPeriods = focusPeriods.length;
-            for (let i = 0; i< noPeriods; i++) {
-                const start = focusPeriods[i][0];
-                const end = focusPeriods[i][1];
-                const noMinutesInPeriod = Math.ceil((end - start) / (60 * 1000)); // in minutes
-
-                for (let j = 0; j < noMinutesInPeriod; j++) {
-                    const minuteIndex = Math.floor((start + j * 60 * 1000));
-
-                    if (minuteIndex >= 0 && minuteIndex < noMinutes) {
-                        minutesList[minuteIndex] = intervalData[key as FocusLevel]?.id || 0;
-                    }
-                }
-            }
-        }
-    }
-
-
-
+export async function totalFocusTimeForWeek() {
 
 }
 
-export async function computeIntervalsFocusData(crtTime: Date, time_unit: 'hour' | 'day', projectName: string | undefined = undefined)
-    : Promise<{ [key: string]: { [key in FocusLevel]?: FocusLevelData } }>
+
+// used by the daily focus chart
+export function dataPointsForDayFocus( intervalsData: FocusDataByIntervalAndType ) : any {
+    // we break down the big interval of a day in smaller ones of an hour so as not to overuse the hdbscan algorithm?
+
+    let totalValueMapping : any = {};
+    for (const interval in Object.keys(intervalsData)) { // for each time unit
+        const intervalData = intervalsData[interval];
+        const valueMapping: any = {};
+        for (const key in focusLevels) {  // for each focus level
+            const focusPeriods : [number, number][] = intervalData[key as FocusLevel]?.periods || [];
+
+            // replace this with just datapoints
+
+            let nextStart;
+            for (let i = 0; i < focusPeriods.length; i++) {
+                const middle = Math.floor((focusPeriods[i][0] + focusPeriods[i][1]) / 2);
+                valueMapping[middle] = 0.5; // focusPeriod value!!!!!!
+
+                // update here that it is start of day in minutes + 1440!!!
+                nextStart = i + 1 < focusPeriods.length ? focusPeriods[i + 1][0] : 1440; // Default to end of day if no next segment
+                const middleOfSpace = Math.floor((focusPeriods[i][1] + nextStart) / 2);
+                valueMapping[middleOfSpace] = 0;
+            }
+
+        }
+        totalValueMapping = {...totalValueMapping, ...valueMapping}; // merge the value mapping for each interval
+    }
+    return totalValueMapping;
+}
+
+export async function computeIntervalsFocusData(crtTime: number, time_unit: 'hour' | 'day', projectName: string | undefined = undefined)
+    : Promise<FocusDataByIntervalAndType>
 {
     const now = crtTime;
     const docEvents: { [key: string]: BucketEvent[] } = await group_events_by_time_unit(time_unit, 'execution', projectName, now);
     const userActivityEvents: { [key: string]: BucketEvent[] } = await group_events_by_time_unit(time_unit, 'userActivity', projectName, now);
     const executionEvents: { [key: string]: BucketEvent[] } = await group_events_by_time_unit(time_unit, 'execution', projectName, now);
-    // does this work, how to common intervals concatenate??
+    // does this work, how to common intervals concatenate?? -> they should have the same keys for interval starts
     const allbucketEvents: { [key: string]: BucketEvent[] } = {...docEvents, ...userActivityEvents, ...executionEvents};
 
     const intervalSeconds = time_unit === 'hour' ? NO_SECONDS_IN_HOUR : NO_SECONDS_IN_DAY;
@@ -111,7 +108,7 @@ export async function computeIntervalsFocusData(crtTime: Date, time_unit: 'hour'
                 const focusClusters = await getHDBSCANResults(events, rate_threshold);
                 focusPeriods = focusClusters.map((cluster: HDBSCANEvent) => [cluster.start_time, cluster.end_time]);
             } else {
-                const nextInterval = i + 1 < noIntervals ? intervals[i + 1] : now.getTime().toString();
+                const nextInterval = i + 1 < noIntervals ? intervals[i + 1] : now.toString();
                 const windowFocusEvents = await sqlInstance.executeSelect('windowFocus', interval,  nextInterval, projectName);
                 _debug_logs(`Window focus for ${interval} - ${nextInterval}: ${JSON.stringify(windowFocusEvents)}`);
                 focusPeriods = windowFocusEvents.map((event: any) => [Number(event.start), Number(event.end)]);
@@ -137,128 +134,77 @@ export async function computeIntervalsFocusData(crtTime: Date, time_unit: 'hour'
 
 }
 
-export async function getHDBSCANResults(bucketEvents: BucketEvent[], rate_threshold: number = 0.5) {
-    //const hdbscanEvents = getHDBSCANEvents(bucketEvents);
-    const hdbscanEvents: HDBSCANEvent[] = [
-        { 'start_time': 51, 'end_time': 68, 'rate': 1.834347898661638, 'no_events': 3 },
-        { 'start_time': 71, 'end_time': 88, 'rate': 5.96850157946487 , 'no_events': 2 },
-        { 'start_time': 82, 'end_time': 93, 'rate': 0.5808361216819946 , 'no_events': 1 },
-        { 'start_time': 87, 'end_time': 96, 'rate': 6.011150117432088 , 'no_events': 8 },
-        { 'start_time': 23, 'end_time': 30, 'rate': 0.20584494295802447, 'no_events': 6 },
-        { 'start_time': 1, 'end_time': 13, 'rate': 8.324426408004218 , 'no_events': 4},
-        { 'start_time': 37, 'end_time': 43, 'rate': 1.8182496720710062, 'no_events': 7 },
-        { 'start_time': 20, 'end_time': 25, 'rate': 3.0424224295953772, 'no_events': 6 },
-        { 'start_time': 21, 'end_time': 38, 'rate': 4.319450186421157, 'no_events': 8 },
-        { 'start_time': 48, 'end_time': 63, 'rate': 6.118528947223795, 'no_events': 4 }
-    ];
+
+// export function iterateThroughEvents(bucketEvents: BucketEvent[], time_unit: 'hour' | 'day', projectName: string | undefined) {
+//     // de intrebat chatgpt daca e ok
+//     let startDate = Number(bucketEvents[0].event?.start);
+
+//     const length = bucketEvents.length;
+//     const focusPeriods : [number, number][] = [];
+//     const activePeriods : [number, number][] = [];
+//     let currentFocusLevel : FocusLevel;
 
 
-    const hdbscanResults = await post_to_services('/cluster', { "events": hdbscanEvents, "rate_threshold": rate_threshold});
-    const clusters = hdbscanResults['clusters'];
-    console.log(`HDBSCAN clusters: ${JSON.stringify(clusters)}`);
-    return clusters;
-}
+//     let currentFocusPeriod : BucketEvent[] = [];
+//     let index = 0
 
-export function getHDBSCANEvents(bucketEvents: BucketEvent[]) {
-    const hdbscanEvents: HDBSCANEvent[] = [];
+//     while (Number(bucketEvents[index].event?.end) < startDate + FIFTEEN_MINUTES_IN_MS && index < length) {
+//         const event = bucketEvents[index];
+//         currentFocusPeriod.push(event);
+//         index++;
+//     }
 
-    // in case of AI document changes / external document changes, the rate is calculated by singleAdds/multiAdds/keystrokes, de vazut
-    for (const bucketEvent of bucketEvents) {
-        const event = bucketEvent.event
-        const percentage = bucketEvent.percentage;
+//     currentFocusLevel = computeFocusLevelForEvents(currentFocusPeriod, time_unit, projectName);
 
-        if (event) {
-            const noEvents = event.noEvents();
-            const rate = percentage * event.computeRateOfEvent();
-            const hdbscanEvent = {
-                'start_time': Number(event.start),
-                'end_time': Number(event.end),
-                'rate': rate,
-                'no_events': noEvents
-            }
-            hdbscanEvents.push(hdbscanEvent);
-        }
-    }
+//     for (const event of bucketEvents.slice(index)) {
 
-    return hdbscanEvents;
-}
+//         const newFocusLevel = computeFocusLevelForEvents(currentFocusPeriod.concat([event]), time_unit, projectName);
 
+//         if (newFocusLevel !== currentFocusLevel) {
+//             // we have a new period with a differentfocus level
+//             const periodLength = currentFocusPeriod.length;
+//             const endDate = Number(currentFocusPeriod[periodLength].event?.end);
 
+//             if (currentFocusLevel === 'active')
+//                 activePeriods.push([startDate, endDate]);
+//             else if (currentFocusLevel === 'focus')
+//                 focusPeriods.push([startDate, endDate]);
 
-
-
-
-
-export function iterateThroughEvents(bucketEvents: BucketEvent[], time_unit: 'hour' | 'day', projectName: string | undefined) {
-    // de intrebat chatgpt daca e ok
-    let startDate = Number(bucketEvents[0].event?.start);
-
-    const length = bucketEvents.length;
-    const focusPeriods : [number, number][] = [];
-    const activePeriods : [number, number][] = [];
-    let currentFocusLevel : FocusLevel;
-
-
-    let currentFocusPeriod : BucketEvent[] = [];
-    let index = 0
-
-    while (Number(bucketEvents[index].event?.end) < startDate + FIFTEEN_MINUTES_IN_MS && index < length) {
-        const event = bucketEvents[index];
-        currentFocusPeriod.push(event);
-        index++;
-    }
-
-    currentFocusLevel = computeFocusLevelForEvents(currentFocusPeriod, time_unit, projectName);
-
-    for (const event of bucketEvents.slice(index)) {
-
-        const newFocusLevel = computeFocusLevelForEvents(currentFocusPeriod.concat([event]), time_unit, projectName);
-
-        if (newFocusLevel !== currentFocusLevel) {
-            // we have a new period with a differentfocus level
-            const periodLength = currentFocusPeriod.length;
-            const endDate = Number(currentFocusPeriod[periodLength].event?.end);
-
-            if (currentFocusLevel === 'active')
-                activePeriods.push([startDate, endDate]);
-            else if (currentFocusLevel === 'focus')
-                focusPeriods.push([startDate, endDate]);
-
-            currentFocusLevel = newFocusLevel;
-            currentFocusPeriod = [event];
-            startDate = Number(event.event?.start);
-        }
-        else {
-            currentFocusPeriod.push(event);
-        }
-    }
-    return {focusPeriods:focusPeriods, activePeriods:activePeriods};
-}
+//             currentFocusLevel = newFocusLevel;
+//             currentFocusPeriod = [event];
+//             startDate = Number(event.event?.start);
+//         }
+//         else {
+//             currentFocusPeriod.push(event);
+//         }
+//     }
+//     return {focusPeriods:focusPeriods, activePeriods:activePeriods};
+// }
 
 
 
 // how do we map this data in the chart? We need for each hour/day, right?
-export function computeFocusLevelForEvents(bucketEvents: BucketEvent[], time_unit: 'hour' | 'day', projectName: string | undefined) : FocusLevel{
-    const rates : number[] = [];
-    // in case of AI document changes / external document changes, the rate is calculated by singleAdds/multiAdds/keystrokes, de vazut
-    for(const bucketEvent of bucketEvents) {
-        const event = bucketEvent.event
-        const percentage = bucketEvent.percentage;
+// export function computeFocusLevelForEvents(bucketEvents: BucketEvent[], time_unit: 'hour' | 'day', projectName: string | undefined) : FocusLevel{
+//     const rates : number[] = [];
+//     // in case of AI document changes / external document changes, the rate is calculated by singleAdds/multiAdds/keystrokes, de vazut
+//     for(const bucketEvent of bucketEvents) {
+//         const event = bucketEvent.event
+//         const percentage = bucketEvent.percentage;
 
-        if (event) {
-            const rate = percentage * event.computeRateOfEvent();
-            rates.push(rate);
-        }
-    }
+//         if (event) {
+//             const rate = percentage * event.computeRateOfEvent();
+//             rates.push(rate);
+//         }
+//     }
 
-    const mean_rate = mean(rates);
+//     const mean_rate = mean(rates);
 
-    if(mean_rate > FOCUS_RATE_TRESHOLD)
-        return 'focus';
-    if(mean_rate > ACTIVE_RATE_TRESHOLD)
-        return 'active';
-    return 'idle';
-}
+//     if(mean_rate > FOCUS_RATE_TRESHOLD)
+//         return 'focus';
+//     if(mean_rate > ACTIVE_RATE_TRESHOLD)
+//         return 'active';
+//     return 'idle';
+// }
 
 
 function mean(rates: number[]) : number {

@@ -34,15 +34,15 @@ function _debug_logs(message: string) {
 
 
 export async function group_events_by_time_unit(time_unit : 'hour' | 'day', type: EventType,
-    projectName: string | undefined = undefined, currentDate: Date | undefined = undefined)
+    projectName: string | undefined = undefined, currentDate: number | undefined = undefined)
 : Promise<{ [key: string]: BucketEvent[] }>
 {
     const time_units_events: { [key: string]: BucketEvent[] } = {}; // number of minutes
 
     if (!currentDate) {
-        currentDate = new Date();
+        currentDate = new Date().getTime();
     }
-    const crtDate = currentDate.getTime();
+    const crtDate = currentDate;
     const startDate = '1748787838321'; // new Date(crtDate - 24 * 60 * 60 * 1000).getTime(); // 24 hours ago
 
     const events: Event[] = await getData(type, startDate.toString(), crtDate.toString(), projectName); // ordered

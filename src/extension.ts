@@ -10,9 +10,12 @@ import { GitTracking } from './Git/local_git_tracking';
 import { testTimeAggregate } from './testScripts/test_aggregate';
 import { NodeCacheManager } from './Cache';
 import { SQLiteManager } from './Database/sqlite_db';
+import { generateEvents } from './EventGeneration/week';
 // import { ChartWebviewPanel } from './Panels/panel_manager';
 
-import { getHDBSCANResults } from './Aggregation/focus_aggregate';
+import { getHDBSCANResults, HDBSCANEvent } from './Clustering/hdbscan';
+import { postToCluster } from './API/api_wrapper';
+import { getDataForFrontend } from './Aggregation/compute_stats';
 
 export let instance: ProjectInfoManager;
 export let gitInstance: GitTracking | undefined = undefined;
@@ -25,6 +28,7 @@ export let debug_cache = true;
 export let debug_time_aggregate = false;
 export let debug_focus_aggregate = true;
 export let debug_efficiency_aggregate = true;
+export let debug_activity_aggregate = true;
 
 // activate runs for every workspace / project / window
 export async function activate(context: ExtensionContext) {
@@ -68,21 +72,18 @@ export async function activate(context: ExtensionContext) {
   panel.webview.html = html;
 
   panel.webview.onDidReceiveMessage(message => {
-    if (message.command === 'requestData') {
-      console.log('Received requestData message from webview');
-      const labels = ['Jan', 'Feb', 'Mar', 'Apr'];
-      const data = [100, 250, 180, 300];
-      panel.webview.postMessage({ labels, data });
-    }
-    else if (message.command === 'selectionChanged') {
-      window.showInformationMessage(`Selection changed: ${message.value}`);
-      console.log('Received message from webview:', message.value);
-    } else if (message.command === 'modeSelected') {
-      window.showInformationMessage(`Mode selected: ${message.value}`);
-      console.log('Received mode selection from webview:', message.value);
+    if (message.command === 'selectionChanged') {
+      window.showInformationMessage(`Selection changed`);
+      console.log('Received message from webview:', message.payload);
+      const { project, mode, date } = message.payload;
+      const dataForFrontend = getDataForFrontend(project, mode, new Date(date));
+
+      
     }
   });
 
+
+  //generateEvents('Name1', '/Path/To/Project', ['main', 'feature1', 'feature2'], ['file1.js', 'file2.js', 'file3.js'], ['/path/to/file1.js', '/path/to/file2.js', '/path/to/file3.js']);
 
   // if user doesn't log in, create an anonymous session??
 
@@ -95,8 +96,6 @@ export async function activate(context: ExtensionContext) {
   gitInstance = await GitTracking.getInstance();
 
   //testSqliteDatabase();
-
-  await getHDBSCANResults([]);
 
   // // it seems this actually triggers the authentication flow
   // const session = await authentication.getSession('auth0-auth-provider', [], { createIfNone: true });

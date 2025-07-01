@@ -249,7 +249,7 @@ export class UserActivityEventInfo extends Event{
     }
 }
 
-export type SuccessType = 'release' | 'deployment' | 'PR close' | 'main push' | 'push' | 'commit' | 'run' | 'test' | 'other';
+export type SuccessType = 'release' | 'deployment' | 'PR close' | 'main push' | 'push' | 'commit' | 'other'; // | 'run' | 'test' | 'other';
 
 export class SuccessIndicator extends Event { // can be about git commits / other actions or comments or some kind of execution
     type: SuccessType;
