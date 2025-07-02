@@ -12,6 +12,27 @@ const projectDropdown = document.getElementById('project-dropdown');
 
 const efficiencyTitle = document.querySelector('[data-id="efficiency-title"]');
 
+const prevBtn = document.getElementById('prev-btn');
+const nextBtn = document.getElementById('next-btn');
+
+prevBtn.addEventListener('click', () => {
+    shiftTimeUnit(-1);
+});
+nextBtn.addEventListener('click', () => {
+    shiftTimeUnit(1);
+});
+
+function shiftTimeUnit(delta) {
+    const multiplier = selectedMode === 'week' ? 7 : 1;
+    const noMSInDay = 24 * 60 * 60 * 1000;
+
+    if (currentReportDate > new Date(new Date() - (multiplier * noMSInDay)) && delta > 0)
+        return;
+
+    currentReportDate.setDate(currentReportDate.getDate() + delta * multiplier);
+    sendCurrentSelectionToBackend();
+}
+
 projectDropdown.addEventListener('change', () => {
     selectedProject = projectDropdown.value;
     efficiencyTitle.textContent = `Efficiency dashboard - Project '${selectedProject}'`;
@@ -54,18 +75,11 @@ toggleButtons.forEach(btn => {
         selectedMode = newMode; // Update the selected mode
         sendCurrentSelectionToBackend();
 
-        // if (myChart1) {
-        //     //myChart1.destroy();
-        // }
-        if (myChart2) {
-            myChart2.destroy();
-        }
-
         // Create chart based on selected mode
         if (selectedMode === 'day') {
             //myChart1 = getChart1ForDay();
             //myChart2 = getChart2ForDay();
-            reportTitle.textContent = `Daily Report - ${new Date().toLocaleDateString()}`;
+            //reportTitle.textContent = `Daily Report - ${new Date().toLocaleDateString()}`;
             Object.entries(dailyMetrics).forEach(([key, value]) => {
                 const element = document.querySelector(`.value[data-id="${key}"]`);
                 if (element) {
@@ -690,6 +704,7 @@ window.addEventListener('message', event => {
             myChart1 = getChart1ForDay(payload.focusValues, allMinutes);
             myChart2 = getChart2ForDay(payload.activityIntervals);
 
+            reportTitle.textContent = `Daily Report - ${currentReportDate.toLocaleDateString()}`;
             // Object.entries(dailyMetrics).forEach(([key, value]) => {
             //     const element = document.querySelector(`.value[data-id="${key}"]`);
             //     if (element) {
@@ -698,6 +713,9 @@ window.addEventListener('message', event => {
         } else {
             myChart1 = getChart1ForWeek(payload.focusDurationsForDay);
             myChart2 = getChart2ForWeek(payload.activityDurationsForDay);
+            const sevenDaysAgo = new Date(currentReportDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+            reportTitle.textContent = `Weekly Report - ${sevenDaysAgo.toLocaleDateString()} to ${currentReportDate.toLocaleDateString()}`;
+
         }
     }
 });
