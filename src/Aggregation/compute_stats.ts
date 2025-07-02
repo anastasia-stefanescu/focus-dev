@@ -55,6 +55,7 @@ interface WeeklyActivityStats {
 // }
 
 interface DataForDay {
+    interval: 'day';
     lineStats: LineStats;
     focusStats: FocusStats;
     focusValues: {};
@@ -62,6 +63,7 @@ interface DataForDay {
 }
 
 interface DataForWeek {
+    interval: 'week';
     lineStats: LineStats;
     focusStats: FocusStats;
     focusDurationsForDay: WeeklyFocusStats; // array of focus durations for each day
@@ -142,8 +144,19 @@ async function getLinesBySource(startMS: number, timeUnitMS: number, projectName
     };
 }
 
+// mark as async
+export function getDataForFrontend(projectName: string, time_unit: 'day' | 'week', startDate: Date): DataForDay | DataForWeek {
+    const dayLineStats = {
+        user: 323,
+        ai: 74,
+        external: 33
+    };
+    const weekLineStats = {
+        user: 1389,
+        ai: 427,
+        external: 126
+    };
 
-export async function getDataForFrontend(projectName: string, time_unit: 'day' | 'week', startDate: Date): Promise<DataForDay | DataForWeek> {
     const segments = [
         { start: 5, end: 10, value: 0.9 }, // Narrow segment
         { start: 15, end: 30, value: 1.29 }, // Wider segment
@@ -235,7 +248,8 @@ export async function getDataForFrontend(projectName: string, time_unit: 'day' |
 
     if (time_unit === 'day') {
         const dataForDay: DataForDay = {
-            lineStats: await getLinesBySource(startDate.getTime(), 24 * 60 * 60 * 1000, projectName),
+            interval: 'day',
+            lineStats:  dayLineStats, //await getLinesBySource(startDate.getTime(), 24 * 60 * 60 * 1000, projectName),
             focusStats: focusStats,
             focusValues: valueMapping,
             activityIntervals: allActivitiesOfDay
@@ -244,7 +258,8 @@ export async function getDataForFrontend(projectName: string, time_unit: 'day' |
         return dataForDay;
     } else {
         const dataForWeek: DataForWeek = {
-            lineStats: await getLinesBySource(startDate.getTime(), 7 * 24 * 60 * 60 * 1000, projectName),
+            interval: 'week',
+            lineStats: weekLineStats, // await getLinesBySource(startDate.getTime(), 7 * 24 * 60 * 60 * 1000, projectName),
             focusStats: weeklyFocusStats,
             focusDurationsForDay: dailyFocusStats,
             activityDurationsForDay: dailyActivityStats

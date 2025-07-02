@@ -13,14 +13,14 @@ const projectDropdown = document.getElementById('project-dropdown');
 const efficiencyTitle = document.querySelector('[data-id="efficiency-title"]');
 
 projectDropdown.addEventListener('change', () => {
-    const selectedValue = projectDropdown.value;
-    efficiencyTitle.textContent = `Efficiency dashboard - Project '${selectedValue}'`;
+    selectedProject = projectDropdown.value;
+    efficiencyTitle.textContent = `Efficiency dashboard - Project '${selectedProject}'`;
 
     //vscode.postMessage({ command: 'selectionChanged', value: selectedValue });
 
     sendCurrentSelectionToBackend();
 
-    if (selectedValue !== 'Select Project') {
+    if (selectedProject !== 'Select Project') {
         if (myChart3) {
             myChart3.destroy();
         }
@@ -54,17 +54,17 @@ toggleButtons.forEach(btn => {
         selectedMode = newMode; // Update the selected mode
         sendCurrentSelectionToBackend();
 
-        if (myChart1) {
-            myChart1.destroy();
-        }
+        // if (myChart1) {
+        //     //myChart1.destroy();
+        // }
         if (myChart2) {
             myChart2.destroy();
         }
 
         // Create chart based on selected mode
         if (selectedMode === 'day') {
-            myChart1 = getChart1ForDay();
-            myChart2 = getChart2ForDay();
+            //myChart1 = getChart1ForDay();
+            //myChart2 = getChart2ForDay();
             reportTitle.textContent = `Daily Report - ${new Date().toLocaleDateString()}`;
             Object.entries(dailyMetrics).forEach(([key, value]) => {
                 const element = document.querySelector(`.value[data-id="${key}"]`);
@@ -73,8 +73,8 @@ toggleButtons.forEach(btn => {
                 }
             });
         } else if (selectedMode === 'week') {
-            myChart1 = getChart1ForWeek();
-            myChart2 = getChart2ForWeek();
+            //myChart1 = getChart1ForWeek(dailyFocus);
+            //myChart2 = getChart2ForWeek();
             const sevenDaysAgo = new Date(new Date().getTime() - 7 * 24 * 60 * 60 * 1000);
             reportTitle.textContent = `Weekly Report - ${sevenDaysAgo.toLocaleDateString()} to ${new Date().toLocaleDateString()}`;
             Object.entries(weeklyMetrics).forEach(([key, value]) => {
@@ -157,10 +157,10 @@ const dailyActivities = {
     'Refactoring': [2, 3, 5, 1, 4, 2, 3],
 }
 const dailyFocus = {
-    'Focused': [0.3, 0.4, 0.7, 0.3, 0.1, 0.2, 0.3],
-    'Active': [0.5, 0.2, 0.1, 0.2, 0.2, 0.4, 0.2],
-    'Idle': [0.1, 0.5, 0.1, 0.1, 0.7, 0.1, 0.1],
-    'Inactive': [0.1, 0.1, 0.1, 0.4, 0.6, 0.3, 0.4],
+    'focus': [0.3, 0.4, 0.7, 0.3, 0.1, 0.2, 0.3],
+    'active': [0.5, 0.2, 0.1, 0.2, 0.2, 0.4, 0.2],
+    'idle': [0.1, 0.5, 0.1, 0.1, 0.7, 0.1, 0.1],
+    'inactive': [0.1, 0.1, 0.1, 0.4, 0.6, 0.3, 0.4],
 }
 
 const activityToColorMapping = {
@@ -214,14 +214,14 @@ const activityDayDatasets = allActivitiesOfDay.map(seg => ({
 
 
 const ctx1 = document.getElementById('myChart1').getContext('2d');
-let myChart1 = getChart1ForDay();
+let myChart1 = getChart1ForDay(valueMapping, allMinutes);
 
 const ctx2 = document.getElementById('myChart2').getContext('2d');
-let myChart2 = getChart2ForDay();
+let myChart2 = getChart2ForDay(allActivitiesOfDay);
 
 
 
-function getChart1ForWeek() {
+function getChart1ForWeek(dailyFocus) {
     return new Chart(ctx1, {
         type: 'bar',
         data: {
@@ -229,22 +229,22 @@ function getChart1ForWeek() {
             datasets: [
                 {
                     label: 'Focused Time',
-                    data: dailyFocus['Focused'],
+                    data: dailyFocus['focus'],
                     backgroundColor: 'rgba(220, 111, 2, 0.6)'
                 },
                 {
                     label: 'Active Time',
-                    data: dailyFocus['Active'],
+                    data: dailyFocus['active'],
                     backgroundColor: 'rgba(235, 202, 54, 0.6)'
                 },
                 {
                     label: 'Idle Time',
-                    data: dailyFocus['Idle'],
+                    data: dailyFocus['idle'],
                     backgroundColor: 'rgba(114, 185, 200, 0.6)'
                 },
                 {
                     label: 'Inactive Time',
-                    data: dailyFocus['Inactive'],
+                    data: dailyFocus['inactive'],
                     backgroundColor: 'rgba(176, 176, 176, 0.6)'
                 },
             ]
@@ -263,10 +263,7 @@ function getChart1ForWeek() {
     });
 }
 
-
-
-
-function getChart1ForDay() {
+function getChart1ForDay(valueMapping, allMinutes) {
     return new Chart(ctx1, {
         type: 'line',
         data: {
@@ -343,7 +340,13 @@ function getChart1ForDay() {
     });
 }
 
-function getChart2ForDay() {
+function getChart2ForDay(allActivitiesOfDay) {
+    const activityDayDatasets = allActivitiesOfDay.map(seg => ({
+        label: seg.label,
+        data: [seg.end - seg.start],
+        backgroundColor: activityToColorMapping[seg.label],
+        stack: 'stack1'
+    }));
     return new Chart(ctx2, {
         type: 'bar',
         data: {
@@ -398,9 +401,7 @@ function getChart2ForDay() {
     });
 }
 
-
-
-function getChart2ForWeek() {
+function getChart2ForWeek(dailyActivities) {
     return new Chart(ctx2, {
         type: 'bar',
         data: {
@@ -517,7 +518,7 @@ const branchXdata = new branchEfficiencyData(
 
 currentTime = Math.floor(new Date('2025-04-13T00:00:00Z').getTime() / 1000);
 const branchYdata = new branchEfficiencyData(
-    'Branch "Setup"',
+    "Branch 'Setup'",
     350,
     [
         new intervalEfficiencyData(nextTime(), 'Branch create', 0, 0, 0, 0, 0, 0, 0, 0),
@@ -668,21 +669,7 @@ function getEfficiencyChart() {
     });
 }
 
-
-// Function to update all charts
-// function updateCharts() {
-//     myChart1.update();
-//     myChart2.update();
-//     myChart3.update();
-// }
-
-window.addEventListener('message', event => {
-    const { labels, data } = event.data;
-
-    chart.updateChartData(data, labels);
-});
-
-function sendCurrentSelectionToBackend(project, mode) {
+function sendCurrentSelectionToBackend() {
     vscode.postMessage({
         command: 'selectionChanged',
         payload: {
@@ -693,3 +680,24 @@ function sendCurrentSelectionToBackend(project, mode) {
     });
 }
 
+window.addEventListener('message', event => {
+    const { command, payload } = event.data;
+    if (myChart1) myChart1.destroy();
+    if (myChart2) myChart2.destroy();
+
+    if (command === 'updateFrontend') {
+        if (selectedMode === 'day') {
+            myChart1 = getChart1ForDay(payload.focusValues, allMinutes);
+            myChart2 = getChart2ForDay(payload.activityIntervals);
+
+            // Object.entries(dailyMetrics).forEach(([key, value]) => {
+            //     const element = document.querySelector(`.value[data-id="${key}"]`);
+            //     if (element) {
+            //         element.textContent = value;
+            //     }
+        } else {
+            myChart1 = getChart1ForWeek(payload.focusDurationsForDay);
+            myChart2 = getChart2ForWeek(payload.activityDurationsForDay);
+        }
+    }
+});

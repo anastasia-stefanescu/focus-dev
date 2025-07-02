@@ -77,8 +77,11 @@ export async function activate(context: ExtensionContext) {
       console.log('Received message from webview:', message.payload);
       const { project, mode, date } = message.payload;
       const dataForFrontend = getDataForFrontend(project, mode, new Date(date));
-
-      
+      console.log('Data for frontend:', dataForFrontend);
+      panel.webview.postMessage({
+        command: 'updateFrontend',
+        payload: JSON.parse(JSON.stringify(dataForFrontend)),
+      });
     }
   });
 
