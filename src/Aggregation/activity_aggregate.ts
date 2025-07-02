@@ -67,21 +67,24 @@ export async function computeIntervalsActivityData(time_unit: 'hour' | 'day', pr
         _debug_logs(`User activity clusters for interval ${interval}: ${JSON.stringify(userActivityClusters)}`);
         _debug_logs(`Execution clusters for interval ${interval}: ${JSON.stringify(executionClusters)}`);
 
+        const allIntervals: any = {...codingClusters, ...userActivityClusters, ...executionClusters};
+        return allIntervals;
+
         // 0- inactive, 1 - idle, 2 - review, 3 - refactoring, 4 - coding, 5 - testing
-        const allMinutes = Array.from({ length: noMinutes }, (_, i) => 0);
+        // const allMinutes = Array.from({ length: noMinutes }, (_, i) => 0);
 
-        // we want to get idle times for review detection
-        const focusData = focusIntervalData[interval] || {}; // is this okay?
-        _debug_logs(`Focus data for interval ${interval}: ${JSON.stringify(focusData)}`);
-        const idlePeriods = focusData['idle' as keyof typeof focusData]?.periods || [];
-        for (const period of idlePeriods) {
-            const start = Math.floor(period[0] / 60); // convert to minutes
-            const end = Math.floor(period[1] / 60);
-            for (let i = start; i <= end; i++) {
-                allMinutes[i] = 1; // mark as idle
-            }
-        }
-
+        // // we want to get idle times for review detection
+        // const focusData = focusIntervalData[interval] || {}; // is this okay?
+        // _debug_logs(`Focus data for interval ${interval}: ${JSON.stringify(focusData)}`);
+        // const idlePeriods = focusData['idle' as keyof typeof focusData]?.periods || [];
+        // for (const period of idlePeriods) {
+        //     const start = Math.floor(period[0] / 60); // convert to minutes
+        //     const end = Math.floor(period[1] / 60);
+        //     for (let i = start; i <= end; i++) {
+        //         allMinutes[i] = 1; // mark as idle
+        //     }
+        // }
+        // return allMinutes;
         // we mark the obtained clusters in the allMinutes array, beginning with coding, execution,
         //for (const cluster)
 

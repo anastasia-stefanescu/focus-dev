@@ -36,25 +36,28 @@ export function verifyDocumentChange(event: TextDocumentChangeEvent) {
         const changeInfo: DocumentChangeInfo = extractChangeData(change); // extracts data and 'analyse' the change
         //window.showInformationMessage(`Extracted: ${changeInfo.charactersAdded} characters, ${changeInfo.singleAdds} singleAdds,  ${changeInfo.lineCount} line count, ${changeInfo.linesAdded} lines added, ${changeInfo.multiAdds} multiAdds `);
 
+        //window.showInformationMessage(`Processing change: ${changeInfo.linesAdded} lines Added, with ${changeInfo.changeType} change type, ${changeInfo.multiAdds} multiAdds`);
         // here we are separating between user/AI/external code - to set the 'source' field in the corresponding DocumentChangeInfo object
         if (undo_redo === false) {
-            if (changeInfo.changeType == 'multiAdd') {                         // not normal typing, one or more blocks of text were added
+            if (changeInfo.changeType == 'multiAdd' || changeInfo.charactersAdded> 100) {                         // not normal typing, one or more blocks of text were added
                 if (multiCursorInserts === false) {                            // only one block of text; possible: paste, generated code, autocompletion
                     const lastCopiedText = instance.getLastCopiedText();
                     if (lastCopiedText != text) {                              // last globally copied text different than text that appeared => not paste
-                        window.showInformationMessage('Not paste, generated code/autocompletion!!');          // generated code, autocompletion
-                        if (changeInfo.linesAdded > 4) {
+                        //window.showInformationMessage('Not paste, generated code/autocompletion!!');          // generated code, autocompletion
+                        if (changeInfo.linesAdded > 4 || changeInfo.charactersAdded > 100) { // if more than one line or more than 100 characters, we consider it generated code
                             window.showInformationMessage('Generated code!');
                             source = 'AI';
                         } else {
-                            window.showInformationMessage('Autocompletion!');
-                            source = 'user';
+                            if (changeInfo.charactersAdded > 5) {
+                                window.showInformationMessage('Autocompletion!');
+                                source = 'user';
+                            }
                         }
                     } else {
                         source = verifyPaste();
                     }
                 } else {  // code refactoring, git pulls/fetches/merges/branch changes, etc.
-                    window.showInformationMessage('Multi cursor insert, is git pull / code refactoring!');
+                    window.showInformationMessage('Multi cursor insert, is code refactoring!'); // git pull / 
                     handleMultipleInserts(now);
                 }
             } else { // normal typing
@@ -93,7 +96,7 @@ export function verifyPaste(): Source {
     const lastInternalCopiedText = instance.getLastInternalCopiedText();
     const lastCopiedText = instance.getLastCopiedText();
 
-    window.showInformationMessage('Last copied text inside VSCode:', lastInternalCopiedText);
+    //window.showInformationMessage('Last copied text inside VSCode:', lastInternalCopiedText);
 
     if (lastCopiedText != lastInternalCopiedText) {
         window.showInformationMessage('Pasted code from external source');

@@ -214,7 +214,7 @@ export class ProjectInfoManager {
     public startProjectTimer() {
         // porneste timer pentru project change pentru a emite datele colectate despre proiect la anumite intervale de timp
         if (!this.projectChangeInfoTimer) {
-            window.showInformationMessage('Timer started');
+            //window.showInformationMessage('Timer started');
             const timer = setTimeout(() => {
                 emitToCacheProjectData(); // send the data to cache
             }, DEFAULT_CHANGE_EMISSION_INTERVAL);
@@ -238,7 +238,7 @@ export class ProjectInfoManager {
             }
 
             this.startProjectTimer(); // ar trebui aici
-            window.showInformationMessage(`Project info initialized: ${this.projectInfo.project_name}, ${this.projectInfo.project_directory}`);
+            //window.showInformationMessage(`Project info initialized: ${this.projectInfo.project_name}, ${this.projectInfo.project_directory}`);
             console.log('Started project timer');
         }
     }

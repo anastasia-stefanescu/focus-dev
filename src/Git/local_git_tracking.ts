@@ -8,6 +8,7 @@ import { CommitData } from './git_models';
 import { getGitBranchReflogs, getGitCredentials, getRepoCredentials } from './local_repo_stats';
 import { SuccessIndicator } from '../EventTracking';
 import { instance } from '../extension';
+import { sendEventsToAWSDB } from '../API/api_wrapper';
 // Watch .git directory changes
 
 export class GitTracking {
@@ -193,6 +194,7 @@ export class GitTracking {
                         console.log('GIT PULL!');
                         window.showInformationMessage('GIT PULL!');
                         // register this somewhere globally, but we don't save it in cloud
+                        //sendEventsToAWSDB('success_indicators', [commit]);
                     } else { // there is no way of knowing this
                         console.log('GIT PUSH!');
                         window.showInformationMessage('GIT PUSH!');

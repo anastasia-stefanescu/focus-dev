@@ -62,11 +62,11 @@ export async function getGitCredentials() {
   }
   console.log('GitHub token:', token);
   console.log('GitHub account label:', accountLabel);
-  window.showInformationMessage(`GitHub token: ${token}`);
+  //window.showInformationMessage(`GitHub token: ${token}`);
 
   const { owner, repoName } = await getRepoCredentials();
   console.log('GitHub Repo:', owner, repoName);
-  window.showInformationMessage(`GitHub Repo: ${owner}, ${repoName}`);
+  //window.showInformationMessage(`GitHub Repo: ${owner}, ${repoName}`);
 
   return { accountLabel, token, owner, repoName };
 }

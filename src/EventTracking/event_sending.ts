@@ -22,7 +22,7 @@ export async function emitToCacheProjectData(deactivation: boolean = false) {
     const projectInfo = instance.getProjectInfo();
 
     if (!projectInfo) {
-        window.showErrorMessage('No project info available');
+        //window.showErrorMessage('No project info available');
         return;
     }
 
@@ -39,7 +39,7 @@ export async function emitToCacheProjectData(deactivation: boolean = false) {
     const executionSessionsExist = !!(sessionsToSendKeys); // covers undefined / [] cases
 
     if (userDocChangesExist || aiDocChangesExist || externalDocChangesExist || userActivityExists || executionSessionsExist) {
-        window.showInformationMessage('Something exists to be sent to be cache!');
+        //window.showInformationMessage('Something exists to be sent to be cache!');
 
         clearTimeout(instance.getTimer());
         instance.setTimer(undefined);
@@ -64,11 +64,11 @@ export function saveToCacheDocumentChanges(instance: ProjectInfoManager, source:
     const changes_dict = instance.getAllDocChangesForSource(source); // returns dict or undefined
 
     if (!changes_dict || Object.keys(changes_dict).length === 0) {
-        window.showInformationMessage(`No ${source} changes to send to cache`);
+        //window.showInformationMessage(`No ${source} changes to send to cache`);
         return;
     }
 
-    window.showInformationMessage(`Begin send docs change for ${source} to cache`);   // just send the event which has project name and directory, filename and path set; // here we might not really need full project data!!!
+    //window.showInformationMessage(`Begin send docs change for ${source} to cache`);   // just send the event which has project name and directory, filename and path set; // here we might not really need full project data!!!
 
     const allChangedFiles = Object.keys(changes_dict);
     const documentCache = cacheInstance.getDocumentCache(source);
@@ -77,8 +77,8 @@ export function saveToCacheDocumentChanges(instance: ProjectInfoManager, source:
         if (!event.end)
             event.end = new Date().getTime().toString(); // through references, the initial array is updated too
         //window.showInformationMessage(`Will call saveEvent for ${file}: ${event.charactersAdded}`);
-        window.showInformationMessage(`Sending: ${event.keystrokes} keystrokes, ${event.charactersAdded}
-            chars added, ${event.charactersDeleted} chars deleted, ${event.multiAdds} multiAdds, ${event.singleAdds}`);
+        //window.showInformationMessage(`Sending: ${event.keystrokes} keystrokes, ${event.charactersAdded}
+        //    chars added, ${event.charactersDeleted} chars deleted, ${event.multiAdds} multiAdds, ${event.singleAdds}`);
         documentCache?.saveEvent(event);
     }                                                             // see other checks from editor flow!!!!
     //instance.setAllDocChangesForSource(source, {});       // reset it
@@ -88,11 +88,11 @@ export function saveToCacheUserActivity(instance: ProjectInfoManager) {
     const userActivity = instance.getUserActivityInfo();
 
     if (!userActivity || userActivity.noEvents() === 0) {
-        window.showInformationMessage('No user activity to send to cache');
+        //window.showInformationMessage('No user activity to send to cache');
         return;
     }
 
-    window.showInformationMessage('Sending user activity to cache');
+    //window.showInformationMessage('Sending user activity to cache');
     const userActivityCache = cacheInstance.getUserActivityCache();
     if (!userActivity.end)
         userActivity.end = new Date().getTime().toString(); // through references, the initial array is updated too
@@ -102,11 +102,11 @@ export function saveToCacheUserActivity(instance: ProjectInfoManager) {
 
 export function saveToCacheExecutionSessions(instance: ProjectInfoManager, sessionsToSendKeys: string[] | undefined, deactivation: boolean = false) {
     if (!sessionsToSendKeys) {
-        window.showInformationMessage(`No execution sessions to send to cache`);
+        //window.showInformationMessage(`No execution sessions to send to cache`);
         return;
     }
 
-    window.showInformationMessage('Sending execution sessions to cache');
+    //window.showInformationMessage('Sending execution sessions to cache');
     const executionCache = cacheInstance.getExecutionCache();
     for (const key of sessionsToSendKeys) {
         const event = instance.getExecutionEventInfo(key);
@@ -125,7 +125,7 @@ function filterFinishedExecutionSessions(instance: ProjectInfoManager) {
     const finishedSessions = Object.keys(allSessions).filter((key) => allSessions[key].end);
 
     if (finishedSessions.length) {
-        window.showInformationMessage('Sending finished execution sessions to cache');
+        //window.showInformationMessage('Sending finished execution sessions to cache');
         return finishedSessions;
     }
     return undefined;

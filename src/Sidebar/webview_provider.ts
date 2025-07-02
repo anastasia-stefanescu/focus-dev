@@ -27,7 +27,7 @@ export class SidebarViewProvider implements WebviewViewProvider {
     public resolveWebviewView(webviewView: WebviewView, context: WebviewViewResolveContext, token: CancellationToken): void {
         this._view = webviewView;
 
-        window.showInformationMessage('resolveWebviewView called');
+        //window.showInformationMessage('resolveWebviewView called');
 
         webviewView.webview.options = {
             enableScripts: true,
@@ -97,10 +97,10 @@ export class SidebarViewProvider implements WebviewViewProvider {
     private getWebviewContentFromFile(htmlFileName: string): string {
         const relativePath = path.join('resources', 'html', htmlFileName + '.html');
         const htmlPath = path.join(this.extensionContext.extensionPath, relativePath);
-        window.showInformationMessage('HTML Path: ' + htmlPath);
+        //window.showInformationMessage('HTML Path: ' + htmlPath);
 
         const htmlContent: string = fs.readFileSync(htmlPath, 'utf8');
-        window.showInformationMessage('HTML Content: ' + htmlContent.substring(0, 100) + '...'); // Show first 100 characters for debugging
+       //window.showInformationMessage('HTML Content: ' + htmlContent.substring(0, 100) + '...'); // Show first 100 characters for debugging
         return htmlContent;
       }
 

@@ -16,7 +16,7 @@ app.use(bodyParser.json());
 app.use(cors());
 
 interface Auth0TokenResponse {
-  access_token: string; 
+  access_token: string;
   token_type: string;
   expires_in: number;
 }
@@ -35,7 +35,7 @@ export function getServerRunning() {
 
   app.post('/callback', async (req: Request, res: Response) => {
     const code = req.body.code; // Auth0 sends the authorization code to your extension
-    window.showInformationMessage(`Callback 1: Code received from uri handler: ${code}`);
+    //window.showInformationMessage(`Callback 1: Code received from uri handler: ${code}`);
     if (!code) {
       res.status(400).send('Authorization code is required');
       return;
@@ -67,7 +67,7 @@ export function getServerRunning() {
 
   app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
-    window.showInformationMessage(`Server running`);
+    //window.showInformationMessage(`Server running`);
     //postActivity();
   });
 }
