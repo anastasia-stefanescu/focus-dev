@@ -55,7 +55,7 @@ projectDropdown.addEventListener('change', () => {
 
     sendCurrentSelectionToBackend();
 
-    const isSelected = selectedProject !== 'Select Project';
+    const isSelected = selectedProject !== 'select project';
 
     // Toggle report visibility
     reportSection.classList.toggle('hidden', !isSelected);
@@ -153,20 +153,15 @@ Object.entries(dailyMetrics).forEach(([key, value]) => {
 //===============================================
 
 const segments = [
-    { start: 5, end: 10, value: 0.9 }, // Narrow segment
-    { start: 15, end: 30, value: 1.29 }, // Wider segment
-    { start: 50, end: 100, value: 2.5 }, // Longer segment
-    { start: 150, end: 180, value: 0.44 }, // Medium segment
-    { start: 200, end: 250, value: 0.3 }, // Medium segment
-    { start: 300, end: 400, value: 0.1 }, // Longer segment
-    { start: 500, end: 600, value: 0.14 }, // Longer segment
-    { start: 800, end: 900, value: 0.7 }, // Medium segment
-    { start: 950, end: 1050, value: 0.4 }, // Longer segment
-    { start: 1100, end: 1150, value: 0.67 }, // Narrow segment
-    { start: 1200, end: 1300, value: 1.3 }, // Long segment
-    { start: 1350, end: 1400, value: 0.9 }, // Narrow segment
-    // Add more segments here...
-];
+        { start: 512, end: 533, value: 2.5 }, // Longer segment
+        { start: 500, end: 593, value: 0.14 }, // Longer segment
+        { start: 625, end: 663, value: 0.7 }, // Medium segment
+        { start: 670, end: 700, value: 0.2 }, // Short segment
+        { start: 756, end: 823, value: 0.4 }, // Longer segment
+        { start: 843, end: 888, value: 0.55}
+
+        // Add more segments here...
+    ];
 
 const allMinutes = Array.from({ length: 1440 }, (_, i) => i);
 const valueMapping = {};
@@ -182,16 +177,16 @@ for (let i = 0; i < segments.length; i++) {
 
 const allDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const dailyActivities = {
-    'Coding': [12, 19, 3, 5, 10, 2, 3],
-    'Code Review': [5, 10, 2, 3, 7, 4, 2],
-    'Testing': [3, 7, 4, 2, 3, 5, 1],
-    'Refactoring': [2, 3, 5, 1, 4, 2, 3],
+    'Coding': [3, 2, 7, 9, 3, 0, 1],
+    'Code Review': [2, 1, 8, 3, 5, 0, 1],
+    'Testing': [1, 3, 2, 5, 4, 0, 0],
+    'Refactoring': [2, 4, 1, 3, 2, 0, 0],
 }
 const dailyFocus = {
-    'focus': [0.3, 0.4, 0.7, 0.3, 0.1, 0.2, 0.3],
-    'active': [0.5, 0.2, 0.1, 0.2, 0.2, 0.4, 0.2],
-    'idle': [0.1, 0.5, 0.1, 0.1, 0.7, 0.1, 0.1],
-    'inactive': [0.1, 0.1, 0.1, 0.4, 0.6, 0.3, 0.4],
+    'focus': [0.3, 0.4, 0.7, 0.3, 0.1, 0, 0],
+    'active': [0.5, 0.2, 0.1, 0.2, 0.2, 0.1, 0.2],
+    'idle': [0.1, 0.3, 0.1, 0.1, 0.5, 0.1, 0.1],
+    'inactive': [0.1, 0.1, 0.1, 0.4, 0.2, 0.8, 0.7],
 }
 
 const activityToColorMapping = {
@@ -204,18 +199,24 @@ const activityToColorMapping = {
 
 // overlapping intervals for a single day!!
 const activitiesOfDay = [
-    { label: 'Coding', start: 10,  end: 80},
-    { label: 'Code Review', start: 90, end: 120 },
-    { label: 'Coding', start: 190, end: 280 },
-    { label: 'Refactoring', start: 400, end: 630 },
-    { label: 'Code Review', start: 800, end: 950 },
-    { label: 'Testing', start: 1000, end: 1200 },
-    { label: 'Coding', start: 1300, end: 1400 },
-    { label: 'Refactoring', start: 1410, end: 1430 },
-    { label: 'Testing', start: 1435, end: 1440 },
-];
+        { label: 'Coding', start: 457, end: 523 },
+        { label: 'Code Review', start: 546, end: 589 },
+        { label: 'Coding', start: 680, end: 712},
+        { label: 'Refactoring', start: 735, end: 773 },
+        { label: 'Code Review', start: 810, end: 832 },
+        { label: 'Testing', start: 879, end: 921 },
+        { label: 'Coding', start: 932, end: 999 },
+    ];
 
 const allActivitiesOfDay = [];
+
+if (activitiesOfDay[0].start > 0) {
+    allActivitiesOfDay.push({
+        label: 'Undefined',
+        start: 0,
+        end: activitiesOfDay[0].start-1
+    });
+}
 
 for (let i = 0; i < activitiesOfDay.length; i++) {
     allActivitiesOfDay.push(activitiesOfDay[i]);
@@ -477,7 +478,7 @@ function getChart2ForWeek(dailyActivities) {
 
 //===============================================
 
-let currentTime = Math.floor(new Date('2025-04-13T00:00:00Z').getTime() / 1000); // UNIX seconds
+let currentTime = Math.floor(new Date('2025-06-15T00:00:00Z').getTime() / 1000); // UNIX seconds
 
 function nextTime(minGap = 1 * 3600, maxGap = 3 * 86400) {
     const gap = Math.floor(Math.random() * (maxGap - minGap + 1)) + minGap;
@@ -535,7 +536,7 @@ class projectEfficiencyData {
 }
 
 const branchXdata = new branchEfficiencyData(
-    "Branch 'Database'",
+    "Branch 'database'",
     100,
     [
         new intervalEfficiencyData(nextTime(), 'Branch create', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
@@ -547,9 +548,9 @@ const branchXdata = new branchEfficiencyData(
     1100
 );
 
-currentTime = Math.floor(new Date('2025-04-13T00:00:00Z').getTime() / 1000);
+currentTime = Math.floor(new Date('2025-06-15T00:00:00Z').getTime() / 1000);
 const branchYdata = new branchEfficiencyData(
-    "Branch 'Setup'",
+    "Branch 'setup'",
     350,
     [
         new intervalEfficiencyData(nextTime(), 'Branch create', 0, 0, 0, 0, 0, 0, 0, 0),
@@ -561,9 +562,9 @@ const branchYdata = new branchEfficiencyData(
     2600
 );
 
-currentTime = Math.floor(new Date('2025-04-13T00:00:00Z').getTime() / 1000);
+currentTime = Math.floor(new Date('2025-06-15T00:00:00Z').getTime() / 1000);
 const mainData = new branchEfficiencyData(
-    'Main',
+    'main',
     0,
     [
         new intervalEfficiencyData(nextTime(), 'Branch create', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
@@ -723,17 +724,35 @@ window.addEventListener('message', event => {
             myChart2 = getChart2ForDay(payload.activityIntervals);
 
             reportTitle.textContent = `Daily ${isProjectSelected} Report - ${currentReportDate.toLocaleDateString()}`;
-            // Object.entries(dailyMetrics).forEach(([key, value]) => {
-            //     const element = document.querySelector(`.value[data-id="${key}"]`);
-            //     if (element) {
-            //         element.textContent = value;
-            //     }
+            Object.entries(payload.reportStats).forEach(([key, value]) => {
+                const element = document.querySelector(`.value[data-id="${key}"]`);
+                if (element) {
+                    element.textContent = value;
+                }
+            });
+            Object.entries(payload.efficiencyMetrics).forEach(([key, value]) => {
+                const element = document.querySelector(`.value[data-id="${key}"]`);
+                if (element) {
+                    element.textContent = value;
+                }
+            });
         } else {
             myChart1 = getChart1ForWeek(payload.focusDurationsForDay);
             myChart2 = getChart2ForWeek(payload.activityDurationsForDay);
             const sevenDaysAgo = new Date(currentReportDate.getTime() - 7 * 24 * 60 * 60 * 1000);
             reportTitle.textContent = `Weekly ${isProjectSelected} Report - ${sevenDaysAgo.toLocaleDateString()} to ${currentReportDate.toLocaleDateString()}`;
-
+            Object.entries(payload.reportStats).forEach(([key, value]) => {
+                const element = document.querySelector(`.value[data-id="${key}"]`);
+                if (element) {
+                    element.textContent = value;
+                }
+            });
+            Object.entries(payload.efficiencyMetrics).forEach(([key, value]) => {
+                const element = document.querySelector(`.value[data-id="${key}"]`);
+                if (element) {
+                    element.textContent = value;
+                }
+            });
         }
     }
 });

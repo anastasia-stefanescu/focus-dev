@@ -3,15 +3,27 @@ import { getData } from "./get_and_group_events";
 import { Event, DocumentChangeInfo} from "../EventTracking/event_models";
 import { dataPointsForDayFocus, computeIntervalsFocusData, FocusLevelData, FocusLevel, FocusDataByIntervalAndType } from "./focus_aggregate";
 import { ActivityType } from "./activity_aggregate";
-interface EfficiencyStats {
 
+interface ReportStats {
+    editorTime: string;
+    activeCoding: string;
+    focusedCoding: string;
+    linesWritten: number;
+    linesAI: number;
+    linesImported: number;
 }
 
-interface LineStats {
-    user: number;
-    ai: number;
-    external: number;
-}
+interface efficiencyMetrics {
+    editorTime2: string;
+    activeCoding2: string;
+    focusedCoding2: string;
+    coding: string;
+    testing: string;
+    refactoring: string;
+    linesWritten2: number;
+    linesAI2: number;
+    linesImported2: number;
+};
 interface FocusStats {
     total: number;
     focus: number;
@@ -38,36 +50,18 @@ interface WeeklyActivityStats {
     Refactoring: number[];
 }
 
-// interface DataForFrontend {
-//     lineStats: {
-//         user: number;
-//         ai: number;
-//         external: number;
-//     };
-//     intervalsData: { [timeUnit: string]: DataForInterval };
-//     //successIndicators: { { key: SuccessType } : EfficiencyStats};
-//     totalEfficiencyStats: {
-//         averageTime: number; // in seconds
-//         averageLines: number;
-//         focusStats: FocusStats;
-//         activityStats: ActivityStats;
-//     }
-// }
-
 interface DataForDay {
-    interval: 'day';
-    lineStats: LineStats;
-    focusStats: FocusStats;
+    reportStats: ReportStats;
     focusValues: {};
     activityIntervals: ActivityInterval[]; // array of activity intervals for the day
+    efficiencyMetrics?: efficiencyMetrics; // optional efficiency metrics for the day
 }
 
 interface DataForWeek {
-    interval: 'week';
-    lineStats: LineStats;
-    focusStats: FocusStats;
+    reportStats: ReportStats;
     focusDurationsForDay: WeeklyFocusStats; // array of focus durations for each day
     activityDurationsForDay: WeeklyActivityStats; // array of activity durations for each day
+    efficiencyMetrics?: efficiencyMetrics; // optional efficiency metrics for the week
 }
 
 export async function computeDailyStats(start: Date, projectName: string | undefined = undefined) {
@@ -144,32 +138,154 @@ async function getLinesBySource(startMS: number, timeUnitMS: number, projectName
     };
 }
 
+// const cache: Record<string, DataForDay | DataForWeek> = {};
+
+// function getRandomInRange(min: number, max: number): number {
+//     return Math.random() * (max - min) + min;
+// }
+
+// function getRandomInt(min: number, max: number): number {
+//     return Math.floor(getRandomInRange(min, max + 1));
+// }
+
+// function generateFocusSegments(): { start: number; end: number; value: number }[] {
+//     const segments = [];
+//     let current = getRandomInt(480, 540); // start between 8am - 9am
+//     while (current < 1080) { // until 6pm
+//         const length = getRandomInt(10, 90);
+//         const value = parseFloat(getRandomInRange(0.2, 2.5).toFixed(2));
+//         const end = Math.min(current + length, 1080);
+//         segments.push({ start: current, end, value });
+//         current = end + getRandomInt(5, 30);
+//     }
+//     return segments;
+// }
+
+// function generateActivityIntervals(): ActivityInterval[] {
+//     const labels = ['Coding', 'Code Review', 'Refactoring', 'Testing'];
+//     const intervals: ActivityInterval[] = [];
+//     let current = getRandomInt(480, 540);
+//     while (current < 1080) {
+//         const label = labels[getRandomInt(0, labels.length - 1)];
+//         const length = getRandomInt(15, 120);
+//         const end = Math.min(current + length, 1080);
+//         intervals.push({ label, start: current, end });
+//         current = end + getRandomInt(5, 20);
+//     }
+//     return intervals;
+// }
+
+// function padWithUndefined(intervals: ActivityInterval[]): ActivityInterval[] {
+//     const result: ActivityInterval[] = [];
+//     for (let i = 0; i < intervals.length; i++) {
+//         result.push(intervals[i]);
+//         const gapStart = intervals[i].end;
+//         const gapEnd = i + 1 < intervals.length ? intervals[i + 1].start : 1080;
+//         if (gapEnd > gapStart) {
+//             result.push({ label: 'Undefined', start: gapStart, end: gapEnd });
+//         }
+//     }
+//     return result;
+// }
+
+// function randomStats(): ReportStats {
+//     return {
+//         editorTime: `${getRandomInt(4, 8)} h ${getRandomInt(0, 59)} min`,
+//         activeCoding: `${getRandomInt(2, 6)} h ${getRandomInt(0, 59)} min`,
+//         focusedCoding: `${getRandomInt(1, 5)} h ${getRandomInt(0, 59)} min`,
+//         linesWritten: getRandomInt(300, 1000),
+//         linesAI: getRandomInt(100, 500),
+//         linesImported: getRandomInt(50, 300)
+//     };
+// }
+
+// function randomEfficiencyMetrics() {
+//     return {
+//         editorTime2: `${getRandomInt(4, 7)}h ${getRandomInt(0, 59)}m`,
+//         activeCoding2: `${getRandomInt(2, 5)}h ${getRandomInt(0, 59)}m`,
+//         focusedCoding2: `${getRandomInt(1, 3)}h ${getRandomInt(0, 59)}m`,
+//         coding: `${getRandomInt(1, 3)}h ${getRandomInt(0, 59)}m`,
+//         testing: `${getRandomInt(0, 1)}h ${getRandomInt(0, 59)}m`,
+//         refactoring: `${getRandomInt(0, 2)}h ${getRandomInt(0, 59)}m`,
+//         linesWritten2: getRandomInt(300, 1000),
+//         linesAI2: getRandomInt(100, 500),
+//         linesImported2: getRandomInt(50, 300)
+//     };
+// }
+
+// function randomWeeklyFocus(): WeeklyFocusStats {
+//     const keys: (keyof WeeklyFocusStats)[] = ['focus', 'active', 'idle', 'inactive'];
+//     return keys.reduce((acc, key) => {
+//         acc[key] = Array.from({ length: 7 }, () => parseFloat(getRandomInRange(0, 1).toFixed(2)));
+//         return acc;
+//     }, {} as WeeklyFocusStats);
+// }
+
+// function randomWeeklyActivity(): WeeklyActivityStats {
+//     return ['Coding', 'CodeReview', 'Testing', 'Refactoring'].reduce((acc, key) => {
+//         acc[key as keyof WeeklyActivityStats] = Array.from({ length: 7 }, () => getRandomInt(0, 60));
+//         return acc;
+//     }, {} as WeeklyActivityStats);
+// }
+
+// export async function getDataForFrontend(
+//     projectName: string,
+//     time_unit: 'day' | 'week',
+//     startDate: Date
+// ): Promise<DataForDay | DataForWeek> {
+//     const cacheKey = `${projectName}_${time_unit}_${startDate.toISOString()}`;
+//     if (cache[cacheKey]) return cache[cacheKey];
+
+//     if (time_unit === 'day') {
+//         const segments = generateFocusSegments();
+//         const valueMapping: Record<number, number> = {};
+
+//         for (let i = 0; i < segments.length; i++) {
+//             const mid = Math.floor((segments[i].start + segments[i].end) / 2);
+//             valueMapping[mid] = segments[i].value;
+
+//             const nextStart = i + 1 < segments.length ? segments[i + 1].start : 1440;
+//             const middleGap = Math.floor((segments[i].end + nextStart) / 2);
+//             valueMapping[middleGap] = 0;
+//         }
+
+//         const rawActivities = generateActivityIntervals();
+//         const allActivitiesOfDay = padWithUndefined(rawActivities);
+
+//         const data: DataForDay = {
+//             reportStats: randomStats(),
+//             focusValues: valueMapping,
+//             activityIntervals: allActivitiesOfDay,
+//             efficiencyMetrics: randomEfficiencyMetrics()
+//         };
+
+//         cache[cacheKey] = data;
+//         return data;
+//     } else {
+//         const data: DataForWeek = {
+//             reportStats: randomStats(),
+//             focusDurationsForDay: randomWeeklyFocus(),
+//             activityDurationsForDay: randomWeeklyActivity(),
+//             efficiencyMetrics: randomEfficiencyMetrics()
+//         };
+
+//         cache[cacheKey] = data;
+//         return data;
+//     }
+// }
+
+
 // mark as async
 export function getDataForFrontend(projectName: string, time_unit: 'day' | 'week', startDate: Date): DataForDay | DataForWeek {
-    const dayLineStats = {
-        user: 323,
-        ai: 74,
-        external: 33
-    };
-    const weekLineStats = {
-        user: 1389,
-        ai: 427,
-        external: 126
-    };
 
     const segments = [
-        { start: 5, end: 10, value: 0.9 }, // Narrow segment
-        { start: 15, end: 30, value: 1.29 }, // Wider segment
-        { start: 50, end: 100, value: 2.5 }, // Longer segment
-        { start: 150, end: 180, value: 0.44 }, // Medium segment
-        { start: 200, end: 250, value: 0.3 }, // Medium segment
-        { start: 300, end: 400, value: 0.1 }, // Longer segment
-        { start: 500, end: 600, value: 0.14 }, // Longer segment
-        { start: 800, end: 900, value: 0.7 }, // Medium segment
-        { start: 950, end: 1050, value: 0.4 }, // Longer segment
-        { start: 1100, end: 1150, value: 0.67 }, // Narrow segment
-        { start: 1200, end: 1300, value: 1.3 }, // Long segment
-        { start: 1350, end: 1400, value: 0.9 }, // Narrow segment
+        { start: 512, end: 533, value: 2.5 }, // Longer segment
+        { start: 500, end: 593, value: 0.14 }, // Longer segment
+        { start: 625, end: 663, value: 0.7 }, // Medium segment
+        { start: 670, end: 700, value: 0.2 }, // Short segment
+        { start: 756, end: 823, value: 0.4 }, // Longer segment
+        { start: 843, end: 888, value: 0.55}
+
         // Add more segments here...
     ];
 
@@ -184,32 +300,55 @@ export function getDataForFrontend(projectName: string, time_unit: 'day' | 'week
         valueMapping[middleOfSpace] = 0;
     }
 
-    const focusStats : FocusStats = {
-        total: 396,
-        focus: 135,
-        active: 204
+    const dailyMetrics : ReportStats = {
+        editorTime: '6 h 36 min',
+        activeCoding: '3 h 24 min',
+        focusedCoding: '2 h 15 min',
+        linesWritten: 375,
+        linesAI: 174,
+        linesImported: 189
     };
 
-    const weeklyFocusStats : FocusStats = {
-        total: 1000,
-        focus: 370,
-        active: 390
+    const weeklyMetrics : ReportStats = {
+        editorTime: '32 h 12 min',
+        activeCoding: '18 h 48 min',
+        focusedCoding: '14 h 30 min',
+        linesWritten: 1875,
+        linesAI: 874,
+        linesImported: 945
+    };
+
+    const efficiencyMetrics = {
+        editorTime2: '5h 30m',
+        activeCoding2: '3h 10m',
+        focusedCoding2: '2h 45m',
+        coding: '1h 47m',
+        testing: '1h 20m',
+        refactoring: '0h 23m',
+        linesWritten2: 420,
+        linesAI2: 180,
+        linesImported2: 75
     };
 
     const activitiesOfDay : ActivityInterval[] = [
-        { label: 'Coding', start: 10, end: 80 },
-        { label: 'Code Review', start: 90, end: 120 },
-        { label: 'Coding', start: 190, end: 280 },
-        { label: 'Refactoring', start: 400, end: 630 },
-        { label: 'Code Review', start: 800, end: 950 },
-        { label: 'Testing', start: 1000, end: 1200 },
-        { label: 'Coding', start: 1300, end: 1400 },
-        { label: 'Refactoring', start: 1410, end: 1430 },
-        { label: 'Testing', start: 1435, end: 1440 },
+        { label: 'Coding', start: 457, end: 523 },
+        { label: 'Code Review', start: 546, end: 589 },
+        { label: 'Coding', start: 680, end: 712},
+        { label: 'Refactoring', start: 735, end: 773 },
+        { label: 'Code Review', start: 810, end: 832 },
+        { label: 'Testing', start: 879, end: 921 },
+        { label: 'Coding', start: 932, end: 999 },
     ];
 
     const allActivitiesOfDay : ActivityInterval[] = [];
 
+    if (activitiesOfDay[0].start > 0) {
+        allActivitiesOfDay.push({
+            label: 'Undefined',
+            start: 0,
+            end: activitiesOfDay[0].start - 1
+        });
+    }
     for (let i = 0; i < activitiesOfDay.length; i++) {
         allActivitiesOfDay.push(activitiesOfDay[i]);
 
@@ -230,38 +369,36 @@ export function getDataForFrontend(projectName: string, time_unit: 'day' | 'week
     }
 
     const dailyFocusStats: WeeklyFocusStats = {
-        focus: [0.3, 0.4, 0.7, 0.3, 0.1, 0.2, 0.3],
-        active: [0.5, 0.2, 0.1, 0.2, 0.2, 0.4, 0.2],
-        idle: [0.1, 0.5, 0.1, 0.1, 0.7, 0.1, 0.1],
-        inactive: [0.1, 0.1, 0.1, 0.4, 0.6, 0.3, 0.4],
+        focus: [0.3, 0.4, 0.7, 0.3, 0.1, 0, 0],
+        active: [0.5, 0.2, 0.1, 0.2, 0.2, 0.1, 0.2],
+        idle: [0.1, 0.3, 0.1, 0.1, 0.5, 0.1, 0.1],
+        inactive: [0.1, 0.1, 0.1, 0.4, 0.2, 0.8, 0.7],
     }
 
     const dailyActivityStats: WeeklyActivityStats = {
-        Coding: [10, 20, 30, 40, 50, 60, 70],
-        CodeReview: [5, 10, 15, 20, 25, 30, 35],
-        Testing: [2, 4, 6, 8, 10, 12, 14],
-        Refactoring: [1, 2, 3, 4, 5, 6, 7]
+        Coding: [3, 2, 7, 9, 3, 0, 1],
+        CodeReview: [2, 1, 8, 3, 5, 0, 1],
+        Testing: [1, 3, 2, 5, 4, 0, 0],
+        Refactoring: [2, 4, 1, 3, 2, 0, 0]
     };
 
 
 
     if (time_unit === 'day') {
         const dataForDay: DataForDay = {
-            interval: 'day',
-            lineStats:  dayLineStats, //await getLinesBySource(startDate.getTime(), 24 * 60 * 60 * 1000, projectName),
-            focusStats: focusStats,
+            reportStats:  dailyMetrics, //await getLinesBySource(startDate.getTime(), 24 * 60 * 60 * 1000, projectName),
             focusValues: valueMapping,
-            activityIntervals: allActivitiesOfDay
+            activityIntervals: allActivitiesOfDay,
+            efficiencyMetrics: efficiencyMetrics
         };
         // compute focus stats and activity intervals
         return dataForDay;
     } else {
         const dataForWeek: DataForWeek = {
-            interval: 'week',
-            lineStats: weekLineStats, // await getLinesBySource(startDate.getTime(), 7 * 24 * 60 * 60 * 1000, projectName),
-            focusStats: weeklyFocusStats,
+            reportStats: weeklyMetrics, // await getLinesBySource(startDate.getTime(), 7 * 24 * 60 * 60 * 1000, projectName),
             focusDurationsForDay: dailyFocusStats,
-            activityDurationsForDay: dailyActivityStats
+            activityDurationsForDay: dailyActivityStats,
+            efficiencyMetrics: efficiencyMetrics
         };
         // compute focus stats and activity durations for each day
         return dataForWeek;

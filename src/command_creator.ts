@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import path from 'path';
+import * as fs from 'fs';
 import { startAuthentication } from './Authentication/authenticate_user';
 import { ExtensionContext, Disposable } from "vscode";
 import { commands, window, workspace, debug, env } from "vscode";
@@ -7,7 +7,7 @@ import { Uri } from 'vscode';
 import { SidebarViewProvider } from './Sidebar/webview_provider';
 import { AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET, REDIRECT_URI } from './Constants';
 import { _tokenEmitter, MyAuth0AuthProvider } from './Authentication/auth_provider';
-import { post_to_services } from './API/api_wrapper';
+import { getDataForFrontend } from './Aggregation/compute_stats';
 import { endExecutionSession, handleCloseFile, handleOpenFile, handleWindowFocusChange, startExecutionSession, verifyDocumentChange } from './EventTracking/event_processing_by_type';
 import { createAndSaveUserActivityEvent } from './EventTracking/event_processing_by_type';
 
@@ -75,8 +75,14 @@ export function createCommands(ctx: ExtensionContext, authProvider: MyAuth0AuthP
     });
   cmds.push(startAuthenticationCommand);
 
+  const endAuthenticationCommand = commands.registerCommand('code-stats.authComplete', () => {
+    const provider = sidebar
+    provider?.showLoggedInView(); // method you'll add next
+  });
+  cmds.push(endAuthenticationCommand);
 
-
+  const showDashboard = openDashboard(ctx);
+  cmds.push(showDashboard);
 
   const copyPasteCutDisposables: Disposable[] = copyPasteCutCommands();
 
@@ -226,4 +232,49 @@ function UIEvents(): Disposable[] {
   });
 
   return [changedWindowState, changedCursorSelection];
+}
+
+
+
+function openDashboard(context: ExtensionContext) {
+  const showDashboard = commands.registerCommand('code-stats.showDashboardPanel', () => {
+    const panel = vscode.window.createWebviewPanel(
+      'chartView',
+      'FocusDev Dashboard',
+      vscode.ViewColumn.One,
+      {
+        enableScripts: true,
+        localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'resources', 'html')]
+      }
+    );
+
+    const htmlDir = vscode.Uri.joinPath(context.extensionUri, 'resources', 'html');
+    const chartName = 'chart.html';
+    const chartHtmlPath = vscode.Uri.joinPath(htmlDir, chartName);
+    let html = fs.readFileSync(chartHtmlPath.fsPath, 'utf8');
+
+    const replaceUris = {
+      'CHART_JS_URI': panel.webview.asWebviewUri(vscode.Uri.joinPath(htmlDir, 'chart.min.js')).toString(),
+      'CHART_CSS_URI': panel.webview.asWebviewUri(vscode.Uri.joinPath(htmlDir, 'better-stats.css')).toString(),
+      'CHART_SCRIPT_URI': panel.webview.asWebviewUri(vscode.Uri.joinPath(htmlDir, 'chart-script.js')).toString()
+    };
+
+    for (const [key, value] of Object.entries(replaceUris)) {
+      html = html.replace(key, value);
+    }
+
+    panel.webview.html = html;
+
+    panel.webview.onDidReceiveMessage(message => {
+      if (message.command === 'selectionChanged') {
+        const { project, mode, date } = message.payload;
+        const dataForFrontend = getDataForFrontend(project, mode, new Date(date));
+        panel.webview.postMessage({
+          command: 'updateFrontend',
+          payload: JSON.parse(JSON.stringify(dataForFrontend)),
+        });
+      }
+    });
+  });
+  return showDashboard;
 }

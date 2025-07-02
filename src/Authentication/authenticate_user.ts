@@ -1,4 +1,4 @@
-import { window, ExtensionContext, authentication, AuthenticationSession } from 'vscode';
+import { window, ExtensionContext, authentication, AuthenticationSession, commands } from 'vscode';
 import { MyAuth0AuthProvider } from './auth_provider';
 import { fetchUserData } from './user_handler';
 
@@ -16,6 +16,7 @@ export async function startAuthentication(context: ExtensionContext, authProvide
             if (user) {
                 await authProvider.updateSessionWithUserInfo(session.accessToken, user, session);
                 window.showInformationMessage(`Globalcontext: ${context.globalState.get('currentSession')}`)
+                commands.executeCommand('code-stats.authComplete'); // Trigger the command to show the logged-in view.
             } else { window.showErrorMessage('User is null !!'); }
         }
     } catch (error) {

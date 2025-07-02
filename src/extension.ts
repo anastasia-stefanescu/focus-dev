@@ -40,51 +40,6 @@ export async function activate(context: ExtensionContext) {
 
   getServerRunning();
 
-  //ChartWebviewPanel.show(context);
-
-  const panel = vscode.window.createWebviewPanel(
-    'chartView',
-    'FocusDev Dashboard',
-    vscode.ViewColumn.One,
-    {
-      enableScripts: true,
-      localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'resources', 'html')]
-    }
-  );
-
-  const htmlDir = vscode.Uri.joinPath(context.extensionUri, 'resources', 'html');
-  console.log(`HTML directory: ${htmlDir.fsPath}`);
-
-  const chartName = 'chart.html';
-  const chartHtmlPath = vscode.Uri.joinPath(htmlDir, chartName);
-  let html = fs.readFileSync(chartHtmlPath.fsPath, 'utf8');
-
-  const replaceUris = {
-    'CHART_JS_URI': panel.webview.asWebviewUri(vscode.Uri.joinPath(htmlDir, 'chart.min.js')).toString(),
-    'CHART_CSS_URI': panel.webview.asWebviewUri(vscode.Uri.joinPath(htmlDir, 'better-stats.css')).toString(),
-    'CHART_SCRIPT_URI': panel.webview.asWebviewUri(vscode.Uri.joinPath(htmlDir, 'chart-script.js')).toString()
-  };
-
-  for (const [key, value] of Object.entries(replaceUris)) {
-    html = html.replace(key, value);
-  }
-
-  panel.webview.html = html;
-
-  panel.webview.onDidReceiveMessage(message => {
-    if (message.command === 'selectionChanged') {
-      window.showInformationMessage(`Selection changed`);
-      console.log('Received message from webview:', message.payload);
-      const { project, mode, date } = message.payload;
-      const dataForFrontend = getDataForFrontend(project, mode, new Date(date));
-      console.log('Data for frontend:', dataForFrontend);
-      panel.webview.postMessage({
-        command: 'updateFrontend',
-        payload: JSON.parse(JSON.stringify(dataForFrontend)),
-      });
-    }
-  });
-
 
   //generateEvents('Name1', '/Path/To/Project', ['main', 'feature1', 'feature2'], ['file1.js', 'file2.js', 'file3.js'], ['/path/to/file1.js', '/path/to/file2.js', '/path/to/file3.js']);
 

@@ -72,6 +72,11 @@
         "category": "Dashboard"
       },
       {
+        "command": "code-stats.showDashboardPanel",
+        "title": "Open Dashboard",
+        "category": "Dashboard"
+      },
+      {
         "command": "code-stats.refreshDashboard",
         "title": "Refresh dashboard"
       },
@@ -90,6 +95,10 @@
       {
         "command": "code-stats.startAuthentication",
         "title": "Start Authentication"
+      },
+      {
+        "command": "code-stats.authComplete",
+        "title": "End Authentication"
       },
       {
         "command": "custom.pasteWithMessage",
