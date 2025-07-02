@@ -93,6 +93,22 @@
     margin-bottom: 20px;
 }
 
+.hidden {
+    display: none;
+}
+
+.reports-2 {
+    background-color: #F2F1F1;
+    padding: 24px;
+    border-radius: 15px;
+    margin-top: 40px;
+}
+
+.reports-2 h2 {
+    font-size: 28px;
+    margin-bottom: 20px;
+}
+
 .metrics {
     display: grid;
     grid-template-columns: repeat(3, 1fr);

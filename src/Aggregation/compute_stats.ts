@@ -221,12 +221,11 @@ export function getDataForFrontend(projectName: string, time_unit: 'day' | 'week
         }
 
         if (nextStart > currentEnd) {
-            const activityInterval : ActivityInterval = {
-                label: activitiesOfDay[i].label,
+            allActivitiesOfDay.push({
+                label: 'Undefined',
                 start: currentEnd,
                 end: nextStart
-            }
-            allActivitiesOfDay.push(activityInterval);
+            });
         }
     }
 

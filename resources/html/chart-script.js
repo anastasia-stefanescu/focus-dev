@@ -33,6 +33,20 @@ function shiftTimeUnit(delta) {
     sendCurrentSelectionToBackend();
 }
 
+const efficiencyMetrics = {
+    editorTime2: '5h 30m',
+    activeCoding2: '3h 10m',
+    focusedCoding2: '2h 45m',
+    coding: '1h 47m',
+    testing: '1h 20m',
+    refactoring: '0h 23m',
+    linesWritten2: 420,
+    linesAI2: 180,
+    linesImported2: 75
+};
+
+const reportSection = document.querySelector('.reports-2');
+
 projectDropdown.addEventListener('change', () => {
     selectedProject = projectDropdown.value;
     efficiencyTitle.textContent = `Efficiency dashboard - Project '${selectedProject}'`;
@@ -41,11 +55,21 @@ projectDropdown.addEventListener('change', () => {
 
     sendCurrentSelectionToBackend();
 
+    const isSelected = selectedProject !== 'Select Project';
+
+    // Toggle report visibility
+    reportSection.classList.toggle('hidden', !isSelected);
+
     if (selectedProject !== 'Select Project') {
         if (myChart3) {
             myChart3.destroy();
         }
         myChart3 = getEfficiencyChart();
+
+        Object.entries(efficiencyMetrics).forEach(([key, value]) => {
+            const el = document.querySelector(`.value[data-id="${key}"]`);
+            if (el) el.textContent = value;
+        });
     }
 });
 
@@ -77,9 +101,6 @@ toggleButtons.forEach(btn => {
 
         // Create chart based on selected mode
         if (selectedMode === 'day') {
-            //myChart1 = getChart1ForDay();
-            //myChart2 = getChart2ForDay();
-            //reportTitle.textContent = `Daily Report - ${new Date().toLocaleDateString()}`;
             Object.entries(dailyMetrics).forEach(([key, value]) => {
                 const element = document.querySelector(`.value[data-id="${key}"]`);
                 if (element) {
@@ -87,10 +108,6 @@ toggleButtons.forEach(btn => {
                 }
             });
         } else if (selectedMode === 'week') {
-            //myChart1 = getChart1ForWeek(dailyFocus);
-            //myChart2 = getChart2ForWeek();
-            const sevenDaysAgo = new Date(new Date().getTime() - 7 * 24 * 60 * 60 * 1000);
-            reportTitle.textContent = `Weekly Report - ${sevenDaysAgo.toLocaleDateString()} to ${new Date().toLocaleDateString()}`;
             Object.entries(weeklyMetrics).forEach(([key, value]) => {
                 const element = document.querySelector(`.value[data-id="${key}"]`);
                 if (element) {
@@ -699,12 +716,13 @@ window.addEventListener('message', event => {
     if (myChart1) myChart1.destroy();
     if (myChart2) myChart2.destroy();
 
+    const isProjectSelected = selectedProject !== 'Select Project' ? selectedProject : '';
     if (command === 'updateFrontend') {
         if (selectedMode === 'day') {
             myChart1 = getChart1ForDay(payload.focusValues, allMinutes);
             myChart2 = getChart2ForDay(payload.activityIntervals);
 
-            reportTitle.textContent = `Daily Report - ${currentReportDate.toLocaleDateString()}`;
+            reportTitle.textContent = `Daily ${isProjectSelected} Report - ${currentReportDate.toLocaleDateString()}`;
             // Object.entries(dailyMetrics).forEach(([key, value]) => {
             //     const element = document.querySelector(`.value[data-id="${key}"]`);
             //     if (element) {
@@ -714,8 +732,10 @@ window.addEventListener('message', event => {
             myChart1 = getChart1ForWeek(payload.focusDurationsForDay);
             myChart2 = getChart2ForWeek(payload.activityDurationsForDay);
             const sevenDaysAgo = new Date(currentReportDate.getTime() - 7 * 24 * 60 * 60 * 1000);
-            reportTitle.textContent = `Weekly Report - ${sevenDaysAgo.toLocaleDateString()} to ${currentReportDate.toLocaleDateString()}`;
+            reportTitle.textContent = `Weekly ${isProjectSelected} Report - ${sevenDaysAgo.toLocaleDateString()} to ${currentReportDate.toLocaleDateString()}`;
 
         }
     }
 });
+
+
